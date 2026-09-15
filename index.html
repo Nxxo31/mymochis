@@ -1,0 +1,1406 @@
+<!DOCTYPE html>
+<html lang="es">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width,initial-scale=1,viewport-fit=cover">
+<meta name="theme-color" content="#e88a9e">
+<title>MyMochis — Mochis artesanales en Neiva</title>
+<meta name="description" content="Mochis artesanales hechos a mano en Neiva. Pedidos por WhatsApp, recoges en nuestra cocina oculta de martes a sábado de 3pm a 7pm.">
+<meta name="application-name" content="MyMochis">
+<meta name="apple-mobile-web-app-title" content="MyMochis">
+<meta name="apple-mobile-web-app-capable" content="yes">
+<meta name="mobile-web-app-capable" content="yes">
+<meta name="format-detection" content="telephone=no">
+
+<link rel="icon" type="image/svg+xml" href="/favicon.svg">
+<link rel="apple-touch-icon" href="/favicon.svg">
+<link rel="manifest" href="/manifest.json">
+
+<meta property="og:title" content="MyMochis — Mochis artesanales en Neiva">
+<meta property="og:description" content="Pedidos por WhatsApp · recoges en cocina oculta mar–sáb 3pm–7pm. 5 sabores de temporada.">
+<meta property="og:type" content="website">
+<meta property="og:locale" content="es_CO">
+<meta property="og:image" content="/og-image.svg">
+<meta property="og:image:width" content="1200">
+<meta property="og:image:height" content="630">
+<meta property="og:image:alt" content="MyMochis — mochis artesanales en Neiva">
+
+<meta name="twitter:card" content="summary_large_image">
+<meta name="twitter:title" content="MyMochis — Mochis artesanales en Neiva">
+<meta name="twitter:description" content="Pedidos por WhatsApp · recoges en cocina oculta mar–sáb 3pm–7pm.">
+<meta name="twitter:image" content="/og-image.svg">
+
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+<link href="https://fonts.googleapis.com/css2?family=Cormorant+Garamond:wght@400;500;600;700&family=Inter:wght@300;400;500;600&family=Noto+Serif+JP:wght@400;600;700&display=swap" rel="stylesheet">
+<style>
+:root {
+  --bg: #fff5f7;
+  --bg-soft: #ffe8ee;
+  --paper: #fffaf5;
+  --ink: #5a4a52;
+  --ink-soft: #8a7a82;
+  --pink: #f4a8b8;
+  --pink-deep: #e88a9e;
+  --pink-glow: rgba(244,168,184,0.45);
+  --mint: #b8d8c0;
+  --mint-deep: #95b89e;
+  --peach: #ffd4b8;
+  --yellow: #fce4a8;
+  --lavender: #d8c8e8;
+  --gold: #e8c896;
+  --line: #f5dde4;
+  --shadow: rgba(232,138,158,0.18);
+  --shadow-soft: rgba(232,138,158,0.10);
+  --accent: var(--pink-deep);
+  --accent-soft: var(--pink);
+  --green: var(--mint-deep);
+}
+* { box-sizing: border-box; margin: 0; padding: 0; }
+html { scroll-behavior: smooth; }
+body {
+  font-family: 'Inter', system-ui, sans-serif;
+  background:
+    radial-gradient(circle at 10% 18%, rgba(244,168,184,0.20), transparent 35%),
+    radial-gradient(circle at 90% 8%, rgba(216,200,232,0.18), transparent 38%),
+    radial-gradient(circle at 80% 90%, rgba(184,216,192,0.18), transparent 40%),
+    radial-gradient(circle at 5% 75%, rgba(255,212,184,0.18), transparent 36%),
+    linear-gradient(180deg, #fff8fa 0%, #fff0f4 50%, #fff5ee 100%);
+  background-attachment: fixed;
+  color: var(--ink);
+  line-height: 1.55;
+  font-weight: 400;
+  -webkit-font-smoothing: antialiased;
+  position: relative;
+  overflow-x: hidden;
+}
+
+.bg-mochis {
+  position: fixed; inset: 0;
+  pointer-events: none; z-index: 0;
+  overflow: hidden;
+}
+.bg-mochi {
+  position: absolute;
+  opacity: 0.55;
+  filter: blur(0.4px);
+  animation: floatY 14s ease-in-out infinite;
+  will-change: transform;
+}
+.bg-mochi.spin  { animation: floatSpin 22s linear infinite; }
+.bg-mochi.bob   { animation: floatBob 9s ease-in-out infinite; }
+.bg-mochi.drift { animation: floatDrift 18s ease-in-out infinite; }
+.bg-mochi.sway  { animation: floatSway 16s ease-in-out infinite; }
+.bg-mochi.zoom  { animation: floatZoom 12s ease-in-out infinite; }
+.bg-mochi.f1 { top: 8%; left: 6%; width: 110px; animation-delay: 0s;   animation-duration: 14s; }
+.bg-mochi.f2 { top: 22%; right: 8%; width: 80px; animation-delay: -3s;  animation-duration: 18s; }
+.bg-mochi.f3 { top: 48%; left: 4%; width: 140px; animation-delay: -6s; animation-duration: 20s; }
+.bg-mochi.f4 { top: 62%; right: 5%; width: 95px;  animation-delay: -2s; animation-duration: 16s; }
+.bg-mochi.f5 { top: 80%; left: 14%; width: 70px; animation-delay: -8s; animation-duration: 22s; }
+.bg-mochi.f6 { top: 88%; right: 18%; width: 120px; animation-delay: -4s; animation-duration: 17s; }
+.bg-mochi.f7 { top: 35%; left: 40%; width: 60px;  animation-delay: -10s; animation-duration: 13s; opacity: 0.35;}
+.bg-mochi.f8 { top: 70%; left: 55%; width: 75px;  animation-delay: -7s; animation-duration: 19s; opacity: 0.4;}
+.bg-mochi.f9 { top: 5%; left: 55%; width: 50px;   animation-delay: -1s; animation-duration: 11s; opacity: 0.45;}
+.bg-mochi.f10{ top: 55%; right: 30%; width: 100px; animation-delay: -5s; animation-duration: 21s; opacity: 0.4;}
+.bg-mochi.f11{ top: 92%; left: 38%; width: 55px;   animation-delay: -12s; animation-duration: 15s; opacity: 0.5;}
+.bg-mochi.f12{ top: 18%; left: 78%; width: 65px;   animation-delay: -9s; animation-duration: 23s; opacity: 0.45;}
+
+@keyframes floatY {
+  0%, 100% { transform: translateY(0) rotate(0deg); }
+  50%      { transform: translateY(-28px) rotate(8deg); }
+}
+@keyframes floatBob {
+  0%, 100% { transform: translateY(0) scale(1); }
+  50%      { transform: translateY(-22px) scale(1.06); }
+}
+@keyframes floatSpin {
+  0%   { transform: translate(0,0) rotate(0deg); }
+  50%  { transform: translate(-18px,-30px) rotate(180deg); }
+  100% { transform: translate(0,0) rotate(360deg); }
+}
+@keyframes floatDrift {
+  0%, 100% { transform: translate(0,0) rotate(-6deg); }
+  33%      { transform: translate(20px,-15px) rotate(4deg); }
+  66%      { transform: translate(-15px,-25px) rotate(-2deg); }
+}
+@keyframes floatSway {
+  0%, 100% { transform: translateX(0) rotate(0deg); }
+  50%      { transform: translateX(24px) rotate(12deg); }
+}
+@keyframes floatZoom {
+  0%, 100% { transform: scale(1) rotate(0deg); }
+  50%      { transform: scale(1.12) rotate(15deg); }
+}
+
+.sakura {
+  position: fixed; pointer-events: none; z-index: 1;
+  opacity: 0.7;
+  animation: sakuraFall 14s linear infinite;
+  will-change: transform;
+}
+.sakura.s1 { top: -40px; left: 12%;  width: 22px; animation-delay: 0s;   animation-duration: 16s; }
+.sakura.s2 { top: -60px; left: 38%;  width: 18px; animation-delay: -4s;  animation-duration: 19s; }
+.sakura.s3 { top: -30px; left: 68%;  width: 26px; animation-delay: -8s;  animation-duration: 17s; }
+.sakura.s4 { top: -50px; left: 85%;  width: 20px; animation-delay: -12s; animation-duration: 20s; }
+.sakura.s5 { top: -70px; left: 24%;  width: 16px; animation-delay: -6s;  animation-duration: 22s; }
+
+@keyframes sakuraFall {
+  0%   { transform: translate(0,-20px) rotate(0deg);   opacity: 0; }
+  10%  { opacity: 0.8; }
+  90%  { opacity: 0.7; }
+  100% { transform: translate(60px,110vh) rotate(720deg); opacity: 0; }
+}
+
+main, header, footer { position: relative; z-index: 2; }
+.serif { font-family: 'Cormorant Garamond', serif; }
+.jp { font-family: 'Noto Serif JP', serif; }
+.container { max-width: 1080px; margin: 0 auto; padding: 0 24px; }
+
+.setup-banner {
+  background: var(--ink); color: var(--bg);
+  padding: 10px 20px; text-align: center;
+  font-size: 13px; display: none;
+}
+.setup-banner.visible { display: block; }
+.setup-banner a {
+  color: var(--gold); text-decoration: none; font-weight: 600;
+  border-bottom: 1px dashed var(--gold);
+}
+.setup-banner a:hover { color: var(--bg); border-color: var(--bg); }
+
+header {
+  position: sticky; top: 0; z-index: 100;
+  background: rgba(245,237,224,0.92);
+  backdrop-filter: blur(10px);
+  -webkit-backdrop-filter: blur(10px);
+  border-bottom: 1px solid var(--line);
+}
+.nav {
+  display: flex; align-items: center; justify-content: space-between;
+  padding: 14px 24px; max-width: 1080px; margin: 0 auto;
+}
+.logo {
+  font-family: 'Cormorant Garamond', serif;
+  font-size: 26px; font-weight: 600; letter-spacing: -0.5px;
+  display: flex; align-items: baseline; gap: 6px;
+}
+.logo .dot { color: var(--accent); font-style: italic; }
+.logo .jp-mark {
+  font-family: 'Noto Serif JP', serif; font-size: 20px;
+  color: var(--accent); font-weight: 600;
+}
+.nav-cta {
+  background: var(--accent); color: #fff; border: 0;
+  padding: 10px 20px; border-radius: 999px;
+  font-family: 'Inter', sans-serif; font-weight: 500; font-size: 14px;
+  cursor: pointer; transition: background 0.2s;
+}
+.nav-cta:hover { background: #952a22; }
+
+.hero {
+  padding: 90px 0 70px; text-align: center;
+  position: relative; overflow: hidden;
+}
+.hero::before {
+  content: ''; position: absolute; top: 0; left: 0; right: 0; bottom: 0;
+  background:
+    radial-gradient(circle at 18% 28%, rgba(184,149,78,0.10), transparent 42%),
+    radial-gradient(circle at 82% 72%, rgba(179,56,44,0.07), transparent 42%);
+  z-index: 0; pointer-events: none;
+}
+.hero-inner { position: relative; z-index: 1; }
+.hero-kanji {
+  font-family: 'Noto Serif JP', serif;
+  font-size: 150px; line-height: 0.9; color: var(--accent);
+  opacity: 0.92; margin-bottom: 18px; font-weight: 600;
+}
+.hero-tag {
+  display: inline-block; padding: 6px 16px;
+  border: 1px solid var(--line); border-radius: 999px;
+  font-size: 12px; letter-spacing: 1.2px;
+  color: var(--ink-soft); margin-bottom: 24px;
+  background: var(--bg-soft); text-transform: uppercase;
+}
+.hero h1 {
+  font-family: 'Cormorant Garamond', serif;
+  font-size: clamp(48px, 8vw, 88px); font-weight: 500;
+  letter-spacing: -1.5px; line-height: 1; margin-bottom: 22px;
+}
+.hero h1 .accent { color: var(--accent); font-style: italic; font-weight: 600; }
+.hero p.lead {
+  font-size: 18px; max-width: 580px; margin: 0 auto 36px;
+  color: var(--ink-soft); line-height: 1.6;
+}
+.hero-cta {
+  display: inline-block;
+  background: var(--ink); color: var(--bg);
+  padding: 16px 38px; border-radius: 999px;
+  font-family: 'Inter', sans-serif; font-weight: 500; font-size: 15px;
+  text-decoration: none; transition: all 0.2s;
+  letter-spacing: 0.3px;
+}
+.hero-cta:hover { background: var(--accent); transform: translateY(-1px); }
+.hero-meta {
+  margin-top: 48px; display: flex; justify-content: center;
+  gap: 32px; flex-wrap: wrap; font-size: 13px;
+  color: var(--ink-soft);
+}
+.hero-meta span { display: flex; align-items: center; gap: 6px; }
+
+section { padding: 88px 0; position: relative; }
+.section-title {
+  font-family: 'Cormorant Garamond', serif;
+  font-size: 46px; font-weight: 500; text-align: center;
+  margin-bottom: 10px; letter-spacing: -0.5px;
+}
+.section-sub {
+  text-align: center; color: var(--ink-soft);
+  margin-bottom: 56px; font-size: 15px;
+}
+
+.products-grid {
+  display: grid;
+  grid-template-columns: repeat(auto-fit, minmax(180px, 1fr));
+  gap: 20px;
+}
+.product {
+  background: var(--paper); border: 1px solid var(--line);
+  border-radius: 18px; padding: 28px 22px; text-align: center;
+  transition: transform 0.2s, box-shadow 0.2s;
+}
+.product:hover { transform: translateY(-4px); box-shadow: 0 14px 36px var(--shadow); }
+.product-illu {
+  width: 96px; height: 96px; border-radius: 50%;
+  background: var(--bg-soft); margin: 0 auto 18px;
+  display: flex; align-items: center; justify-content: center;
+  overflow: hidden;
+}
+.product-illu svg { width: 84px; height: 84px; display: block; }
+.product h3 {
+  font-family: 'Cormorant Garamond', serif;
+  font-size: 22px; font-weight: 600; margin-bottom: 6px;
+  letter-spacing: -0.2px;
+}
+.product-desc {
+  font-size: 13px; color: var(--ink-soft);
+  margin-bottom: 14px; min-height: 38px; line-height: 1.5;
+}
+.product-price {
+  font-size: 18px; font-weight: 600; color: var(--accent);
+  margin-bottom: 16px; letter-spacing: -0.3px;
+}
+.qty {
+  display: flex; align-items: center; justify-content: center;
+  gap: 10px;
+}
+.qty button {
+  width: 38px; height: 38px; border-radius: 50%;
+  border: 1px solid var(--line); background: var(--bg);
+  cursor: pointer; font-size: 18px; line-height: 1;
+  transition: all 0.15s;
+  color: var(--ink); font-family: 'Inter', sans-serif;
+}
+.qty button:hover:not(:disabled) { background: var(--accent); color: #fff; border-color: var(--accent); }
+.qty button:disabled { opacity: 0.3; cursor: not-allowed; }
+.qty input {
+  width: 44px; text-align: center; border: 0;
+  background: transparent; font-size: 16px; font-weight: 600;
+  font-family: 'Inter', sans-serif;
+  -moz-appearance: textfield; color: var(--ink);
+}
+.qty input::-webkit-outer-spin-button,
+.qty input::-webkit-inner-spin-button { -webkit-appearance: none; margin: 0; }
+
+.combos { background: var(--bg-soft); }
+.combos-grid {
+  display: grid;
+  grid-template-columns: repeat(auto-fit, minmax(260px, 1fr));
+  gap: 24px;
+}
+.combo {
+  background: var(--paper); border-radius: 22px; padding: 34px 28px;
+  border: 1px solid var(--line);
+  position: relative; transition: transform 0.2s;
+}
+.combo:hover { transform: translateY(-3px); }
+.combo.featured { border: 2px solid var(--accent); background: #fff; }
+.combo-badge {
+  position: absolute; top: -13px; left: 50%; transform: translateX(-50%);
+  background: var(--accent); color: #fff;
+  padding: 5px 16px; border-radius: 999px;
+  font-size: 10px; font-weight: 700; letter-spacing: 1.5px;
+  text-transform: uppercase;
+}
+.combo h3 {
+  font-family: 'Cormorant Garamond', serif;
+  font-size: 32px; font-weight: 600; margin-bottom: 4px;
+  letter-spacing: -0.5px;
+}
+.combo-qty { color: var(--ink-soft); font-size: 13px; margin-bottom: 16px; }
+.combo-desc { font-size: 14px; color: var(--ink-soft); margin-bottom: 22px; min-height: 42px; line-height: 1.5; }
+.combo-prices {
+  display: flex; align-items: baseline; gap: 10px;
+  margin-bottom: 22px; flex-wrap: wrap;
+}
+.combo-now { font-size: 34px; font-weight: 600; color: var(--accent); letter-spacing: -1px; }
+.combo-was { font-size: 16px; color: var(--ink-soft); text-decoration: line-through; }
+.combo-save {
+  font-size: 11px; font-weight: 700; color: var(--gold);
+  background: rgba(184,149,78,0.14); padding: 4px 10px;
+  border-radius: 999px; margin-left: auto;
+  letter-spacing: 0.5px;
+}
+.combo-add {
+  width: 100%; background: var(--ink); color: var(--bg);
+  border: 0; padding: 14px; border-radius: 12px;
+  font-family: 'Inter', sans-serif; font-weight: 500; font-size: 14px;
+  cursor: pointer; transition: background 0.2s;
+  letter-spacing: 0.3px;
+}
+.combo-add:hover { background: var(--accent); }
+
+.how-grid {
+  display: grid;
+  grid-template-columns: repeat(auto-fit, minmax(220px, 1fr));
+  gap: 32px;
+  text-align: center;
+}
+.how-step { padding: 0 16px; }
+.how-num {
+  font-family: 'Noto Serif JP', serif;
+  font-size: 72px; color: var(--accent); opacity: 0.9;
+  line-height: 1; margin-bottom: 14px; font-weight: 600;
+}
+.how-step h4 {
+  font-family: 'Cormorant Garamond', serif;
+  font-size: 24px; font-weight: 600; margin-bottom: 8px;
+}
+.how-step p { font-size: 14px; color: var(--ink-soft); line-height: 1.6; }
+
+.order {
+  background: linear-gradient(180deg, var(--bg) 0%, var(--bg-soft) 100%);
+}
+.order-card {
+  max-width: 540px; margin: 0 auto;
+  background: var(--paper); border-radius: 24px;
+  padding: 44px 36px;
+  box-shadow: 0 8px 36px var(--shadow);
+  border: 1px solid var(--line);
+}
+.form-group { margin-bottom: 22px; }
+.form-group label {
+  display: block; font-size: 11px; font-weight: 600;
+  color: var(--ink-soft); margin-bottom: 8px;
+  letter-spacing: 1.2px; text-transform: uppercase;
+}
+.form-group input,
+.form-group textarea {
+  width: 100%; padding: 13px 14px;
+  border: 1px solid var(--line); border-radius: 10px;
+  font-family: 'Inter', sans-serif; font-size: 15px;
+  background: var(--bg); color: var(--ink);
+  transition: border 0.15s, background 0.15s;
+}
+.form-group input:focus,
+.form-group textarea:focus {
+  outline: none; border-color: var(--accent); background: #fff;
+}
+.day-pick { display: grid; grid-template-columns: repeat(5, 1fr); gap: 6px; }
+.day-pick label {
+  text-align: center; padding: 12px 2px;
+  border: 1px solid var(--line); border-radius: 10px;
+  cursor: pointer; font-size: 12px; font-weight: 600;
+  background: var(--bg); transition: all 0.15s;
+  text-transform: none; letter-spacing: 0;
+  margin: 0;
+}
+.day-pick input { display: none; }
+.day-pick label:has(input:checked) {
+  background: var(--accent); color: #fff; border-color: var(--accent);
+}
+.order-summary {
+  background: var(--bg); border: 1px solid var(--line);
+  border-radius: 12px; padding: 18px; margin: 24px 0; font-size: 14px;
+}
+.order-summary-row {
+  display: flex; justify-content: space-between; gap: 12px;
+  padding: 7px 0;
+}
+.order-summary-row.total {
+  border-top: 1px solid var(--line); margin-top: 10px; padding-top: 14px;
+  font-weight: 600; font-size: 17px;
+}
+.order-summary-row.total .amount { color: var(--accent); }
+.submit-btn {
+  width: 100%; background: var(--accent); color: #fff;
+  border: 0; padding: 17px; border-radius: 12px;
+  font-family: 'Inter', sans-serif; font-weight: 600; font-size: 15px;
+  cursor: pointer; transition: all 0.2s;
+  display: flex; align-items: center; justify-content: center; gap: 8px;
+  letter-spacing: 0.3px;
+}
+.submit-btn:hover:not(:disabled) { background: #952a22; transform: translateY(-1px); }
+.submit-btn:disabled { opacity: 0.45; cursor: not-allowed; }
+.submit-hint {
+  text-align: center; font-size: 13px;
+  color: var(--ink-soft); margin-top: 14px;
+}
+.submit-hint a {
+  color: var(--accent); text-decoration: none; font-weight: 600;
+  border-bottom: 1px dashed var(--accent);
+}
+.empty-cart-msg {
+  text-align: center; padding: 36px 24px;
+  color: var(--ink-soft); font-size: 14px; line-height: 1.6;
+}
+.empty-cart-msg a {
+  color: var(--accent); text-decoration: none; font-weight: 500;
+}
+
+footer {
+  background: var(--ink); color: var(--bg-soft);
+  padding: 64px 0 28px; text-align: center;
+}
+footer .logo { color: var(--bg); font-size: 32px; margin-bottom: 14px; justify-content: center; }
+footer .logo .dot { color: var(--accent-soft); }
+footer .tagline { font-size: 14px; opacity: 0.7; margin-bottom: 28px; }
+.footer-info {
+  display: flex; justify-content: center; gap: 32px;
+  flex-wrap: wrap; font-size: 13px; margin-bottom: 28px;
+}
+.footer-info span { opacity: 0.85; display: flex; align-items: center; gap: 6px; }
+.footer-edit {
+  border-top: 1px solid rgba(255,255,255,0.1);
+  padding-top: 22px; font-size: 12px; opacity: 0.55;
+}
+.footer-edit a {
+  color: var(--bg-soft); opacity: 0.9; text-decoration: none;
+  border-bottom: 1px dotted rgba(255,255,255,0.3);
+  margin-left: 8px;
+}
+.footer-edit a:hover { opacity: 1; border-color: var(--bg-soft); }
+
+.cart-bar {
+  position: fixed; bottom: 24px; left: 50%; transform: translateX(-50%);
+  background: var(--ink); color: var(--bg);
+  padding: 14px 26px; border-radius: 999px;
+  display: none; align-items: center; gap: 16px;
+  box-shadow: 0 10px 36px rgba(0,0,0,0.22);
+  z-index: 90; cursor: pointer;
+  border: 0; font-family: 'Inter', sans-serif;
+}
+.cart-bar.visible { display: flex; }
+.cart-bar:hover { background: var(--accent); }
+.cart-count {
+  background: var(--accent); color: #fff;
+  width: 26px; height: 26px; border-radius: 50%;
+  display: flex; align-items: center; justify-content: center;
+  font-size: 13px; font-weight: 700;
+}
+.cart-bar.visible:hover .cart-count { background: var(--bg); color: var(--accent); }
+.cart-total { font-weight: 600; font-size: 16px; letter-spacing: -0.3px; }
+.cart-cta { font-size: 13px; opacity: 0.8; }
+
+.admin-link {
+  position: fixed; bottom: 6px; right: 6px;
+  background: rgba(43,38,32,0.55); color: var(--bg);
+  padding: 4px 8px; border-radius: 4px;
+  font-size: 10px; text-decoration: none;
+  z-index: 80; opacity: 0.4; letter-spacing: 0.5px;
+}
+.admin-link:hover { opacity: 1; }
+
+.modal-back {
+  position: fixed; inset: 0; background: rgba(43,38,32,0.6);
+  z-index: 200; display: none; align-items: center; justify-content: center;
+  padding: 20px;
+}
+.modal-back.visible { display: flex; }
+.modal {
+  background: var(--paper); border-radius: 22px;
+  padding: 36px 32px; max-width: 440px; width: 100%;
+  box-shadow: 0 20px 60px rgba(0,0,0,0.25);
+}
+.modal h3 {
+  font-family: 'Cormorant Garamond', serif;
+  font-size: 28px; font-weight: 600; margin-bottom: 6px;
+}
+.modal p { font-size: 14px; color: var(--ink-soft); margin-bottom: 22px; line-height: 1.55; }
+.modal .form-group { margin-bottom: 16px; }
+.modal input {
+  width: 100%; padding: 13px 14px;
+  border: 1px solid var(--line); border-radius: 10px;
+  font-family: 'Inter', sans-serif; font-size: 16px;
+  background: var(--bg); color: var(--ink);
+}
+.modal input:focus { outline: none; border-color: var(--accent); background: #fff; }
+.modal-actions {
+  display: flex; gap: 8px; margin-top: 22px;
+}
+.modal-actions .btn-save {
+  flex: 1; background: var(--accent); color: #fff;
+  border: 0; padding: 13px; border-radius: 10px;
+  font-family: 'Inter', sans-serif; font-weight: 600; font-size: 14px;
+  cursor: pointer;
+}
+.modal-actions .btn-save:hover { background: #952a22; }
+.modal-actions .btn-cancel {
+  background: transparent; color: var(--ink-soft);
+  border: 1px solid var(--line); padding: 13px 18px;
+  border-radius: 10px; cursor: pointer; font-size: 14px;
+  font-family: 'Inter', sans-serif;
+}
+.modal-actions .btn-cancel:hover { background: var(--bg-soft); }
+
+@media (max-width: 600px) {
+  .hero { padding: 56px 0 48px; }
+  .hero-kanji { font-size: 100px; }
+  section { padding: 60px 0; }
+  .section-title { font-size: 34px; }
+  .combo.featured { transform: none; }
+  .day-pick label { font-size: 11px; padding: 11px 2px; }
+  .order-card { padding: 30px 22px; }
+  .nav-cta { padding: 9px 16px; font-size: 13px; }
+  .hero-meta { gap: 18px; font-size: 12px; }
+  .footer-info { gap: 16px; }
+  .bg-mochi.f1, .bg-mochi.f3, .bg-mochi.f6 { width: 70px; opacity: 0.35; }
+  .bg-mochi.f2, .bg-mochi.f4, .bg-mochi.f10 { width: 60px; opacity: 0.30; }
+  .bg-mochi.f5, .bg-mochi.f7, .bg-mochi.f8, .bg-mochi.f9, .bg-mochi.f11, .bg-mochi.f12 { display: none; }
+}
+
+.product { position: relative; overflow: visible; }
+.product .product-illu {
+  transition: transform 0.5s cubic-bezier(0.34, 1.56, 0.64, 1);
+  transform-origin: 50% 60%;
+}
+.product:hover .product-illu {
+  transform: scale(1.18) rotate(-8deg);
+  animation: squish 0.6s ease;
+}
+@keyframes squish {
+  0%   { transform: scale(1) rotate(0deg); }
+  30%  { transform: scale(0.92, 1.10) rotate(-4deg); }
+  60%  { transform: scale(1.12, 0.95) rotate(6deg); }
+  100% { transform: scale(1.18) rotate(-8deg); }
+}
+.product.flavor-fresas-crema:hover h3 { color: var(--pink-deep); }
+.product.flavor-chokis-cream:hover h3 { color: #b8954e; }
+.product.flavor-blueberry:hover h3 { color: #7a6db8; }
+.product.flavor-durazno-caramelizado:hover h3 { color: #d88450; }
+.product.flavor-crema-pastelera:hover h3 { color: #c4a866; }
+
+.qty button.pop { animation: btnPop 0.4s ease; }
+@keyframes btnPop {
+  0%   { transform: scale(1); }
+  35%  { transform: scale(0.78); }
+  70%  { transform: scale(1.18); }
+  100% { transform: scale(1); }
+}
+
+.fly-particle {
+  position: fixed; width: 32px; height: 32px;
+  pointer-events: none; z-index: 250;
+  transition: transform 0.9s cubic-bezier(0.5, -0.4, 0.5, 1.4), opacity 0.9s ease;
+}
+.fly-particle.flying { opacity: 0; }
+
+.cart-bar.popped { animation: cartPop 0.5s ease; }
+@keyframes cartPop {
+  0%, 100% { transform: translateX(-50%) scale(1); }
+  30%      { transform: translateX(-50%) scale(1.18); }
+  60%      { transform: translateX(-50%) scale(0.95); }
+}
+.cart-count.pulse { animation: badgePulse 0.5s ease; }
+@keyframes badgePulse {
+  0%, 100% { transform: scale(1); }
+  40%      { transform: scale(1.4); box-shadow: 0 0 0 8px rgba(244,168,184,0.3); }
+}
+
+.hero-kanji { animation: heroSway 5s ease-in-out infinite; transform-origin: 50% 60%; }
+@keyframes heroSway {
+  0%, 100% { transform: rotate(-2deg) scale(1); }
+  50%      { transform: rotate(2deg) scale(1.04); }
+}
+
+.nav-cta { position: relative; overflow: hidden; }
+.nav-cta::after {
+  content: '♥';
+  position: absolute; right: 8px; top: 50%;
+  transform: translateY(-50%) scale(0);
+  transition: transform 0.3s ease;
+  font-size: 11px; opacity: 0.8;
+}
+.nav-cta:hover::after { transform: translateY(-50%) scale(1); animation: heartBeat 1.2s ease infinite; }
+@keyframes heartBeat {
+  0%, 100% { transform: translateY(-50%) scale(1); }
+  25%, 75% { transform: translateY(-50%) scale(1.25); }
+  50%      { transform: translateY(-50%) scale(0.95); }
+}
+
+.combo.featured .combo-badge { animation: badgeShine 3s ease infinite; }
+@keyframes badgeShine {
+  0%, 100% { box-shadow: 0 0 0 0 rgba(244,168,184,0); }
+  50%      { box-shadow: 0 0 0 6px rgba(244,168,184,0.25); }
+}
+
+.confetti-piece {
+  position: fixed; top: -20px; width: 28px; height: 28px;
+  pointer-events: none; z-index: 300;
+  animation: confettiFall 1.8s cubic-bezier(0.4, 0.1, 0.6, 1) forwards;
+  opacity: 0.95;
+}
+@keyframes confettiFall {
+  0%   { transform: translateY(0) rotate(0deg) scale(1); opacity: 1; }
+  100% { transform: translateY(80vh) rotate(540deg) scale(0.6); opacity: 0; }
+}
+
+.empty-cart-msg::before {
+  content: ''; display: block; width: 80px; height: 80px;
+  margin: 0 auto 18px;
+  background: radial-gradient(circle at 38% 35%, #ffd4dc 0%, #f4a8b8 55%, #e88a9e 100%);
+  border-radius: 50%;
+  box-shadow: inset -8px -6px 14px rgba(232,138,158,0.4), 0 4px 12px rgba(232,138,158,0.2);
+  animation: gentleBob 3s ease-in-out infinite;
+}
+@keyframes gentleBob {
+  0%, 100% { transform: translateY(0) rotate(-3deg); }
+  50%      { transform: translateY(-6px) rotate(3deg); }
+}
+
+.submit-btn { position: relative; overflow: hidden; }
+.submit-btn.shimmer::before {
+  content: ''; position: absolute; top: 0; left: -100%;
+  width: 60%; height: 100%;
+  background: linear-gradient(90deg, transparent, rgba(255,255,255,0.4), transparent);
+  animation: shimmer 2.5s ease infinite;
+}
+@keyframes shimmer {
+  0%   { left: -100%; }
+  100% { left: 200%; }
+}
+
+.form-group input:focus,
+.form-group textarea:focus {
+  transform: translateY(-1px);
+  box-shadow: 0 6px 18px var(--shadow-soft);
+}
+
+.day-pick label { transition: all 0.25s cubic-bezier(0.34, 1.56, 0.64, 1); }
+.day-pick label:hover { transform: translateY(-3px) scale(1.04); }
+
+.combo .combo-add { transition: all 0.3s cubic-bezier(0.34, 1.56, 0.64, 1); }
+.combo:hover .combo-add { transform: translateY(-2px); }
+.combo .combo-add.popped { animation: btnPop 0.4s ease; }
+
+.product, .combo, .order-card { transition: transform 0.25s ease, box-shadow 0.25s ease; }
+.product:hover, .combo:hover { box-shadow: 0 18px 42px var(--shadow-soft); }
+.product:hover { transform: translateY(-6px); }
+.combo:hover { transform: translateY(-5px); }
+
+section { position: relative; z-index: 2; }
+</style>
+</head>
+<body>
+
+<div class="bg-mochis" aria-hidden="true">
+  <svg class="bg-mochi f1 spin" viewBox="0 0 100 100"><defs><radialGradient id="bg-g-pink" cx="38%" cy="35%" r="65%"><stop offset="0%" stop-color="#ffe0e8"/><stop offset="55%" stop-color="#f4a8b8"/><stop offset="100%" stop-color="#e88a9e"/></radialGradient></defs><ellipse cx="50" cy="58" rx="38" ry="32" fill="url(#bg-g-pink)"/><ellipse cx="40" cy="46" rx="10" ry="6" fill="#fff" opacity="0.45"/></svg>
+  <svg class="bg-mochi f2 bob" viewBox="0 0 100 100"><defs><radialGradient id="bg-g-mint" cx="38%" cy="35%" r="65%"><stop offset="0%" stop-color="#dfeede"/><stop offset="55%" stop-color="#b8d8c0"/><stop offset="100%" stop-color="#95b89e"/></radialGradient></defs><ellipse cx="50" cy="58" rx="38" ry="32" fill="url(#bg-g-mint)"/><ellipse cx="40" cy="46" rx="10" ry="6" fill="#fff" opacity="0.45"/></svg>
+  <svg class="bg-mochi f3 drift" viewBox="0 0 100 100"><defs><radialGradient id="bg-g-peach" cx="38%" cy="35%" r="65%"><stop offset="0%" stop-color="#ffe8d4"/><stop offset="55%" stop-color="#ffd4b8"/><stop offset="100%" stop-color="#e8b896"/></radialGradient></defs><ellipse cx="50" cy="58" rx="38" ry="32" fill="url(#bg-g-peach)"/><ellipse cx="40" cy="46" rx="10" ry="6" fill="#fff" opacity="0.45"/></svg>
+  <svg class="bg-mochi f4 sway" viewBox="0 0 100 100"><defs><radialGradient id="bg-g-lav" cx="38%" cy="35%" r="65%"><stop offset="0%" stop-color="#ece4f4"/><stop offset="55%" stop-color="#d8c8e8"/><stop offset="100%" stop-color="#b8a4d0"/></radialGradient></defs><ellipse cx="50" cy="58" rx="38" ry="32" fill="url(#bg-g-lav)"/><ellipse cx="40" cy="46" rx="10" ry="6" fill="#fff" opacity="0.45"/></svg>
+  <svg class="bg-mochi f5 zoom" viewBox="0 0 100 100"><defs><radialGradient id="bg-g-yellow" cx="38%" cy="35%" r="65%"><stop offset="0%" stop-color="#fff4d4"/><stop offset="55%" stop-color="#fce4a8"/><stop offset="100%" stop-color="#e8c896"/></radialGradient></defs><ellipse cx="50" cy="58" rx="38" ry="32" fill="url(#bg-g-yellow)"/><ellipse cx="40" cy="46" rx="10" ry="6" fill="#fff" opacity="0.45"/></svg>
+  <svg class="bg-mochi f6 bob" viewBox="0 0 100 100"><defs><radialGradient id="bg-g-cream" cx="38%" cy="35%" r="65%"><stop offset="0%" stop-color="#fffaf0"/><stop offset="55%" stop-color="#fff0d4"/><stop offset="100%" stop-color="#e8d4b8"/></radialGradient></defs><ellipse cx="50" cy="58" rx="38" ry="32" fill="url(#bg-g-cream)"/><ellipse cx="40" cy="46" rx="10" ry="6" fill="#fff" opacity="0.45"/></svg>
+  <svg class="bg-mochi f7 spin" viewBox="0 0 100 100"><defs><radialGradient id="bg-g-pink2" cx="38%" cy="35%" r="65%"><stop offset="0%" stop-color="#ffe0e8"/><stop offset="55%" stop-color="#f4a8b8"/><stop offset="100%" stop-color="#e88a9e"/></radialGradient></defs><ellipse cx="50" cy="58" rx="38" ry="32" fill="url(#bg-g-pink2)"/><ellipse cx="40" cy="46" rx="10" ry="6" fill="#fff" opacity="0.45"/></svg>
+  <svg class="bg-mochi f8 drift" viewBox="0 0 100 100"><defs><radialGradient id="bg-g-mint2" cx="38%" cy="35%" r="65%"><stop offset="0%" stop-color="#dfeede"/><stop offset="55%" stop-color="#b8d8c0"/><stop offset="100%" stop-color="#95b89e"/></radialGradient></defs><ellipse cx="50" cy="58" rx="38" ry="32" fill="url(#bg-g-mint2)"/><ellipse cx="40" cy="46" rx="10" ry="6" fill="#fff" opacity="0.45"/></svg>
+  <svg class="bg-mochi f9 zoom" viewBox="0 0 100 100"><defs><radialGradient id="bg-g-peach2" cx="38%" cy="35%" r="65%"><stop offset="0%" stop-color="#ffe8d4"/><stop offset="55%" stop-color="#ffd4b8"/><stop offset="100%" stop-color="#e8b896"/></radialGradient></defs><ellipse cx="50" cy="58" rx="38" ry="32" fill="url(#bg-g-peach2)"/><ellipse cx="40" cy="46" rx="10" ry="6" fill="#fff" opacity="0.45"/></svg>
+  <svg class="bg-mochi f10 sway" viewBox="0 0 100 100"><defs><radialGradient id="bg-g-lav2" cx="38%" cy="35%" r="65%"><stop offset="0%" stop-color="#ece4f4"/><stop offset="55%" stop-color="#d8c8e8"/><stop offset="100%" stop-color="#b8a4d0"/></radialGradient></defs><ellipse cx="50" cy="58" rx="38" ry="32" fill="url(#bg-g-lav2)"/><ellipse cx="40" cy="46" rx="10" ry="6" fill="#fff" opacity="0.45"/></svg>
+  <svg class="bg-mochi f11 bob" viewBox="0 0 100 100"><defs><radialGradient id="bg-g-pink3" cx="38%" cy="35%" r="65%"><stop offset="0%" stop-color="#ffe0e8"/><stop offset="55%" stop-color="#f4a8b8"/><stop offset="100%" stop-color="#e88a9e"/></radialGradient></defs><ellipse cx="50" cy="58" rx="38" ry="32" fill="url(#bg-g-pink3)"/><ellipse cx="40" cy="46" rx="10" ry="6" fill="#fff" opacity="0.45"/></svg>
+  <svg class="bg-mochi f12 spin" viewBox="0 0 100 100"><defs><radialGradient id="bg-g-cream2" cx="38%" cy="35%" r="65%"><stop offset="0%" stop-color="#fffaf0"/><stop offset="55%" stop-color="#fff0d4"/><stop offset="100%" stop-color="#e8d4b8"/></radialGradient></defs><ellipse cx="50" cy="58" rx="38" ry="32" fill="url(#bg-g-cream2)"/><ellipse cx="40" cy="46" rx="10" ry="6" fill="#fff" opacity="0.45"/></svg>
+</div>
+
+<svg class="sakura s1" viewBox="0 0 30 30"><path d="M15 4 Q17 12 25 15 Q17 18 15 26 Q13 18 5 15 Q13 12 15 4 Z" fill="#f4a8b8" opacity="0.85"/><circle cx="15" cy="15" r="2" fill="#ffd4dc"/></svg>
+<svg class="sakura s2" viewBox="0 0 30 30"><path d="M15 4 Q17 12 25 15 Q17 18 15 26 Q13 18 5 15 Q13 12 15 4 Z" fill="#d8c8e8" opacity="0.85"/><circle cx="15" cy="15" r="2" fill="#ece4f4"/></svg>
+<svg class="sakura s3" viewBox="0 0 30 30"><path d="M15 4 Q17 12 25 15 Q17 18 15 26 Q13 18 5 15 Q13 12 15 4 Z" fill="#ffd4b8" opacity="0.85"/><circle cx="15" cy="15" r="2" fill="#ffe8d4"/></svg>
+<svg class="sakura s4" viewBox="0 0 30 30"><path d="M15 4 Q17 12 25 15 Q17 18 15 26 Q13 18 5 15 Q13 12 15 4 Z" fill="#f4a8b8" opacity="0.85"/><circle cx="15" cy="15" r="2" fill="#ffd4dc"/></svg>
+<svg class="sakura s5" viewBox="0 0 30 30"><path d="M15 4 Q17 12 25 15 Q17 18 15 26 Q13 18 5 15 Q13 12 15 4 Z" fill="#b8d8c0" opacity="0.85"/><circle cx="15" cy="15" r="2" fill="#dfeede"/></svg>
+
+<div id="setup-banner" class="setup-banner">
+  Configura tu WhatsApp para empezar a recibir pedidos →
+  <a href="#" onclick="event.preventDefault(); openConfig()">Configurar ahora</a>
+</div>
+
+<header>
+  <div class="nav">
+    <div class="logo">
+      <span class="jp-mark">餅</span>
+      My<span class="dot">·</span>Mochis
+    </div>
+    <button class="nav-cta" onclick="document.getElementById('order').scrollIntoView({behavior:'smooth'})">Pedir ahora</button>
+  </div>
+</header>
+
+<main>
+
+<section class="hero">
+  <div class="hero-inner container">
+    <div class="hero-kanji">餅</div>
+    <span class="hero-tag">Hecho a mano en Neiva</span>
+    <h1 class="serif">My <span class="accent">Mochis</span></h1>
+    <p class="lead">Mochis artesanales que mezclan Japón con el Huila. Pide cada semana y recoge en nuestra cocina oculta — frescos, sin congelar, hechos el mismo día.</p>
+    <a href="#order" class="hero-cta">Hacer mi pedido</a>
+    <div class="hero-meta">
+      <span>📍 Cocina oculta en Neiva</span>
+      <span>🕒 Mar–Sáb · 3pm a 7pm</span>
+      <span>💬 Pedidos por WhatsApp</span>
+    </div>
+  </div>
+</section>
+
+<section id="sabores">
+  <div class="container">
+    <h2 class="section-title serif">Esta semana</h2>
+    <p class="section-sub">5 sabores de temporada · unidad a $8.000 COP</p>
+    <div class="products-grid">
+
+      <div class="product flavor-fresas-crema" data-flavor="fresas-crema">
+        <div class="product-illu">
+          <svg viewBox="0 0 80 80" xmlns="http://www.w3.org/2000/svg" aria-hidden="true">
+            <defs>
+              <radialGradient id="g-fresa" cx="38%" cy="35%" r="65%">
+                <stop offset="0%" stop-color="#ffb1bf"/>
+                <stop offset="55%" stop-color="#ef5a6f"/>
+                <stop offset="100%" stop-color="#b83246"/>
+              </radialGradient>
+            </defs>
+            <ellipse cx="40" cy="46" rx="28" ry="24" fill="url(#g-fresa)"/>
+            <ellipse cx="34" cy="38" rx="8" ry="5" fill="#ffd4dc" opacity="0.55"/>
+            <path d="M30 24 L36 14 L40 22 L44 14 L50 24 L46 26 L40 22 L34 26 Z" fill="#5d8a4a"/>
+            <path d="M40 22 L40 16" stroke="#3d6a30" stroke-width="1" stroke-linecap="round"/>
+          </svg>
+        </div>
+        <h3 class="serif">Fresas con crema</h3>
+        <p class="product-desc">Fresa fresca del Huila, crema batida y un toque de vainilla</p>
+        <div class="product-price">$8.000</div>
+        <div class="qty">
+          <button onclick="changeQty('fresas-crema',-1)">−</button>
+          <input type="number" id="qty-fresas-crema" value="0" min="0" readonly>
+          <button onclick="changeQty('fresas-crema',1)">+</button>
+        </div>
+      </div>
+
+      <div class="product flavor-chokis-cream" data-flavor="chokis-cream">
+        <div class="product-illu">
+          <svg viewBox="0 0 80 80" xmlns="http://www.w3.org/2000/svg" aria-hidden="true">
+            <defs>
+              <radialGradient id="g-chokis" cx="38%" cy="35%" r="65%">
+                <stop offset="0%" stop-color="#fdf3df"/>
+                <stop offset="60%" stop-color="#e8c896"/>
+                <stop offset="100%" stop-color="#a87a4a"/>
+              </radialGradient>
+            </defs>
+            <ellipse cx="40" cy="46" rx="28" ry="24" fill="url(#g-chokis)"/>
+            <ellipse cx="34" cy="40" rx="6" ry="3" fill="#fff" opacity="0.5"/>
+            <circle cx="32" cy="38" r="3" fill="#4a2c1a"/>
+            <circle cx="46" cy="36" r="3.5" fill="#4a2c1a"/>
+            <circle cx="38" cy="50" r="3" fill="#4a2c1a"/>
+            <circle cx="50" cy="50" r="2.5" fill="#4a2c1a"/>
+            <circle cx="29" cy="50" r="2" fill="#4a2c1a"/>
+            <circle cx="44" cy="46" r="2" fill="#4a2c1a"/>
+          </svg>
+        </div>
+        <h3 class="serif">Chokis & cream</h3>
+        <p class="product-desc">Trozos de galleta Chokis con crema dulce — nuestro hit</p>
+        <div class="product-price">$8.000</div>
+        <div class="qty">
+          <button onclick="changeQty('chokis-cream',-1)">−</button>
+          <input type="number" id="qty-chokis-cream" value="0" min="0" readonly>
+          <button onclick="changeQty('chokis-cream',1)">+</button>
+        </div>
+      </div>
+
+      <div class="product flavor-blueberry" data-flavor="blueberry">
+        <div class="product-illu">
+          <svg viewBox="0 0 80 80" xmlns="http://www.w3.org/2000/svg" aria-hidden="true">
+            <defs>
+              <radialGradient id="g-blue" cx="38%" cy="35%" r="65%">
+                <stop offset="0%" stop-color="#a8b8e0"/>
+                <stop offset="55%" stop-color="#5470b8"/>
+                <stop offset="100%" stop-color="#2c3e7c"/>
+              </radialGradient>
+            </defs>
+            <ellipse cx="40" cy="46" rx="28" ry="24" fill="url(#g-blue)"/>
+            <ellipse cx="34" cy="38" rx="8" ry="4" fill="#c0d0f0" opacity="0.5"/>
+            <circle cx="36" cy="50" r="3.5" fill="#2c3e7c" opacity="0.55"/>
+            <circle cx="48" cy="44" r="3" fill="#2c3e7c" opacity="0.55"/>
+            <circle cx="42" cy="54" r="2.5" fill="#2c3e7c" opacity="0.55"/>
+          </svg>
+        </div>
+        <h3 class="serif">Blueberry</h3>
+        <p class="product-desc">Arándano entero, crema suave y un guiño a limón</p>
+        <div class="product-price">$8.000</div>
+        <div class="qty">
+          <button onclick="changeQty('blueberry',-1)">−</button>
+          <input type="number" id="qty-blueberry" value="0" min="0" readonly>
+          <button onclick="changeQty('blueberry',1)">+</button>
+        </div>
+      </div>
+
+      <div class="product flavor-durazno-caramelizado" data-flavor="durazno-caramelizado">
+        <div class="product-illu">
+          <svg viewBox="0 0 80 80" xmlns="http://www.w3.org/2000/svg" aria-hidden="true">
+            <defs>
+              <radialGradient id="g-durazno" cx="38%" cy="35%" r="65%">
+                <stop offset="0%" stop-color="#ffd9a8"/>
+                <stop offset="55%" stop-color="#f4a85a"/>
+                <stop offset="100%" stop-color="#b86a2a"/>
+              </radialGradient>
+            </defs>
+            <ellipse cx="40" cy="46" rx="28" ry="24" fill="url(#g-durazno)"/>
+            <ellipse cx="34" cy="38" rx="9" ry="5" fill="#ffe6c2" opacity="0.6"/>
+            <path d="M40 22 Q44 18 48 22" stroke="#7a3e1c" stroke-width="2" fill="none" stroke-linecap="round"/>
+            <ellipse cx="40" cy="48" rx="2.5" ry="3.5" fill="#7a3e1c" opacity="0.4"/>
+          </svg>
+        </div>
+        <h3 class="serif">Durazno caramelizado</h3>
+        <p class="product-desc">Rodaja de durazno con caramelo dorado y notas de canela</p>
+        <div class="product-price">$8.000</div>
+        <div class="qty">
+          <button onclick="changeQty('durazno-caramelizado',-1)">−</button>
+          <input type="number" id="qty-durazno-caramelizado" value="0" min="0" readonly>
+          <button onclick="changeQty('durazno-caramelizado',1)">+</button>
+        </div>
+      </div>
+
+      <div class="product flavor-crema-pastelera" data-flavor="crema-pastelera">
+        <div class="product-illu">
+          <svg viewBox="0 0 80 80" xmlns="http://www.w3.org/2000/svg" aria-hidden="true">
+            <defs>
+              <radialGradient id="g-crema" cx="38%" cy="35%" r="65%">
+                <stop offset="0%" stop-color="#fffaef"/>
+                <stop offset="55%" stop-color="#f5e6b8"/>
+                <stop offset="100%" stop-color="#c4a866"/>
+              </radialGradient>
+            </defs>
+            <ellipse cx="40" cy="46" rx="28" ry="24" fill="url(#g-crema)"/>
+            <ellipse cx="34" cy="38" rx="9" ry="5" fill="#fff" opacity="0.5"/>
+            <line x1="30" y1="50" x2="32" y2="58" stroke="#7a5e2a" stroke-width="1" stroke-linecap="round" opacity="0.5"/>
+            <line x1="46" y1="52" x2="48" y2="60" stroke="#7a5e2a" stroke-width="1" stroke-linecap="round" opacity="0.5"/>
+            <line x1="38" y1="54" x2="40" y2="60" stroke="#7a5e2a" stroke-width="1" stroke-linecap="round" opacity="0.4"/>
+          </svg>
+        </div>
+        <h3 class="serif">Crema pastelera</h3>
+        <p class="product-desc">La clásica: vainilla, yema y un corazón cremoso</p>
+        <div class="product-price">$8.000</div>
+        <div class="qty">
+          <button onclick="changeQty('crema-pastelera',-1)">−</button>
+          <input type="number" id="qty-crema-pastelera" value="0" min="0" readonly>
+          <button onclick="changeQty('crema-pastelera',1)">+</button>
+        </div>
+      </div>
+
+    </div>
+  </div>
+</section>
+
+<section id="combos" class="combos">
+  <div class="container">
+    <h2 class="section-title serif">Combos de la semana</h2>
+    <p class="section-sub">Ahorra pidiendo varios — perfectos para compartir</p>
+    <div class="combos-grid">
+
+      <div class="combo">
+        <h3 class="serif">Combo 4</h3>
+        <div class="combo-qty">4 unidades</div>
+        <p class="combo-desc">Ideal para probar varios sabores en una tarde. Tú eliges la combinación.</p>
+        <div class="combo-prices">
+          <span class="combo-now">$28.000</span>
+          <span class="combo-was">$32.000</span>
+          <span class="combo-save">Ahorras $4.000</span>
+        </div>
+        <button class="combo-add" onclick="addCombo(4, 28000)">Añadir combo</button>
+      </div>
+
+      <div class="combo featured">
+        <div class="combo-badge">Más pedido</div>
+        <h3 class="serif">Combo 6</h3>
+        <div class="combo-qty">6 unidades — tú eliges los sabores</div>
+        <p class="combo-desc">El favorito para compartir en familia o con amigos. Ajusta las cantidades arriba.</p>
+        <div class="combo-prices">
+          <span class="combo-now">$39.000</span>
+          <span class="combo-was">$48.000</span>
+          <span class="combo-save">Ahorras $9.000</span>
+        </div>
+        <button class="combo-add" onclick="addCombo(6, 39000)">Añadir combo</button>
+      </div>
+
+      <div class="combo">
+        <h3 class="serif">Caja sorpresa 12</h3>
+        <div class="combo-qty">12 unidades — sorpresa del chef</div>
+        <p class="combo-desc">Una caja surtida con todos los sabores y nuestras pruebas nuevas de la semana.</p>
+        <div class="combo-prices">
+          <span class="combo-now">$75.000</span>
+          <span class="combo-was">$96.000</span>
+          <span class="combo-save">Ahorras $21.000</span>
+        </div>
+        <button class="combo-add" onclick="addCombo(12, 75000)">Añadir caja sorpresa</button>
+      </div>
+
+    </div>
+  </div>
+</section>
+
+<section id="how">
+  <div class="container">
+    <h2 class="section-title serif">Cómo funciona</h2>
+    <p class="section-sub">Tres pasos. Sin registros, sin descargas.</p>
+    <div class="how-grid">
+      <div class="how-step">
+        <div class="how-num">一</div>
+        <h4 class="serif">Elige</h4>
+        <p>Mira los sabores de la semana y arma tu pedido con unidades sueltas o combos.</p>
+      </div>
+      <div class="how-step">
+        <div class="how-num">二</div>
+        <h4 class="serif">Confirma</h4>
+        <p>Envía tu pedido por WhatsApp. Te respondemos el mismo día para confirmar.</p>
+      </div>
+      <div class="how-step">
+        <div class="how-num">三</div>
+        <h4 class="serif">Recoge</h4>
+        <p>Pasa por nuestra cocina oculta en Neiva, <strong>martes a sábado de 3pm a 7pm</strong>.</p>
+      </div>
+    </div>
+  </div>
+</section>
+
+<section id="order" class="order">
+  <div class="container">
+    <h2 class="section-title serif">Tu pedido</h2>
+    <p class="section-sub">Confirma por WhatsApp y recoge en Neiva</p>
+
+    <div class="order-card">
+      <div id="empty-msg" class="empty-cart-msg">
+        Aún no has elegido sabores. Sube arriba y selecciona los que quieras desde <a href="#sabores">Esta semana</a> o <a href="#combos">Combos</a>.
+      </div>
+
+      <form id="order-form" style="display:none">
+        <div class="order-summary" id="summary"></div>
+
+        <div class="form-group">
+          <label>Tu nombre</label>
+          <input type="text" id="cli-name" required placeholder="Ej: María Pérez">
+        </div>
+        <div class="form-group">
+          <label>Tu WhatsApp</label>
+          <input type="tel" id="cli-phone" required placeholder="Ej: 312 345 6789">
+        </div>
+        <div class="form-group">
+          <label>Día de recogida</label>
+          <div class="day-pick">
+            <label><input type="radio" name="day" value="Martes" required>Mar</label>
+            <label><input type="radio" name="day" value="Miércoles">Mié</label>
+            <label><input type="radio" name="day" value="Jueves">Jue</label>
+            <label><input type="radio" name="day" value="Viernes">Vie</label>
+            <label><input type="radio" name="day" value="Sábado">Sáb</label>
+          </div>
+        </div>
+        <div class="form-group">
+          <label>Notas (opcional)</label>
+          <textarea id="cli-notes" rows="2" placeholder="Alergias, dedicatoria, hora exacta…"></textarea>
+        </div>
+
+        <button type="submit" class="submit-btn" id="submit-btn">
+          Confirmar pedido por WhatsApp →
+        </button>
+        <div class="submit-hint" id="submit-hint">
+          ¿No tienes WhatsApp configurado? <a href="#" onclick="event.preventDefault(); openConfig()">Configúralo aquí</a>.
+        </div>
+      </form>
+    </div>
+  </div>
+</section>
+
+</main>
+
+<footer>
+  <div class="container">
+    <div class="logo">
+      <span class="jp-mark">餅</span>
+      My<span class="dot">·</span>Mochis
+    </div>
+    <p class="tagline">Mochis artesanales hechos a mano en Neiva, Huila · Colombia</p>
+    <div class="footer-info">
+      <span>📍 Cocina oculta en Neiva</span>
+      <span>🕒 Mar–Sáb · 3pm a 7pm</span>
+      <span>💬 Pedidos por WhatsApp</span>
+      <span>📷 @mymochis.neiva</span>
+    </div>
+    <div class="footer-edit">
+      Cada semana, un lote nuevo · hecho con cariño en el Huila
+      <a href="#" onclick="event.preventDefault(); openConfig()">⚙ Configurar</a>
+      <a href="admin.html">operador</a>
+    </div>
+  </div>
+</footer>
+
+<div class="cart-bar" id="cart-bar" onclick="document.getElementById('order').scrollIntoView({behavior:'smooth'})">
+  <span class="cart-count" id="cart-count">0</span>
+  <span class="cart-total" id="cart-total">$0</span>
+  <span class="cart-cta">Ver pedido →</span>
+</div>
+
+<div id="config-modal" class="modal-back">
+  <div class="modal">
+    <h3 class="serif">Configurar WhatsApp</h3>
+    <p>Número al que llegarán los pedidos de los clientes. Incluye el código de país (57 para Colombia) sin el signo +.</p>
+    <div class="form-group">
+      <input type="tel" id="config-phone" placeholder="573001234567" autocomplete="tel">
+    </div>
+    <div style="font-size:12px;color:var(--ink-soft);margin-top:-8px">Ej: 573123456789 (57 = Colombia, 3123456789 = tu número)</div>
+    <div class="modal-actions">
+      <button class="btn-cancel" onclick="closeConfig()">Cancelar</button>
+      <button class="btn-save" onclick="saveConfig()">Guardar</button>
+    </div>
+  </div>
+</div>
+
+<script>
+const DEFAULT_WHATSAPP = '573000000000';
+const CONFIG_KEY = 'mymochis_wpp';
+
+function getWppNumber() {
+  return (localStorage.getItem(CONFIG_KEY) || '').trim() || DEFAULT_WHATSAPP;
+}
+
+function isConfigured() {
+  const n = (localStorage.getItem(CONFIG_KEY) || '').trim();
+  return n && n !== DEFAULT_WHATSAPP;
+}
+
+function openConfig() {
+  document.getElementById('config-phone').value =
+    isConfigured() ? localStorage.getItem(CONFIG_KEY) : '';
+  document.getElementById('config-modal').classList.add('visible');
+  setTimeout(() => document.getElementById('config-phone').focus(), 100);
+}
+function closeConfig() {
+  document.getElementById('config-modal').classList.remove('visible');
+}
+function saveConfig() {
+  const raw = document.getElementById('config-phone').value.replace(/\D/g, '');
+  if (raw.length < 10) {
+    alert('El número parece muy corto. Incluye código de país + número (mínimo 12 dígitos).');
+    return;
+  }
+  localStorage.setItem(CONFIG_KEY, raw);
+  closeConfig();
+  applyConfigState();
+}
+document.getElementById('config-phone')?.addEventListener('keypress', e => {
+  if (e.key === 'Enter') { e.preventDefault(); saveConfig(); }
+});
+document.getElementById('config-modal')?.addEventListener('click', e => {
+  if (e.target.id === 'config-modal') closeConfig();
+});
+
+function applyConfigState() {
+  const banner = document.getElementById('setup-banner');
+  const hint = document.getElementById('submit-hint');
+  if (isConfigured()) {
+    banner.classList.remove('visible');
+    if (hint) hint.style.display = 'none';
+  } else {
+    banner.classList.add('visible');
+    if (hint) hint.style.display = 'block';
+  }
+}
+
+const FLAVORS = {
+  'fresas-crema': 'Fresas con crema',
+  'chokis-cream': 'Chokis & cream',
+  'blueberry': 'Blueberry',
+  'durazno-caramelizado': 'Durazno caramelizado',
+  'crema-pastelera': 'Crema pastelera'
+};
+const PRICES = {
+  'fresas-crema': 8000,
+  'chokis-cream': 8000,
+  'blueberry': 8000,
+  'durazno-caramelizado': 8000,
+  'crema-pastelera': 8000
+};
+
+let cart = JSON.parse(localStorage.getItem('mymochis_cart') || '{}');
+let combos = JSON.parse(localStorage.getItem('mymochis_combos') || '[]');
+
+function saveCart() {
+  localStorage.setItem('mymochis_cart', JSON.stringify(cart));
+  localStorage.setItem('mymochis_combos', JSON.stringify(combos));
+  renderCart();
+}
+
+function changeQty(flavor, delta) {
+  cart[flavor] = Math.max(0, (cart[flavor] || 0) + delta);
+  document.getElementById('qty-' + flavor).value = cart[flavor];
+  saveCart();
+}
+
+function addCombo(units, price) {
+  const flavors = Object.keys(FLAVORS);
+  const perFlavor = Math.floor(units / flavors.length);
+  let remainder = units - perFlavor * flavors.length;
+  flavors.forEach(f => {
+    cart[f] = (cart[f] || 0) + perFlavor + (remainder > 0 ? 1 : 0);
+    if (remainder > 0) remainder--;
+    document.getElementById('qty-' + f).value = cart[f];
+  });
+  combos.push({ units, price, ts: Date.now() });
+  saveCart();
+  document.getElementById('combos').scrollIntoView({ behavior: 'smooth', block: 'center' });
+}
+
+function fmt(n) { return '$' + n.toLocaleString('es-CO'); }
+
+function renderCart() {
+  const items = Object.entries(cart).filter(([k,v]) => v > 0);
+  const comboUnits = combos.reduce((s,c) => s + c.units, 0);
+  const comboTotal = combos.reduce((s,c) => s + c.price, 0);
+  const unitsTotal = items.reduce((s,[,q]) => s + q, 0);
+  const itemsTotal = items.reduce((s,[f,q]) => s + q * PRICES[f], 0);
+  const subtotal = itemsTotal + comboTotal;
+  const count = unitsTotal + comboUnits;
+
+  const bar = document.getElementById('cart-bar');
+  if (count > 0) bar.classList.add('visible');
+  else bar.classList.remove('visible');
+  document.getElementById('cart-count').textContent = count;
+  document.getElementById('cart-total').textContent = fmt(subtotal);
+
+  const form = document.getElementById('order-form');
+  const empty = document.getElementById('empty-msg');
+  if (count > 0) {
+    form.style.display = 'block';
+    empty.style.display = 'none';
+    let html = '<div style="font-weight:600;margin-bottom:10px;font-size:13px;color:var(--ink-soft);text-transform:uppercase;letter-spacing:1px">Resumen</div>';
+    items.forEach(([f,q]) => {
+      html += `<div class="order-summary-row"><span>${FLAVORS[f]} × ${q}</span><span>${fmt(q*PRICES[f])}</span></div>`;
+    });
+    combos.forEach(c => {
+      html += `<div class="order-summary-row"><span>Combo ${c.units} u. (eliges sabores)</span><span>${fmt(c.price)}</span></div>`;
+    });
+    if (combos.length) {
+      html += `<div style="font-size:12px;color:var(--ink-soft);margin-top:6px;padding:8px;background:rgba(184,149,78,0.08);border-radius:6px">💡 Ajusta las cantidades arriba si quieres elegir sabores específicos para tu combo.</div>`;
+    }
+    html += `<div class="order-summary-row total"><span>Total</span><span class="amount">${fmt(subtotal)} COP</span></div>`;
+    document.getElementById('summary').innerHTML = html;
+  } else {
+    form.style.display = 'none';
+    empty.style.display = 'block';
+  }
+}
+
+document.getElementById('order-form').addEventListener('submit', function(e) {
+  e.preventDefault();
+  if (!isConfigured()) {
+    openConfig();
+    return;
+  }
+  const name = document.getElementById('cli-name').value.trim();
+  const phone = document.getElementById('cli-phone').value.trim();
+  const day = document.querySelector('input[name="day"]:checked').value;
+  const notes = document.getElementById('cli-notes').value.trim();
+  const items = Object.entries(cart).filter(([k,v]) => v > 0);
+  const itemsTotal = items.reduce((s,[f,q]) => s + q * PRICES[f], 0);
+  const comboTotal = combos.reduce((s,c) => s + c.price, 0);
+  const total = itemsTotal + comboTotal;
+
+  let lines = [];
+  lines.push(`*Pedido MyMochis* 餅`);
+  lines.push(`Nombre: ${name}`);
+  lines.push(`WhatsApp: ${phone}`);
+  lines.push(`Recogida: ${day} de 3pm a 7pm`);
+  lines.push(``);
+  lines.push(`*Pedido:*`);
+  items.forEach(([f,q]) => lines.push(`• ${FLAVORS[f]} × ${q} — ${fmt(q*PRICES[f])}`));
+  if (combos.length) {
+    lines.push(``);
+    lines.push(`*Combos:*`);
+    combos.forEach((c, i) => lines.push(`• Combo ${i+1}: ${c.units} unidades — ${fmt(c.price)}`));
+  }
+  lines.push(``);
+  lines.push(`*Total: ${fmt(total)} COP*`);
+  if (notes) { lines.push(``); lines.push(`Notas: ${notes}`); }
+  lines.push(``);
+  lines.push(`¡Gracias! 🏮`);
+
+  const msg = encodeURIComponent(lines.join('\n'));
+  const url = `https://wa.me/${getWppNumber()}?text=${msg}`;
+
+  const order = {
+    id: 'MYM-' + Date.now().toString(36).toUpperCase(),
+    ts: new Date().toISOString(),
+    name, phone, day, notes,
+    items: Object.fromEntries(items),
+    combos: [...combos],
+    total
+  };
+  const history = JSON.parse(localStorage.getItem('mymochis_orders') || '[]');
+  history.push(order);
+  localStorage.setItem('mymochis_orders', JSON.stringify(history));
+
+  window.open(url, '_blank');
+
+  setTimeout(() => {
+    cart = {};
+    combos = [];
+    document.querySelectorAll('input[id^="qty-"]').forEach(i => i.value = 0);
+    saveCart();
+    document.getElementById('cli-name').value = '';
+    document.getElementById('cli-phone').value = '';
+    document.getElementById('cli-notes').value = '';
+    document.querySelectorAll('input[name="day"]').forEach(i => i.checked = false);
+    alert('¡Pedido enviado! Si WhatsApp no se abrió automáticamente, escríbenos directo al mismo número. Te confirmamos el mismo día. 🏮');
+  }, 1000);
+});
+
+applyConfigState();
+renderCart();
+
+const MOCHI_PALETTES = [
+  { id:'pink', from:'#ffe0e8', mid:'#f4a8b8', to:'#e88a9e' },
+  { id:'mint', from:'#dfeede', mid:'#b8d8c0', to:'#95b89e' },
+  { id:'peach', from:'#ffe8d4', mid:'#ffd4b8', to:'#e8b896' },
+  { id:'lavender', from:'#ece4f4', mid:'#d8c8e8', to:'#b8a4d0' },
+  { id:'yellow', from:'#fff4d4', mid:'#fce4a8', to:'#e8c896' },
+  { id:'cream', from:'#fffaf0', mid:'#fff0d4', to:'#e8d4b8' }
+];
+let _mochiUid = 0;
+function buildMochiSVG(paletteId) {
+  const p = MOCHI_PALETTES.find(x => x.id === paletteId) || MOCHI_PALETTES[0];
+  const gid = 'mp-' + (++_mochiUid);
+  return `<svg viewBox="0 0 100 100" xmlns="http://www.w3.org/2000/svg"><defs><radialGradient id="${gid}" cx="38%" cy="35%" r="65%"><stop offset="0%" stop-color="${p.from}"/><stop offset="55%" stop-color="${p.mid}"/><stop offset="100%" stop-color="${p.to}"/></radialGradient></defs><ellipse cx="50" cy="58" rx="38" ry="32" fill="url(#${gid})"/><ellipse cx="40" cy="46" rx="10" ry="6" fill="#fff" opacity="0.5"/></svg>`;
+}
+function flyToCart(originEl, paletteId) {
+  const cartBar = document.getElementById('cart-bar');
+  if (!cartBar || !originEl) return;
+  const start = originEl.getBoundingClientRect();
+  const end = cartBar.getBoundingClientRect();
+  const el = document.createElement('div');
+  el.className = 'fly-particle';
+  el.innerHTML = buildMochiSVG(paletteId);
+  el.style.left = (start.left + start.width/2 - 16) + 'px';
+  el.style.top = (start.top + start.height/2 - 16) + 'px';
+  document.body.appendChild(el);
+  requestAnimationFrame(() => {
+    const dx = (end.left + end.width/2) - (start.left + start.width/2);
+    const dy = (end.top + end.height/2) - (start.top + start.height/2);
+    el.style.transform = `translate(${dx}px, ${dy}px) scale(0.5) rotate(360deg)`;
+    el.classList.add('flying');
+  });
+  setTimeout(() => el.remove(), 950);
+  cartBar.classList.remove('popped');
+  void cartBar.offsetWidth;
+  cartBar.classList.add('popped');
+  const badge = document.getElementById('cart-count');
+  if (badge) {
+    badge.classList.remove('pulse');
+    void badge.offsetWidth;
+    badge.classList.add('pulse');
+  }
+}
+function popBtn(btn) {
+  if (!btn) return;
+  btn.classList.remove('pop');
+  void btn.offsetWidth;
+  btn.classList.add('pop');
+}
+function confettiBurst(count = 24) {
+  const palettes = ['pink','mint','peach','lavender','yellow','cream'];
+  for (let i = 0; i < count; i++) {
+    const el = document.createElement('div');
+    el.className = 'confetti-piece';
+    el.innerHTML = buildMochiSVG(palettes[Math.floor(Math.random()*palettes.length)]);
+    el.style.left = (Math.random() * 100) + 'vw';
+    el.style.animationDelay = (Math.random() * 0.4) + 's';
+    el.style.animationDuration = (1.4 + Math.random() * 0.8) + 's';
+    const rot = (Math.random() * 60 - 30);
+    el.style.transform = `rotate(${rot}deg)`;
+    document.body.appendChild(el);
+    setTimeout(() => el.remove(), 2400);
+  }
+}
+
+const FLAVOR_PALETTE = {
+  'fresas-crema': 'pink',
+  'chokis-cream': 'yellow',
+  'blueberry': 'lavender',
+  'durazno-caramelizado': 'peach',
+  'crema-pastelera': 'cream'
+};
+
+const _origChangeQty = changeQty;
+changeQty = function(flavor, delta) {
+  _origChangeQty(flavor, delta);
+  const input = document.getElementById('qty-' + flavor);
+  if (input) {
+    const btn = input.parentElement.querySelector('button[onclick*="changeQty(\'' + flavor + '\',' + (delta>0?'1':'-1') + ')"]');
+    if (delta > 0) {
+      popBtn(btn);
+      flyToCart(btn, FLAVOR_PALETTE[flavor] || 'pink');
+    }
+  }
+};
+const _origAddCombo = addCombo;
+addCombo = function(units, price) {
+  const btn = (typeof event !== 'undefined' && event && event.target) ? event.target.closest('.combo-add') : null;
+  popBtn(btn);
+  _origAddCombo(units, price);
+  ['pink','mint','peach','lavender','yellow','cream'].forEach((p, i) => {
+    setTimeout(() => flyToCart(btn, p), i * 60);
+  });
+};
+document.querySelectorAll('.combo-add').forEach(b => {
+  b.addEventListener('click', () => { popBtn(b); });
+});
+
+const _origSubmit = document.getElementById('order-form').onsubmit;
+document.getElementById('order-form').addEventListener('submit', function(e) {
+  setTimeout(confettiBurst, 50);
+}, true);
+
+const _origSaveConfig = saveConfig;
+saveConfig = function() {
+  _origSaveConfig();
+  const btn = document.querySelector('#config-modal .btn-save');
+  popBtn(btn);
+  confettiBurst(12);
+};
+
+let _lastScroll = 0;
+let _scrollTicking = false;
+window.addEventListener('scroll', () => {
+  _lastScroll = window.scrollY;
+  if (_scrollTicking) return;
+  _scrollTicking = true;
+  requestAnimationFrame(() => {
+    const y = _lastScroll;
+    document.querySelectorAll('.bg-mochi').forEach((el, i) => {
+      const speed = 0.08 + (i % 4) * 0.04;
+      const baseT = el.classList.contains('spin') ? ` rotate(${(y*0.04)%360}deg)` : '';
+      el.style.translate = `0 ${y * speed}px${baseT}`;
+    });
+    document.querySelectorAll('.sakura').forEach((el, i) => {
+      el.style.translate = `0 ${y * 0.18}px`;
+    });
+    _scrollTicking = false;
+  });
+}, { passive: true });
+
+if ('serviceWorker' in navigator) {
+  window.addEventListener('load', () => {
+    navigator.serviceWorker.register('/sw.js').catch(() => {});
+  });
+}
+</script>
+
+</body>
+</html>

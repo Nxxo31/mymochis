@@ -1,0 +1,56 @@
+<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 1200 630" width="1200" height="630">
+  <defs>
+    <radialGradient id="bg" cx="20%" cy="18%" r="70%">
+      <stop offset="0%" stop-color="#fff0f4"/>
+      <stop offset="100%" stop-color="#fff5f7"/>
+    </radialGradient>
+    <radialGradient id="m1" cx="38%" cy="35%" r="65%">
+      <stop offset="0%" stop-color="#ffe0e8"/>
+      <stop offset="55%" stop-color="#f4a8b8"/>
+      <stop offset="100%" stop-color="#e88a9e"/>
+    </radialGradient>
+    <radialGradient id="m2" cx="38%" cy="35%" r="65%">
+      <stop offset="0%" stop-color="#dfeede"/>
+      <stop offset="55%" stop-color="#b8d8c0"/>
+      <stop offset="100%" stop-color="#95b89e"/>
+    </radialGradient>
+    <radialGradient id="m3" cx="38%" cy="35%" r="65%">
+      <stop offset="0%" stop-color="#ffe8d4"/>
+      <stop offset="55%" stop-color="#ffd4b8"/>
+      <stop offset="100%" stop-color="#e8b896"/>
+    </radialGradient>
+    <radialGradient id="m4" cx="38%" cy="35%" r="65%">
+      <stop offset="0%" stop-color="#ece4f4"/>
+      <stop offset="55%" stop-color="#d8c8e8"/>
+      <stop offset="100%" stop-color="#b8a4d0"/>
+    </radialGradient>
+    <linearGradient id="title" x1="0%" y1="0%" x2="100%" y2="0%">
+      <stop offset="0%" stop-color="#5a4a52"/>
+      <stop offset="100%" stop-color="#b3382c"/>
+    </linearGradient>
+  </defs>
+
+  <rect width="1200" height="630" fill="url(#bg)"/>
+
+  <ellipse cx="120" cy="110" rx="60" ry="50" fill="url(#m1)" opacity="0.55"/>
+  <ellipse cx="1080" cy="180" rx="70" ry="58" fill="url(#m2)" opacity="0.50"/>
+  <ellipse cx="1100" cy="520" rx="55" ry="46" fill="url(#m3)" opacity="0.55"/>
+  <ellipse cx="100" cy="500" rx="65" ry="54" fill="url(#m4)" opacity="0.45"/>
+
+  <path d="M200 80 Q220 200 320 230 Q220 260 200 380 Q180 260 80 230 Q180 200 200 80 Z" fill="#f4a8b8" opacity="0.55"/>
+  <path d="M1000 70 Q1010 130 1080 145 Q1010 160 1000 230 Q990 160 920 145 Q990 130 1000 70 Z" fill="#d8c8e8" opacity="0.55"/>
+
+  <g transform="translate(600 290)">
+    <text text-anchor="middle" font-family="'Noto Serif JP',serif" font-weight="600" font-size="180" fill="#e88a9e" y="-30">餅</text>
+  </g>
+
+  <g transform="translate(600 440)">
+    <text text-anchor="middle" font-family="'Cormorant Garamond','Times New Roman',serif" font-weight="600" font-size="110" fill="url(#title)" letter-spacing="-2">My Mochis</text>
+    <text text-anchor="middle" font-family="'Inter',sans-serif" font-weight="500" font-size="26" fill="#8a7a82" y="50" letter-spacing="6">M O C H I S   A R T E S A N A L E S</text>
+  </g>
+
+  <g transform="translate(600 545)">
+    <rect x="-180" y="-26" width="360" height="52" rx="26" fill="#e88a9e"/>
+    <text text-anchor="middle" font-family="'Inter',sans-serif" font-weight="600" font-size="22" fill="#fff" y="6">Pedidos por WhatsApp · Neiva, Huila</text>
+  </g>
+</svg>
