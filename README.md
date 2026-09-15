@@ -11,10 +11,11 @@ Stack: HTML + CSS + JS vanilla (zero deps, zero build). PWA instalable. Funciona
 | `index.html` | Landing pública con sabores, combos, carrito y form WhatsApp |
 | `admin.html` | Panel operador (clave `mymochis2026`) con registro manual + parser de mensajes |
 | `favicon.svg` | Ícono adaptable (kanji 餅 sobre fondo crema) |
-| `og-image.svg` | Preview 1200×630 cuando alguien comparte el link por WhatsApp/redes |
+| `og-image.png` | Preview 1200×630 PNG (WhatsApp/redes). El `.svg` es la fuente editable |
+| `og-image.svg` | Preview 1200×630 cuando alguien comparte el link (fuente SVG) |
+| `icon-192.png` / `icon-512.png` | Íconos PWA instalable |
 | `manifest.json` | PWA instalable (nombre, colores, íconos) |
 | `sw.js` | Service worker: cache-first para assets, network-first para HTML |
-| `vercel.json` | Headers de seguridad y `cleanUrls` |
 
 ## Flujo de pedidos
 
@@ -33,35 +34,19 @@ Cliente                  Landing                WhatsApp                Operador
 
 El admin guarda los pedidos en `localStorage` del navegador del operador. Es deliberadamente simple para MVP — un sólo operador, un sólo dispositivo. Cuando crezca el volumen se migra a backend (Supabase sugerido).
 
-## Deploy
+## Deploy — GitHub Pages (activo)
 
-### Opción A: Vercel CLI (recomendado)
+El sitio está publicado en GitHub Pages desde la rama `main`:
 
-```bash
-npm i -g vercel
-cd Desktop\proyectos\mymochis
-vercel              # primer deploy, te da URL *.vercel.app
-vercel --prod       # promover a producción
-```
+**URL:** `https://nxxo31.github.io/mymochis/`
 
-Sin variables de entorno, sin build step. Vercel detecta el `vercel.json` y aplica `cleanUrls` + headers de seguridad.
+Se activó vía la API de GitHub (Settings → Pages → Source: main / root). Cada `git push` a `main` re-deploya automáticamente en ~1 minuto. No hay build step — los archivos se sirven tal cual.
 
-### Opción B: Vercel dashboard
+### Dominio personalizado (opcional)
 
-1. Ir a https://vercel.com/new
-2. "Import Project" → seleccionar el repo (o drag-and-drop la carpeta `mymochis/`)
-3. Framework preset: **Other** (no usa framework)
-4. Deploy
-
-### Dominio personalizado
-
-Una vez con URL `*.vercel.app`:
-
-1. Comprar dominio (Namecheap, Google Domains, etc.)
-2. Vercel → Project Settings → Domains → agregar dominio
-3. Apuntar DNS según instrucciones
-
-Sugerencias `.co` colombianas: `mymochis.co`, `mymochisneiva.co`, `mochisdelhuila.co`.
+1. Settings → Pages → Custom domain: poner el dominio (ej. `mymochis.co`)
+2. En el DNS del dominio: `CNAME` → `nxxo31.github.io`
+3. GitHub emite el certificado HTTPS automáticamente
 
 ## Configuración post-deploy
 

@@ -2,8 +2,8 @@
   "name": "MyMochis — Mochis artesanales en Neiva",
   "short_name": "MyMochis",
   "description": "Mochis artesanales hechos a mano en Neiva. Pedidos por WhatsApp, recoges en cocina oculta mar–sáb 3pm–7pm.",
-  "start_url": "/",
-  "scope": "/",
+  "start_url": "./",
+  "scope": "./",
   "display": "standalone",
   "orientation": "portrait",
   "background_color": "#fff5f7",
@@ -11,19 +11,19 @@
   "lang": "es-CO",
   "icons": [
     {
-      "src": "/favicon.svg",
+      "src": "favicon.svg",
       "sizes": "any",
       "type": "image/svg+xml",
       "purpose": "any maskable"
     },
     {
-      "src": "/icon-192.png",
+      "src": "icon-192.png",
       "sizes": "192x192",
       "type": "image/png",
       "purpose": "any maskable"
     },
     {
-      "src": "/icon-512.png",
+      "src": "icon-512.png",
       "sizes": "512x512",
       "type": "image/png",
       "purpose": "any maskable"
