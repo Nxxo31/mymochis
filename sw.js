@@ -1,5 +1,5 @@
-const CACHE = 'mymochis-v2';
-const PRECACHE = ['./', 'index.html', 'admin.html', 'favicon.svg', 'manifest.json', 'og-image.png', 'icon-192.png', 'icon-512.png'];
+const CACHE = 'mochis-land-v2';
+const PRECACHE = ['./', 'index.html', 'admin.html', 'site-config.js', 'favicon.svg', 'logo-mochis-land.svg', 'manifest.json', 'og-image.png', 'icon-192.png', 'icon-512.png'];
 
 self.addEventListener('install', e => {
   e.waitUntil(caches.open(CACHE).then(c => c.addAll(PRECACHE)).then(() => self.skipWaiting()));

@@ -189,6 +189,11 @@ header {
   font-family: 'Noto Serif JP', serif; font-size: 20px;
   color: var(--accent); font-weight: 600;
 }
+.brand-logo {
+  width: 38px; height: 38px; border-radius: 12px;
+  object-fit: cover; box-shadow: 0 4px 14px var(--shadow-soft);
+}
+.brand-text { display: inline-flex; align-items: baseline; gap: 4px; }
 .nav-cta {
   background: var(--accent); color: #fff; border: 0;
   padding: 10px 20px; border-radius: 999px;
@@ -731,8 +736,8 @@ section { position: relative; z-index: 2; }
 <header>
   <div class="nav">
     <div class="logo">
-      <span class="jp-mark">餅</span>
-      My<span class="dot">·</span>Mochis
+      <img id="brand-logo-nav" class="brand-logo" src="logo-mochis-land.svg" alt="MyMochis">
+      <span class="brand-text"><span class="jp-mark" id="brand-mark-nav">餅</span><span id="brand-name-nav">My<span class="dot">·</span>Mochis</span></span>
     </div>
     <button class="nav-cta" onclick="document.getElementById('order').scrollIntoView({behavior:'smooth'})">Pedir ahora</button>
   </div>
@@ -742,15 +747,15 @@ section { position: relative; z-index: 2; }
 
 <section class="hero">
   <div class="hero-inner container">
-    <div class="hero-kanji">餅</div>
-    <span class="hero-tag">Hecho a mano en Neiva</span>
-    <h1 class="serif">My <span class="accent">Mochis</span></h1>
-    <p class="lead">Mochis artesanales que mezclan Japón con el Huila. Pide cada semana y recoge en nuestra cocina oculta — frescos, sin congelar, hechos el mismo día.</p>
+    <div class="hero-kanji" id="brand-kanji">餅</div>
+    <span class="hero-tag" id="brand-tag">Hecho a mano en Neiva</span>
+    <h1 class="serif" id="brand-title">My <span class="accent">Mochis</span></h1>
+    <p class="lead" id="brand-lead">Mochis artesanales que mezclan Japón con el Huila. Pide cada semana y recoge en nuestra cocina oculta — frescos, sin congelar, hechos el mismo día.</p>
     <a href="#order" class="hero-cta">Hacer mi pedido</a>
     <div class="hero-meta">
-      <span>📍 Cocina oculta en Neiva</span>
-      <span>🕒 Mar–Sáb · 3pm a 7pm</span>
-      <span>💬 Pedidos por WhatsApp</span>
+      <span id="meta-location">📍 Cocina oculta en Neiva</span>
+      <span id="meta-schedule">🕒 Mar–Sáb · 3pm a 7pm</span>
+      <span id="meta-whatsapp">💬 Pedidos por WhatsApp</span>
     </div>
   </div>
 </section>
@@ -1024,15 +1029,15 @@ section { position: relative; z-index: 2; }
 <footer>
   <div class="container">
     <div class="logo">
-      <span class="jp-mark">餅</span>
-      My<span class="dot">·</span>Mochis
+      <img id="brand-logo-footer" class="brand-logo" src="logo-mochis-land.svg" alt="MyMochis">
+      <span class="brand-text"><span class="jp-mark" id="brand-mark-footer">餅</span><span id="brand-name-footer">My<span class="dot">·</span>Mochis</span></span>
     </div>
-    <p class="tagline">Mochis artesanales hechos a mano en Neiva, Huila · Colombia</p>
+    <p class="tagline" id="brand-tagline">Mochis artesanales hechos a mano en Neiva, Huila · Colombia</p>
     <div class="footer-info">
-      <span>📍 Cocina oculta en Neiva</span>
-      <span>🕒 Mar–Sáb · 3pm a 7pm</span>
-      <span>💬 Pedidos por WhatsApp</span>
-      <span>📷 @mymochis.neiva</span>
+      <span id="footer-location">📍 Cocina oculta en Neiva</span>
+      <span id="footer-schedule">🕒 Mar–Sáb · 3pm a 7pm</span>
+      <span id="footer-whatsapp">💬 Pedidos por WhatsApp</span>
+      <span id="footer-instagram">📷 @mymochis.neiva</span>
     </div>
     <div class="footer-edit">
       Cada semana, un lote nuevo · hecho con cariño en el Huila
@@ -1063,17 +1068,39 @@ section { position: relative; z-index: 2; }
   </div>
 </div>
 
+<script src="site-config.js"></script>
 <script>
 const DEFAULT_WHATSAPP = '573000000000';
 const CONFIG_KEY = 'mymochis_wpp';
 
-function getWppNumber() {
-  return (localStorage.getItem(CONFIG_KEY) || '').trim() || DEFAULT_WHATSAPP;
+const STORE_CONFIG = (() => {
+  const api = window.NX_STORE;
+  if (!api) return null;
+  const base = api.clone(api.defaults);
+  const saved = JSON.parse(localStorage.getItem(api.storageKey(base.store.slug)) || 'null');
+  return api.merge(base, saved);
+})();
+
+function configWppTarget() {
+  const store = STORE_CONFIG && STORE_CONFIG.store;
+  if (!store) return '';
+  const direct = (store.whatsapp || '').replace(/\D/g, '');
+  if (direct) return direct;
+  const link = String(store.whatsappLink || '').trim();
+  if (!link) return '';
+  const match = link.match(/wa\.me\/(\d+)/);
+  if (match) return match[1];
+  return /^https:\/\//.test(link) ? link : '';
+}
+
+function getWppTarget() {
+  return (localStorage.getItem(CONFIG_KEY) || '').trim() || configWppTarget() || DEFAULT_WHATSAPP;
 }
 
 function isConfigured() {
-  const n = (localStorage.getItem(CONFIG_KEY) || '').trim();
-  return n && n !== DEFAULT_WHATSAPP;
+  const local = (localStorage.getItem(CONFIG_KEY) || '').trim();
+  const shared = configWppTarget();
+  return Boolean((local && local !== DEFAULT_WHATSAPP) || (shared && shared !== DEFAULT_WHATSAPP));
 }
 
 function openConfig() {
@@ -1114,20 +1141,91 @@ function applyConfigState() {
   }
 }
 
-const FLAVORS = {
+const STORE = STORE_CONFIG ? STORE_CONFIG.store || {} : {};
+const STORE_NAME = STORE.name || 'MyMochis';
+const STORE_MARK = '🍡';
+
+function setText(id, value) {
+  const el = document.getElementById(id);
+  if (el && value) el.textContent = value;
+}
+
+function setMeta(selector, attr, value) {
+  if (!value) return;
+  const el = document.querySelector(selector);
+  if (el) el.setAttribute(attr, value);
+}
+
+function applyStoreConfig() {
+  if (!STORE_CONFIG) return;
+  const theme = STORE.theme || {};
+  const root = document.documentElement;
+  [
+    ['--pink', theme.primary],
+    ['--pink-deep', theme.primaryDeep],
+    ['--yellow', theme.sun],
+    ['--ink', theme.ink],
+    ['--bg', theme.soft],
+    ['--paper', theme.paper],
+    ['--mint-deep', theme.mint],
+    ['--accent', theme.primaryDeep],
+    ['--accent-soft', theme.primary],
+    ['--green', theme.mint]
+  ].forEach(([key, value]) => { if (value) root.style.setProperty(key, value); });
+
+  const logo = STORE.logo || 'favicon.svg';
+  ['brand-logo-nav', 'brand-logo-footer'].forEach(id => {
+    const el = document.getElementById(id);
+    if (el) { el.src = logo; el.alt = STORE_NAME; }
+  });
+  ['brand-name-nav', 'brand-name-footer'].forEach(id => {
+    const el = document.getElementById(id);
+    if (el) el.textContent = STORE_NAME;
+  });
+  const brandTitle = document.getElementById('brand-title');
+  if (brandTitle) brandTitle.innerHTML = STORE_NAME.split(' ').length > 1
+    ? STORE_NAME.replace(/ ([^ ]+)$/, ' <span class="accent">$1</span>')
+    : `<span class="accent">${STORE_NAME}</span>`;
+
+  if (STORE.tagline) setText('brand-tag', STORE.tagline);
+  if (STORE.description) setText('brand-lead', STORE.description);
+  if (STORE.location) {
+    setText('meta-location', '📍 ' + STORE.location);
+    setText('footer-location', '📍 ' + STORE.location);
+  }
+  if (STORE.schedule) {
+    setText('meta-schedule', '🕒 ' + STORE.schedule);
+    setText('footer-schedule', '🕒 ' + STORE.schedule);
+  }
+  const instagram = STORE.instagram || STORE.instagramUrl;
+  if (instagram) setText('footer-instagram', '📷 ' + instagram);
+  if (STORE.tagline) setText('brand-tagline', STORE.tagline + ' · ' + (STORE.location || 'Neiva, Huila · Colombia'));
+
+  document.title = STORE_NAME + ' — ' + (STORE.tagline || 'Mochis artesanales en Neiva');
+  setMeta('meta[name="description"]', 'content', STORE.description);
+  setMeta('meta[property="og:title"]', 'content', document.title);
+  setMeta('meta[property="og:description"]', 'content', STORE.description);
+  setMeta('meta[name="twitter:title"]', 'content', document.title);
+  setMeta('meta[name="twitter:description"]', 'content', STORE.description);
+}
+
+const FALLBACK_FLAVORS = {
   'fresas-crema': 'Fresas con crema',
   'chokis-cream': 'Chokis & cream',
   'blueberry': 'Blueberry',
   'durazno-caramelizado': 'Durazno caramelizado',
   'crema-pastelera': 'Crema pastelera'
 };
-const PRICES = {
+const FALLBACK_PRICES = {
   'fresas-crema': 8000,
   'chokis-cream': 8000,
   'blueberry': 8000,
   'durazno-caramelizado': 8000,
   'crema-pastelera': 8000
 };
+const storeFlavors = (STORE_CONFIG && Array.isArray(STORE_CONFIG.flavors) ? STORE_CONFIG.flavors : []).filter(f => f && f.id && f.available !== false);
+const FLAVORS = Object.assign({}, FALLBACK_FLAVORS, Object.fromEntries(storeFlavors.map(f => [f.id, f.name || f.id])));
+const PRICES = Object.assign({}, FALLBACK_PRICES, Object.fromEntries(storeFlavors.map(f => [f.id, Number(f.price) || FALLBACK_PRICES[f.id] || 8000])));
 
 let cart = JSON.parse(localStorage.getItem('mymochis_cart') || '{}');
 let combos = JSON.parse(localStorage.getItem('mymochis_combos') || '[]');
@@ -1159,6 +1257,51 @@ function addCombo(units, price) {
 }
 
 function fmt(n) { return '$' + n.toLocaleString('es-CO'); }
+
+function renderConfiguredCatalog() {
+  if (!STORE_CONFIG) return;
+  storeFlavors.forEach(f => {
+    const card = document.querySelector(`.product[data-flavor="${f.id}"]`);
+    if (!card) return;
+    card.style.display = f.available === false ? 'none' : '';
+    const name = card.querySelector('h3');
+    const desc = card.querySelector('.product-desc');
+    const price = card.querySelector('.product-price');
+    if (name) name.textContent = f.name || FLAVORS[f.id] || f.id;
+    if (desc) desc.textContent = f.description || '';
+    if (price) price.textContent = fmt(Number(f.price) || PRICES[f.id] || 0);
+  });
+  const promos = (Array.isArray(STORE_CONFIG.promos) ? STORE_CONFIG.promos : []).filter(p => p && p.active !== false);
+  document.querySelectorAll('.combo').forEach((card, i) => {
+    const promo = promos[i];
+    if (!promo) { card.style.display = 'none'; return; }
+    card.style.display = '';
+    card.classList.toggle('featured', Boolean(promo.featured));
+    const badge = card.querySelector('.combo-badge');
+    if (badge) badge.style.display = promo.featured ? '' : 'none';
+    const title = card.querySelector('h3');
+    const qty = card.querySelector('.combo-qty');
+    const desc = card.querySelector('.combo-desc');
+    const now = card.querySelector('.combo-now');
+    const was = card.querySelector('.combo-was');
+    const save = card.querySelector('.combo-save');
+    const btn = card.querySelector('.combo-add');
+    if (title) title.textContent = promo.title || promo.id;
+    if (qty) qty.textContent = promo.subtitle || `${promo.units} unidades`;
+    if (desc) desc.textContent = promo.description || '';
+    if (now) now.textContent = fmt(Number(promo.price) || 0);
+    if (was) {
+      if (promo.compareAt) { was.style.display = ''; was.textContent = fmt(Number(promo.compareAt)); }
+      else was.style.display = 'none';
+    }
+    if (save) {
+      const diff = Number(promo.compareAt || 0) - Number(promo.price || 0);
+      if (diff > 0) { save.style.display = ''; save.textContent = 'Ahorras ' + fmt(diff); }
+      else save.style.display = 'none';
+    }
+    if (btn) btn.onclick = () => addCombo(Number(promo.units) || 0, Number(promo.price) || 0);
+  });
+}
 
 function renderCart() {
   const items = Object.entries(cart).filter(([k,v]) => v > 0);
@@ -1214,7 +1357,7 @@ document.getElementById('order-form').addEventListener('submit', function(e) {
   const total = itemsTotal + comboTotal;
 
   let lines = [];
-  lines.push(`*Pedido MyMochis* 餅`);
+  lines.push(`*Pedido ${STORE_NAME}* ${STORE_MARK}`);
   lines.push(`Nombre: ${name}`);
   lines.push(`WhatsApp: ${phone}`);
   lines.push(`Recogida: ${day} de 3pm a 7pm`);
@@ -1233,7 +1376,10 @@ document.getElementById('order-form').addEventListener('submit', function(e) {
   lines.push(`¡Gracias! 🏮`);
 
   const msg = encodeURIComponent(lines.join('\n'));
-  const url = `https://wa.me/${getWppNumber()}?text=${msg}`;
+  const target = getWppTarget();
+  const url = target.startsWith('http')
+    ? target + (target.includes('?') ? '&' : '?') + 'text=' + msg
+    : `https://wa.me/${target}?text=${msg}`;
 
   const order = {
     id: 'MYM-' + Date.now().toString(36).toUpperCase(),
@@ -1262,6 +1408,8 @@ document.getElementById('order-form').addEventListener('submit', function(e) {
   }, 1000);
 });
 
+applyStoreConfig();
+renderConfiguredCatalog();
 applyConfigState();
 renderCart();
 

@@ -1,13 +1,13 @@
 {
-  "name": "MyMochis — Mochis artesanales en Neiva",
-  "short_name": "MyMochis",
-  "description": "Mochis artesanales hechos a mano en Neiva. Pedidos por WhatsApp, recoges en cocina oculta mar–sáb 3pm–7pm.",
+  "name": "Mochi's Land — Mochis artesanales en Neiva",
+  "short_name": "Mochi's Land",
+  "description": "Mochis artesanales hechos a mano en Neiva. Pedidos por WhatsApp y catálogo administrable desde el panel NX-Studio.",
   "start_url": "./",
   "scope": "./",
   "display": "standalone",
   "orientation": "portrait",
-  "background_color": "#fff5f7",
-  "theme_color": "#e88a9e",
+  "background_color": "#fff6df",
+  "theme_color": "#62d3ec",
   "lang": "es-CO",
   "icons": [
     {

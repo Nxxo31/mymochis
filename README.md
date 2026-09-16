@@ -10,6 +10,8 @@ Stack: HTML + CSS + JS vanilla (zero deps, zero build). PWA instalable. Funciona
 |---|---|
 | `index.html` | Landing pública con sabores, combos, carrito y form WhatsApp |
 | `admin.html` | Panel operador (clave `mymochis2026`) con registro manual + parser de mensajes |
+| `logo-mochis-land.svg` | Logo actual de la marca (usado por landing y PWA) |
+| `site-config.js` | Configuración editable de tienda: nombre, tema, Instagram, WhatsApp/link y catálogo base |
 | `favicon.svg` | Ícono adaptable (kanji 餅 sobre fondo crema) |
 | `og-image.png` | Preview 1200×630 PNG (WhatsApp/redes). El `.svg` es la fuente editable |
 | `og-image.svg` | Preview 1200×630 cuando alguien comparte el link (fuente SVG) |
@@ -52,9 +54,10 @@ Se activó vía la API de GitHub (Settings → Pages → Source: main / root). C
 
 1. Abrir `https://TU-URL/admin.html`
 2. Ingresar clave `mymochis2026`
-3. **Configurar WhatsApp** (botón ⚙ en footer de la landing): poner el número real `57XXXXXXXXXX`
-4. Probar el flujo: landing → carrito → confirmar → WhatsApp abre con mensaje
-5. Verificar que el OG image se vea al compartir: https://www.opengraph.xyz/url-preview/TU-URL
+3. **Configurar WhatsApp** (botón ⚙ en footer de la landing, o `site-config.js` → `store.whatsapp` / `store.whatsappLink`)
+4. Ajustar marca/catálogo en `site-config.js` (`store`, `flavors`, `promos`) y recargar; la landing lee esa config al iniciar
+5. Probar el flujo: landing → carrito → confirmar → WhatsApp abre con mensaje
+6. Verificar que el OG image se vea al compartir: https://www.opengraph.xyz/url-preview/TU-URL
 
 ## Pendientes del operador (no de código)
 
