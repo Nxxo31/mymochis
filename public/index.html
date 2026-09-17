@@ -3,59 +3,71 @@
 <head>
 <meta charset="UTF-8">
 <meta name="viewport" content="width=device-width,initial-scale=1,viewport-fit=cover">
-<meta name="theme-color" content="#e88a9e">
-<title>MyMochis — Mochis artesanales en Neiva</title>
-<meta name="description" content="Mochis artesanales hechos a mano en Neiva. Pedidos por WhatsApp, recoges en nuestra cocina oculta de martes a sábado de 3pm a 7pm.">
-<meta name="application-name" content="MyMochis">
-<meta name="apple-mobile-web-app-title" content="MyMochis">
+<meta name="theme-color" content="#62d3ec">
+<title>Mochi's Land — Mochis artesanales en Neiva</title>
+<meta name="description" content="Mochi's Land · Mochis artesanales hechos a mano en Neiva. Pedidos por WhatsApp o entrega inmediata a domicilio.">
+<meta name="application-name" content="Mochi's Land">
+<meta name="apple-mobile-web-app-title" content="Mochi's Land">
 <meta name="apple-mobile-web-app-capable" content="yes">
 <meta name="mobile-web-app-capable" content="yes">
 <meta name="format-detection" content="telephone=no">
 
 <link rel="icon" type="image/svg+xml" href="favicon.svg">
-<link rel="apple-touch-icon" href="icon-192.png">
+<link rel="apple-touch-icon" href="logo-mochis-land.svg">
 <link rel="manifest" href="manifest.json">
 
-<meta property="og:title" content="MyMochis — Mochis artesanales en Neiva">
-<meta property="og:description" content="Pedidos por WhatsApp · recoges en cocina oculta mar–sáb 3–7pm.">
+<meta property="og:title" content="Mochi's Land — Mochis artesanales en Neiva">
+<meta property="og:description" content="Pedidos por WhatsApp o entrega inmediata a domicilio en Neiva.">
 <meta property="og:type" content="website">
 <meta property="og:locale" content="es_CO">
 <meta property="og:image" content="og-image.png">
 <meta property="og:image:width" content="1200">
 <meta property="og:image:height" content="630">
-<meta property="og:image:alt" content="MyMochis — mochis artesanales en Neiva">
+<meta property="og:image:alt" content="Mochi's Land — mochis artesanales en Neiva">
 
 <meta name="twitter:card" content="summary_large_image">
-<meta name="twitter:title" content="MyMochis — Mochis artesanales en Neiva">
-<meta name="twitter:description" content="Pedidos por WhatsApp · recoges en cocina oculta mar–sáb 3–7pm.">
+<meta name="twitter:title" content="Mochi's Land — Mochis artesanales en Neiva">
+<meta name="twitter:description" content="Pedidos por WhatsApp o entrega inmediata a domicilio en Neiva.">
 <meta name="twitter:image" content="og-image.png">
 
 <link rel="preconnect" href="https://fonts.googleapis.com">
 <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
-<link href="https://fonts.googleapis.com/css2?family=Cormorant+Garamond:wght@400;500;600;700&family=Inter:wght@300;400;500;600;700&display=swap" rel="stylesheet">
+<link href="https://fonts.googleapis.com/css2?family=Fredoka:wght@400;500;600;700&family=Inter:wght@300;400;500;600;700&display=swap" rel="stylesheet">
 
 <style>
 :root {
-  --bg: #fff5f7;
-  --bg-soft: #ffe8ee;
-  --paper: #fffaf5;
-  --ink: #4a3d44;
-  --ink-soft: #8a7a82;
-  --line: #f0d8df;
-  --pink: #f4a8b8;
-  --pink-deep: #e88a9e;
-  --pink-glow: rgba(244,168,184,0.45);
-  --mint: #b8d8c0;
-  --mint-deep: #95b89e;
-  --peach: #ffd4b8;
-  --yellow: #fce4a8;
-  --lavender: #d8c8e8;
-  --gold: #b8954e;
+  /* === Mochi's Land · paleta oficial === */
+  --bg: #7DD3E8;
+  --bg-soft: #B8E8F2;
+  --paper: #FFF8E7;
+  --ink: #2D2D2D;
+  --ink-soft: #5A6B7B;
+  --line: rgba(45,45,45,0.12);
+  --pink: #E94560;
+  --pink-deep: #C73350;
+  --pink-glow: rgba(233,69,96,0.35);
+  --mint: #A8B545;
+  --mint-deep: #7B8A2E;
+  --peach: #F9D85E;
+  --yellow: #FFE8A8;
+  --lavender: #A78BD9;
+  --gold: #B8954E;
+  --cyan-deep: #44B8D8;
+  --cyan-bright: #62D3EC;
+  --cyan-pale: #E8F7FB;
+  --white: #FFFFFF;
+  --cream: #FFF8E7;
+  --shadow: rgba(45,45,45,0.18);
+  --shadow-soft: rgba(45,45,45,0.10);
+  /* === flavor accents === */
+  --flavor-fresa: #E94560;
+  --flavor-chokis: #7B4B26;
+  --flavor-blueberry: #A78BD9;
+  --flavor-durazno: #F9D85E;
+  --flavor-crema: #FFE8A8;
   --accent: var(--pink-deep);
   --accent-soft: var(--pink);
   --green: var(--mint-deep);
-  --shadow: rgba(232,138,158,0.18);
-  --shadow-soft: rgba(232,138,158,0.10);
 }
 * { box-sizing: border-box; margin: 0; padding: 0; }
 html { scroll-behavior: smooth; }
@@ -68,12 +80,12 @@ body {
   -webkit-font-smoothing: antialiased;
   overflow-x: hidden;
 }
-.serif { font-family: 'Cormorant Garamond', serif; }
+.serif { font-family: 'Fredoka', serif; }
 
 /* === HEADER === */
 header {
   position: sticky; top: 0; z-index: 100;
-  background: rgba(255,245,247,0.92);
+  background: rgba(125,211,232,0.78);
   backdrop-filter: blur(14px);
   -webkit-backdrop-filter: blur(14px);
   border-bottom: 1px solid var(--line);
@@ -83,20 +95,18 @@ header {
   padding: 14px 24px; max-width: 1180px; margin: 0 auto;
 }
 .brand {
-  display: flex; align-items: center; gap: 10px;
-  font-family: 'Cormorant Garamond', serif;
+  display: flex; align-items: center; gap: 12px;
+  font-family: 'Fredoka', sans-serif;
   font-size: 26px; font-weight: 600; letter-spacing: -0.4px;
+  color: var(--ink);
 }
 .brand-mark {
-  width: 38px; height: 38px; border-radius: 50%;
-  background: linear-gradient(135deg, var(--pink) 0%, var(--pink-deep) 100%);
-  display: flex; align-items: center; justify-content: center;
-  color: #fff; font-family: 'Cormorant Garamond', serif;
-  font-weight: 700; font-size: 22px; font-style: italic;
+  width: 44px; height: 44px; border-radius: 50%;
+  object-fit: cover;
   box-shadow: 0 4px 12px var(--shadow);
 }
-.brand-name { color: var(--ink); }
-.brand-name .dot { color: var(--pink-deep); font-style: italic; }
+.brand-name { color: var(--ink); font-weight: 600; }
+.brand-name .dot { color: var(--pink-deep); font-weight: 700; }
 .nav-cta {
   background: var(--ink); color: var(--bg);
   padding: 10px 20px; border-radius: 999px;
@@ -124,7 +134,7 @@ header {
   margin-bottom: 18px;
 }
 .hero h1 {
-  font-family: 'Cormorant Garamond', serif;
+  font-family: 'Fredoka', serif;
   font-size: clamp(44px, 7vw, 76px);
   font-weight: 500; letter-spacing: -1.5px; line-height: 1;
   margin-bottom: 22px; color: var(--ink);
@@ -193,7 +203,7 @@ section { padding: 72px 24px; position: relative; }
   color: var(--pink-deep); margin-bottom: 10px;
 }
 .section-title {
-  font-family: 'Cormorant Garamond', serif;
+  font-family: 'Fredoka', serif;
   font-size: clamp(34px, 5vw, 48px); font-weight: 500;
   letter-spacing: -0.8px; line-height: 1.05; margin-bottom: 12px;
 }
@@ -237,7 +247,7 @@ section { padding: 72px 24px; position: relative; }
 }
 .combo-body { padding: 22px 24px 26px; flex: 1; display: flex; flex-direction: column; }
 .combo-name {
-  font-family: 'Cormorant Garamond', serif;
+  font-family: 'Fredoka', serif;
   font-size: 26px; font-weight: 600; margin-bottom: 4px;
 }
 .combo-qty { color: var(--ink-soft); font-size: 13px; margin-bottom: 14px; }
@@ -247,7 +257,7 @@ section { padding: 72px 24px; position: relative; }
   margin-bottom: 18px; flex-wrap: wrap;
 }
 .combo-now {
-  font-family: 'Cormorant Garamond', serif;
+  font-family: 'Fredoka', serif;
   font-size: 34px; font-weight: 600; color: var(--pink-deep);
   letter-spacing: -0.8px;
 }
@@ -288,7 +298,7 @@ section { padding: 72px 24px; position: relative; }
 }
 .why-icon svg { width: 28px; height: 28px; }
 .why-item h3 {
-  font-family: 'Cormorant Garamond', serif;
+  font-family: 'Fredoka', serif;
   font-size: 22px; font-weight: 600; margin-bottom: 6px;
 }
 .why-item p { font-size: 14px; color: var(--ink-soft); line-height: 1.55; }
@@ -341,9 +351,10 @@ footer {
   background: var(--ink); color: var(--bg-soft);
   padding: 56px 0 28px; text-align: center;
 }
-footer .brand { color: var(--bg); justify-content: center; font-size: 32px; margin-bottom: 12px; }
-footer .brand-name { color: var(--bg); }
-footer .brand-name .dot { color: var(--pink-soft); }
+footer .brand { color: var(--cream); justify-content: center; font-size: 32px; margin-bottom: 12px; gap: 14px; }
+footer .brand-name { color: var(--cream); }
+footer .brand-name .dot { color: var(--pink); }
+footer .brand-mark { background: var(--cream); }
 footer .tagline { font-size: 13px; opacity: 0.65; margin-bottom: 24px; }
 .footer-info {
   display: flex; justify-content: center; gap: 24px;
@@ -375,7 +386,7 @@ footer .tagline { font-size: 13px; opacity: 0.65; margin-bottom: 24px; }
   max-height: 90vh; overflow-y: auto;
 }
 .modal h2 {
-  font-family: 'Cormorant Garamond', serif;
+  font-family: 'Fredoka', serif;
   font-size: 30px; font-weight: 600; margin-bottom: 6px;
 }
 .modal .sub { color: var(--ink-soft); font-size: 14px; margin-bottom: 22px; line-height: 1.5; }
@@ -437,7 +448,7 @@ footer .tagline { font-size: 13px; opacity: 0.65; margin-bottom: 24px; }
 }
 .total-row .lbl { font-size: 14px; color: var(--ink-soft); }
 .total-row .val {
-  font-family: 'Cormorant Garamond', serif;
+  font-family: 'Fredoka', serif;
   font-size: 26px; font-weight: 600; color: var(--pink-deep);
   letter-spacing: -0.5px;
 }
@@ -481,17 +492,99 @@ footer .tagline { font-size: 13px; opacity: 0.65; margin-bottom: 24px; }
   .combo-card .combo-body { padding: 18px 18px 20px; }
   .combo-now { font-size: 28px; }
   .day-pick label { font-size: 11px; padding: 10px 2px; }
+  .flavor-card .name { font-size: 20px; }
+  .flavor-card .price { font-size: 24px; }
 }
+
+/* === FLAVOR CARDS (Popsy-style, configurable via mochis.config.json) === */
+.flavors { background: var(--cream); }
+.flavor-grid {
+  display: grid;
+  grid-template-columns: repeat(auto-fill, minmax(240px, 1fr));
+  gap: 26px;
+  max-width: 1180px; margin: 0 auto;
+}
+.flavor-card {
+  background: var(--white);
+  border-radius: 24px;
+  overflow: hidden;
+  position: relative;
+  transition: transform 0.25s, box-shadow 0.25s;
+  border: 1px solid var(--line);
+  display: flex; flex-direction: column;
+  --flavor-accent: var(--flavor-fresa);
+}
+.flavor-card:hover {
+  transform: translateY(-6px);
+  box-shadow: 0 20px 50px var(--shadow);
+}
+.flavor-card .ribbon {
+  position: absolute; top: 14px; right: 14px; z-index: 3;
+  background: var(--flavor-accent); color: #fff;
+  padding: 5px 12px; border-radius: 999px;
+  font-size: 11px; font-weight: 700;
+  letter-spacing: 0.6px; text-transform: uppercase;
+  box-shadow: 0 4px 12px var(--shadow);
+}
+.flavor-card .accent-stripe {
+  position: absolute; top: 0; left: 0; bottom: 0; width: 6px;
+  background: var(--flavor-accent);
+  z-index: 2;
+}
+.flavor-card .photo {
+  aspect-ratio: 1 / 1; background: var(--cyan-pale);
+  overflow: hidden;
+}
+.flavor-card .photo img {
+  width: 100%; height: 100%; object-fit: cover; display: block;
+  transition: transform 0.4s;
+}
+.flavor-card:hover .photo img { transform: scale(1.06); }
+.flavor-card .body {
+  padding: 18px 22px 22px; flex: 1;
+  display: flex; flex-direction: column;
+}
+.flavor-card .name {
+  font-family: 'Fredoka', sans-serif;
+  font-size: 22px; font-weight: 600; margin-bottom: 4px;
+  color: var(--ink);
+}
+.flavor-card .desc {
+  color: var(--ink-soft);
+  font-size: 13px; line-height: 1.5;
+  margin-bottom: 14px; flex: 1;
+}
+.flavor-card .price-row {
+  display: flex; align-items: baseline; justify-content: space-between;
+  margin-bottom: 14px;
+}
+.flavor-card .price {
+  font-family: 'Fredoka', sans-serif;
+  font-size: 26px; font-weight: 700;
+  color: var(--ink); letter-spacing: -0.5px;
+}
+.flavor-card .unit { color: var(--ink-soft); font-size: 12px; }
+.flavor-card .add-btn {
+  width: 100%;
+  background: var(--flavor-accent);
+  color: #fff; border: 0; padding: 13px;
+  border-radius: 14px;
+  font-family: 'Fredoka', sans-serif; font-weight: 600; font-size: 14px;
+  cursor: pointer; letter-spacing: 0.3px;
+  transition: filter 0.2s, transform 0.15s;
+}
+.flavor-card .add-btn:hover { filter: brightness(1.08); transform: translateY(-1px); }
+.flavor-card .add-btn:active { transform: translateY(0); }
 </style>
 </head>
 <body>
 
 <header>
   <div class="nav">
-    <div class="brand">
-      <span class="brand-mark">M</span>
-      <span class="brand-name">My<span class="dot">·</span>Mochis</span>
-    </div>
+    <a href="/" class="brand" aria-label="Mochi's Land — inicio">
+      <img src="logo-mochis-land.svg" alt="" class="brand-mark" width="44" height="44">
+      <span class="brand-name">Mochi's <span class="dot">Land</span></span>
+    </a>
     <button class="nav-cta" onclick="openQuickOrder()">Pedir ahora</button>
   </div>
 </header>
@@ -521,6 +614,17 @@ footer .tagline { font-size: 13px; opacity: 0.65; margin-bottom: 24px; }
     </video>
     -->
     <div class="hero-badge"><span class="dot-live"></span> Pedidos abiertos</div>
+  </div>
+</section>
+
+<section class="flavors" id="flavors">
+  <div class="container">
+    <div class="section-head">
+      <span class="section-eyebrow">Sabores de la semana</span>
+      <h2 class="section-title">Cinco sabores para tentar</h2>
+      <p class="section-sub">Cada mochi se prepara el mismo día. Toca uno para sumarlo a tu pedido.</p>
+    </div>
+    <div class="flavor-grid" id="flavor-cards-grid"></div>
   </div>
 </section>
 
@@ -655,8 +759,8 @@ footer .tagline { font-size: 13px; opacity: 0.65; margin-bottom: 24px; }
 <footer>
   <div class="container">
     <div class="brand">
-      <span class="brand-mark">M</span>
-      <span class="brand-name">My<span class="dot">·</span>Mochis</span>
+      <img src="logo-mochis-land.svg" alt="" class="brand-mark" width="56" height="56">
+      <span class="brand-name">Mochi's <span class="dot">Land</span></span>
     </div>
     <p class="tagline">Mochis artesanales hechos a mano en Neiva, Huila · Colombia</p>
     <div class="footer-info">
@@ -741,12 +845,55 @@ async function loadConfig() {
     if (res.ok) {
       const data = await res.json();
       APP_CONFIG = data.config;
-      if (data.flavors?.length) FLAVORS.length = 0, FLAVORS.push(...data.flavors.map(f => ({ id: f.id, name: f.name, price: f.price })));
+      if (data.flavors?.length) FLAVORS.length = 0, FLAVORS.push(...data.flavors.map(f => ({ id: f.id, name: f.name, price: f.price, description: f.description || '' })));
       if (data.combos?.length) COMBOS.length = 0, COMBOS.push(...data.combos);
     }
   } catch (e) {
     console.warn('No se pudo cargar config del API, usando fallback local:', e.message);
   }
+}
+
+let MOCHIS_CONFIG = {};
+async function loadMochisConfig() {
+  try {
+    const res = await fetch('img/mochis/mochis.config.json');
+    if (res.ok) MOCHIS_CONFIG = await res.json();
+  } catch (e) {
+    console.warn('No se pudo cargar mochis.config.json:', e.message);
+  }
+}
+
+function renderFlavorCards() {
+  const grid = document.getElementById('flavor-cards-grid');
+  if (!grid) return;
+  grid.innerHTML = FLAVORS.map(f => {
+    const cfg = MOCHIS_CONFIG[f.id] || {};
+    const photo = cfg.photo || 'img/hero-1.jpg';
+    const accent = cfg.accent || '#E94560';
+    const ribbon = cfg.ribbon;
+    const ribbonHtml = ribbon ? `<div class="ribbon">${ribbon}</div>` : '';
+    return `
+      <article class="flavor-card" style="--flavor-accent: ${accent}">
+        ${ribbonHtml}
+        <div class="accent-stripe"></div>
+        <div class="photo"><img src="${photo}" alt="${f.name}" loading="lazy"></div>
+        <div class="body">
+          <div class="name">${f.name}</div>
+          <p class="desc">${f.description || ''}</p>
+          <div class="price-row">
+            <span class="price">$${f.price.toLocaleString('es-CO')}</span>
+            <span class="unit">por unidad</span>
+          </div>
+          <button class="add-btn" onclick="quickAddFlavor('${f.id}')">+ Añadir al carrito</button>
+        </div>
+      </article>
+    `;
+  }).join('');
+}
+
+function quickAddFlavor(id) {
+  openQuickOrder();
+  bumpFlavor(id, 1);
 }
 
 const DEFAULT_WHATSAPP = (APP_CONFIG && APP_CONFIG.whatsapp_number) || '573000000000';
@@ -954,9 +1101,10 @@ if (stickyCta && heroCta) {
 }
 
 // Cargar config del API al inicio
-loadConfig().then(() => {
+Promise.all([loadConfig(), loadMochisConfig()]).then(() => {
   applyServerConfig();
   renderFlavors();
+  renderFlavorCards();
 });
 
 // PWA

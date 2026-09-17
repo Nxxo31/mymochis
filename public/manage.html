@@ -3,28 +3,32 @@
 <head>
 <meta charset="UTF-8">
 <meta name="viewport" content="width=device-width,initial-scale=1">
-<meta name="theme-color" content="#e88a9e">
-<title>MyMochis · Panel de gestión</title>
+<meta name="theme-color" content="#62d3ec">
+<title>Mochi's Land · Panel de gestión</title>
 <link rel="icon" type="image/svg+xml" href="favicon.svg">
+<link rel="apple-touch-icon" href="logo-mochis-land.svg">
 <link rel="manifest" href="manifest.json">
 <meta name="robots" content="noindex, nofollow">
-<link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700&family=Cormorant+Garamond:wght@500;600;700&display=swap" rel="stylesheet">
+<link href="https://fonts.googleapis.com/css2?family=Fredoka:wght@400;500;600;700&family=Inter:wght@400;500;600;700&display=swap" rel="stylesheet">
 <style>
 :root {
-  --bg: #fff5f7;
-  --bg-soft: #ffe8ee;
-  --paper: #fffaf5;
-  --ink: #4a3d44;
-  --ink-soft: #8a7a82;
-  --line: #f0d8df;
-  --pink: #f4a8b8;
-  --pink-deep: #e88a9e;
-  --pink-glow: rgba(244,168,184,0.45);
-  --mint: #95b89e;
-  --mint-deep: #6e9579;
-  --gold: #b8954e;
-  --shadow: rgba(232,138,158,0.15);
-  --shadow-soft: rgba(232,138,158,0.08);
+  /* === Mochi's Land · paleta oficial === */
+  --bg: #F4FAFC;
+  --bg-soft: #E8F7FB;
+  --paper: #FFFFFF;
+  --ink: #2D2D2D;
+  --ink-soft: #5A6B7B;
+  --line: rgba(45,45,45,0.12);
+  --pink: #E94560;
+  --pink-deep: #C73350;
+  --mint: #A8B545;
+  --mint-deep: #7B8A2E;
+  --cyan-deep: #44B8D8;
+  --cyan-bright: #62D3EC;
+  --cyan-pale: #E8F7FB;
+  --cream: #FFF8E7;
+  --shadow: rgba(45,45,45,0.18);
+  --shadow-soft: rgba(45,45,45,0.10);
   --accent: var(--pink-deep);
   --green: var(--mint-deep);
 }
@@ -38,7 +42,7 @@ body {
   -webkit-font-smoothing: antialiased;
   min-height: 100vh;
 }
-.serif { font-family: 'Cormorant Garamond', serif; }
+.serif { font-family: 'Fredoka', serif; }
 a { color: var(--pink-deep); text-decoration: none; }
 a:hover { text-decoration: underline; }
 
@@ -47,9 +51,9 @@ a:hover { text-decoration: underline; }
   min-height: 100vh;
   display: flex; align-items: center; justify-content: center;
   background:
-    radial-gradient(circle at 30% 20%, rgba(244,168,184,0.20), transparent 50%),
-    radial-gradient(circle at 80% 80%, rgba(184,216,192,0.18), transparent 50%),
-    linear-gradient(180deg, #fff8fa 0%, #fff0f4 100%);
+    radial-gradient(circle at 30% 20%, rgba(98,211,236,0.30), transparent 50%),
+    radial-gradient(circle at 80% 80%, rgba(233,69,96,0.18), transparent 50%),
+    linear-gradient(180deg, #E8F7FB 0%, #B8E8F2 100%);
   padding: 24px;
 }
 .login-card {
@@ -62,18 +66,18 @@ a:hover { text-decoration: underline; }
 }
 .login-card .brand {
   display: flex; align-items: center; gap: 10px;
-  font-family: 'Cormorant Garamond', serif;
+  font-family: 'Fredoka', serif;
   font-size: 28px; font-weight: 600;
   margin-bottom: 8px;
 }
 .login-card .brand-mark {
-  width: 38px; height: 38px; border-radius: 50%;
-  background: linear-gradient(135deg, var(--pink) 0%, var(--pink-deep) 100%);
-  display: flex; align-items: center; justify-content: center;
-  color: #fff; font-style: italic;
+  width: 40px; height: 40px; border-radius: 50%;
+  object-fit: cover;
+  background: var(--cream);
+  border: 2px solid var(--cyan-bright);
 }
 .login-card h2 {
-  font-family: 'Cormorant Garamond', serif;
+  font-family: 'Fredoka', serif;
   font-size: 26px; font-weight: 600; margin-bottom: 6px;
 }
 .login-card p { color: var(--ink-soft); font-size: 14px; margin-bottom: 22px; }
@@ -134,16 +138,16 @@ a:hover { text-decoration: underline; }
 }
 .sidebar .brand {
   display: flex; align-items: center; gap: 10px;
-  font-family: 'Cormorant Garamond', serif;
+  font-family: 'Fredoka', serif;
   font-size: 22px; font-weight: 600; color: #fff;
   padding: 0 8px 16px; border-bottom: 1px solid rgba(255,255,255,0.1);
   margin-bottom: 12px;
 }
 .sidebar .brand-mark {
-  width: 32px; height: 32px; border-radius: 50%;
-  background: linear-gradient(135deg, var(--pink) 0%, var(--pink-deep) 100%);
-  display: flex; align-items: center; justify-content: center;
-  color: #fff; font-style: italic; font-size: 18px;
+  width: 36px; height: 36px; border-radius: 50%;
+  object-fit: cover;
+  background: var(--cream);
+  border: 2px solid var(--cyan-bright);
 }
 .nav-section { font-size: 10px; font-weight: 700; letter-spacing: 1.2px; text-transform: uppercase; opacity: 0.4; padding: 14px 8px 4px; }
 .nav-item {
@@ -169,7 +173,7 @@ a:hover { text-decoration: underline; }
   flex-wrap: wrap; gap: 16px; margin-bottom: 24px;
 }
 .page-head h1 {
-  font-family: 'Cormorant Garamond', serif;
+  font-family: 'Fredoka', serif;
   font-size: 36px; font-weight: 600; margin-bottom: 4px;
 }
 .page-head .sub { color: var(--ink-soft); font-size: 14px; }
@@ -181,7 +185,7 @@ a:hover { text-decoration: underline; }
   border-radius: 14px; padding: 18px;
 }
 .card h3 {
-  font-family: 'Cormorant Garamond', serif;
+  font-family: 'Fredoka', serif;
   font-size: 22px; font-weight: 600; margin-bottom: 12px;
 }
 .grid { display: grid; gap: 16px; }
@@ -207,7 +211,7 @@ a:hover { text-decoration: underline; }
   text-transform: uppercase; color: var(--ink-soft);
 }
 .kpi .value {
-  font-family: 'Cormorant Garamond', serif;
+  font-family: 'Fredoka', serif;
   font-size: 32px; font-weight: 600;
   color: var(--pink-deep); margin-top: 4px;
 }
@@ -286,7 +290,7 @@ tbody tr:hover { background: var(--bg); }
   box-shadow: 0 24px 70px rgba(0,0,0,0.3);
 }
 .modal h2 {
-  font-family: 'Cormorant Garamond', serif;
+  font-family: 'Fredoka', serif;
   font-size: 28px; font-weight: 600; margin-bottom: 14px;
 }
 .modal-actions {
@@ -386,8 +390,8 @@ tbody tr:hover { background: var(--bg); }
 <div id="login-screen" class="login-screen">
   <div class="login-card">
     <div class="brand">
-      <span class="brand-mark">M</span>
-      <span>MyMochis</span>
+      <img src="logo-mochis-land.svg" alt="" class="brand-mark" width="40" height="40">
+      <span>Mochi's Land</span>
     </div>
     <h2 style="margin-top:18px">Panel de gestión</h2>
     <p>Inicia sesión con tu email y clave</p>
@@ -412,8 +416,8 @@ tbody tr:hover { background: var(--bg); }
 
   <aside id="sidebar" class="sidebar">
     <div class="brand">
-      <span class="brand-mark">M</span>
-      <span>MyMochis</span>
+      <img src="logo-mochis-land.svg" alt="" class="brand-mark" width="36" height="36">
+      <span>Mochi's Land</span>
     </div>
 
     <div class="nav-section">General</div>

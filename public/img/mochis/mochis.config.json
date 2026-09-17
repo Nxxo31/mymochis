@@ -1,0 +1,38 @@
+{
+  "_comment": "Componente configurable de sabores. Para agregar/quitar/editar un sabor: (1) editá este archivo, (2) agregá/quitá la fila en la tabla flavors de la DB, (3) refrescá el navegador. Las fotos referenciadas son rutas relativas desde la raíz del sitio.",
+  "fresas-crema": {
+    "photo": "img/hero-1.jpg",
+    "accent": "#E94560",
+    "ribbon": "Más pedido",
+    "category": "Clásicos",
+    "description_short": "Fresa fresca del Huila"
+  },
+  "chokis-cream": {
+    "photo": "img/hero-2.jpg",
+    "accent": "#7B4B26",
+    "ribbon": null,
+    "category": "Premium",
+    "description_short": "Trozos de Chokis con crema dulce"
+  },
+  "blueberry": {
+    "photo": "img/cut-open.jpg",
+    "accent": "#A78BD9",
+    "ribbon": null,
+    "category": "Frutales",
+    "description_short": "Arándano entero con crema suave"
+  },
+  "durazno-caramelizado": {
+    "photo": "img/combo-colorful.jpg",
+    "accent": "#F9D85E",
+    "ribbon": "Temporada",
+    "category": "Temporada",
+    "description_short": "Durazno con caramelo dorado y canela"
+  },
+  "crema-pastelera": {
+    "photo": "img/combo-white.jpg",
+    "accent": "#FFE8A8",
+    "ribbon": null,
+    "category": "Clásicos",
+    "description_short": "Clásica: vainilla, yema y corazón cremoso"
+  }
+}
