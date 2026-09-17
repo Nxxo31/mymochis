@@ -5,19 +5,23 @@ import { authMiddleware } from '../auth.js';
 const router = Router();
 
 router.get('/', (req, res) => {
-  const rows = db.prepare(
-    'SELECT id, name, description, price, available, image_url, color, sort_order FROM flavors ORDER BY sort_order, name'
-  ).all();
+  const rows = db.prepare(`
+    SELECT f.id, f.name, f.description, f.price, f.available, f.image_url, f.color, f.sort_order,
+           f.category_id, c.name AS category_name, c.slug AS category_slug
+    FROM flavors f
+    LEFT JOIN categories c ON c.id = f.category_id
+    ORDER BY c.sort_order, f.sort_order, f.name
+  `).all();
   res.json(rows.map(r => ({ ...r, available: !!r.available })));
 });
 
 router.post('/', authMiddleware, (req, res) => {
-  const { id, name, description, price, available, image_url, color, sort_order } = req.body || {};
+  const { id, name, description, price, available, image_url, color, sort_order, category_id } = req.body || {};
   if (!id || !name || price == null) return res.status(400).json({ error: 'bad_request', message: 'id, name, price son obligatorios' });
   try {
     db.prepare(
-      'INSERT INTO flavors (id, name, description, price, available, image_url, color, sort_order) VALUES (?, ?, ?, ?, ?, ?, ?, ?)'
-    ).run(id, name, description || null, price, available ? 1 : 0, image_url || null, color || null, sort_order || 0);
+      'INSERT INTO flavors (id, name, description, price, available, image_url, color, sort_order, category_id) VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?)'
+    ).run(id, name, description || null, price, available ? 1 : 0, image_url || null, color || null, sort_order || 0, category_id || null);
   } catch (e) {
     if (String(e.message).includes('UNIQUE')) return res.status(409).json({ error: 'duplicate', message: 'Ya existe un sabor con ese id' });
     throw e;
@@ -28,7 +32,7 @@ router.post('/', authMiddleware, (req, res) => {
 router.put('/:id', authMiddleware, (req, res) => {
   const existing = db.prepare('SELECT * FROM flavors WHERE id = ?').get(req.params.id);
   if (!existing) return res.status(404).json({ error: 'not_found' });
-  const allowed = ['name', 'description', 'price', 'available', 'image_url', 'color', 'sort_order'];
+  const allowed = ['name', 'description', 'price', 'available', 'image_url', 'color', 'sort_order', 'category_id'];
   const updates = {};
   for (const k of allowed) if (k in req.body) updates[k] = req.body[k];
   if ('available' in updates) updates.available = updates.available ? 1 : 0;

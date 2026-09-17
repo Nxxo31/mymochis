@@ -5,3 +5,4 @@ data/*.db-shm
 .env
 .DS_Store
 *.log
+public/img/popsy-ref/
