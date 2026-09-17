@@ -1,0 +1,1234 @@
+<!DOCTYPE html>
+<html lang="es">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width,initial-scale=1">
+<meta name="theme-color" content="#e88a9e">
+<title>MyMochis · Panel de gestión</title>
+<link rel="icon" type="image/svg+xml" href="favicon.svg">
+<link rel="manifest" href="manifest.json">
+<meta name="robots" content="noindex, nofollow">
+<link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700&family=Cormorant+Garamond:wght@500;600;700&display=swap" rel="stylesheet">
+<style>
+:root {
+  --bg: #fff5f7;
+  --bg-soft: #ffe8ee;
+  --paper: #fffaf5;
+  --ink: #4a3d44;
+  --ink-soft: #8a7a82;
+  --line: #f0d8df;
+  --pink: #f4a8b8;
+  --pink-deep: #e88a9e;
+  --pink-glow: rgba(244,168,184,0.45);
+  --mint: #95b89e;
+  --mint-deep: #6e9579;
+  --gold: #b8954e;
+  --shadow: rgba(232,138,158,0.15);
+  --shadow-soft: rgba(232,138,158,0.08);
+  --accent: var(--pink-deep);
+  --green: var(--mint-deep);
+}
+* { box-sizing: border-box; margin: 0; padding: 0; }
+body {
+  font-family: 'Inter', system-ui, sans-serif;
+  background: var(--bg);
+  color: var(--ink);
+  font-size: 14px;
+  line-height: 1.55;
+  -webkit-font-smoothing: antialiased;
+  min-height: 100vh;
+}
+.serif { font-family: 'Cormorant Garamond', serif; }
+a { color: var(--pink-deep); text-decoration: none; }
+a:hover { text-decoration: underline; }
+
+/* === LOGIN === */
+.login-screen {
+  min-height: 100vh;
+  display: flex; align-items: center; justify-content: center;
+  background:
+    radial-gradient(circle at 30% 20%, rgba(244,168,184,0.20), transparent 50%),
+    radial-gradient(circle at 80% 80%, rgba(184,216,192,0.18), transparent 50%),
+    linear-gradient(180deg, #fff8fa 0%, #fff0f4 100%);
+  padding: 24px;
+}
+.login-card {
+  background: var(--paper);
+  border: 1px solid var(--line);
+  border-radius: 22px;
+  padding: 40px 32px;
+  max-width: 380px; width: 100%;
+  box-shadow: 0 16px 50px rgba(232,138,158,0.18);
+}
+.login-card .brand {
+  display: flex; align-items: center; gap: 10px;
+  font-family: 'Cormorant Garamond', serif;
+  font-size: 28px; font-weight: 600;
+  margin-bottom: 8px;
+}
+.login-card .brand-mark {
+  width: 38px; height: 38px; border-radius: 50%;
+  background: linear-gradient(135deg, var(--pink) 0%, var(--pink-deep) 100%);
+  display: flex; align-items: center; justify-content: center;
+  color: #fff; font-style: italic;
+}
+.login-card h2 {
+  font-family: 'Cormorant Garamond', serif;
+  font-size: 26px; font-weight: 600; margin-bottom: 6px;
+}
+.login-card p { color: var(--ink-soft); font-size: 14px; margin-bottom: 22px; }
+.form-group { margin-bottom: 14px; }
+.form-group label {
+  display: block; font-size: 11px; font-weight: 600;
+  color: var(--ink-soft); margin-bottom: 6px;
+  letter-spacing: 1px; text-transform: uppercase;
+}
+.form-group input, .form-group select, .form-group textarea {
+  width: 100%; padding: 12px 14px;
+  border: 1px solid var(--line); border-radius: 10px;
+  font-family: 'Inter', sans-serif; font-size: 14px;
+  background: var(--bg); color: var(--ink);
+}
+.form-group input:focus, .form-group select:focus, .form-group textarea:focus {
+  outline: none; border-color: var(--pink-deep); background: #fff;
+}
+.form-group textarea { resize: vertical; min-height: 80px; font-family: inherit; }
+.btn {
+  border: 0; padding: 11px 18px; border-radius: 10px;
+  font-family: 'Inter', sans-serif; font-weight: 600; font-size: 14px;
+  cursor: pointer; transition: all 0.15s;
+  display: inline-flex; align-items: center; gap: 6px;
+  text-decoration: none;
+}
+.btn-primary { background: var(--pink-deep); color: #fff; }
+.btn-primary:hover { background: #c46f82; }
+.btn-primary:disabled { opacity: 0.5; cursor: not-allowed; }
+.btn-ghost { background: transparent; color: var(--ink); border: 1px solid var(--line); }
+.btn-ghost:hover { background: var(--bg-soft); }
+.btn-danger { background: transparent; color: var(--accent); border: 1px solid var(--line); }
+.btn-danger:hover { background: rgba(232,138,158,0.08); }
+.btn-sm { padding: 7px 12px; font-size: 12px; }
+.btn-block { width: 100%; justify-content: center; }
+.login-error {
+  color: var(--accent); font-size: 13px;
+  background: rgba(232,138,158,0.08);
+  padding: 10px 12px; border-radius: 8px;
+  margin-bottom: 14px; display: none;
+}
+.login-error.visible { display: block; }
+.login-card .hint {
+  margin-top: 14px; font-size: 11px;
+  color: var(--ink-soft); text-align: center;
+}
+
+/* === APP LAYOUT === */
+.app { display: none; min-height: 100vh; grid-template-columns: 240px 1fr; }
+.app.visible { display: grid; }
+.sidebar {
+  background: var(--ink);
+  color: var(--bg-soft);
+  padding: 22px 16px;
+  position: sticky; top: 0; height: 100vh;
+  display: flex; flex-direction: column; gap: 4px;
+  overflow-y: auto;
+}
+.sidebar .brand {
+  display: flex; align-items: center; gap: 10px;
+  font-family: 'Cormorant Garamond', serif;
+  font-size: 22px; font-weight: 600; color: #fff;
+  padding: 0 8px 16px; border-bottom: 1px solid rgba(255,255,255,0.1);
+  margin-bottom: 12px;
+}
+.sidebar .brand-mark {
+  width: 32px; height: 32px; border-radius: 50%;
+  background: linear-gradient(135deg, var(--pink) 0%, var(--pink-deep) 100%);
+  display: flex; align-items: center; justify-content: center;
+  color: #fff; font-style: italic; font-size: 18px;
+}
+.nav-section { font-size: 10px; font-weight: 700; letter-spacing: 1.2px; text-transform: uppercase; opacity: 0.4; padding: 14px 8px 4px; }
+.nav-item {
+  display: flex; align-items: center; gap: 10px;
+  padding: 9px 12px; border-radius: 8px;
+  cursor: pointer; color: var(--bg-soft);
+  font-weight: 500; font-size: 14px;
+  transition: background 0.15s;
+}
+.nav-item:hover { background: rgba(255,255,255,0.05); }
+.nav-item.active { background: rgba(244,168,184,0.18); color: #fff; }
+.nav-item svg { width: 18px; height: 18px; opacity: 0.85; }
+.sidebar-footer { margin-top: auto; padding-top: 12px; border-top: 1px solid rgba(255,255,255,0.1); }
+.user-pill {
+  padding: 8px 12px; font-size: 12px;
+  color: var(--bg-soft); opacity: 0.7;
+  word-break: break-all;
+}
+
+.main { padding: 32px 36px; max-width: 1400px; }
+.page-head {
+  display: flex; justify-content: space-between; align-items: flex-start;
+  flex-wrap: wrap; gap: 16px; margin-bottom: 24px;
+}
+.page-head h1 {
+  font-family: 'Cormorant Garamond', serif;
+  font-size: 36px; font-weight: 600; margin-bottom: 4px;
+}
+.page-head .sub { color: var(--ink-soft); font-size: 14px; }
+.page-head .actions { display: flex; gap: 8px; flex-wrap: wrap; }
+
+/* === CARDS / GRID === */
+.card {
+  background: var(--paper); border: 1px solid var(--line);
+  border-radius: 14px; padding: 18px;
+}
+.card h3 {
+  font-family: 'Cormorant Garamond', serif;
+  font-size: 22px; font-weight: 600; margin-bottom: 12px;
+}
+.grid { display: grid; gap: 16px; }
+.grid-2 { grid-template-columns: repeat(auto-fit, minmax(280px, 1fr)); }
+.grid-3 { grid-template-columns: repeat(auto-fit, minmax(220px, 1fr)); }
+.grid-4 { grid-template-columns: repeat(auto-fit, minmax(180px, 1fr)); }
+
+/* === KPI === */
+.kpi {
+  background: var(--paper); border: 1px solid var(--line);
+  border-radius: 14px; padding: 20px;
+  position: relative; overflow: hidden;
+}
+.kpi::before {
+  content: ''; position: absolute; top: 0; left: 0;
+  width: 4px; height: 100%;
+  background: var(--pink-deep);
+}
+.kpi.mint::before { background: var(--mint-deep); }
+.kpi.gold::before { background: var(--gold); }
+.kpi .label {
+  font-size: 11px; font-weight: 700; letter-spacing: 1px;
+  text-transform: uppercase; color: var(--ink-soft);
+}
+.kpi .value {
+  font-family: 'Cormorant Garamond', serif;
+  font-size: 32px; font-weight: 600;
+  color: var(--pink-deep); margin-top: 4px;
+}
+.kpi.mint .value { color: var(--mint-deep); }
+.kpi.gold .value { color: var(--gold); }
+.kpi .hint { font-size: 12px; color: var(--ink-soft); margin-top: 2px; }
+
+/* === TABLE === */
+.table-wrap {
+  background: var(--paper); border: 1px solid var(--line);
+  border-radius: 14px; overflow: hidden;
+}
+table {
+  width: 100%; border-collapse: collapse; font-size: 13px;
+}
+thead th {
+  background: var(--bg-soft);
+  text-align: left; padding: 11px 14px;
+  font-size: 11px; font-weight: 700;
+  letter-spacing: 0.8px; text-transform: uppercase;
+  color: var(--ink-soft);
+  border-bottom: 1px solid var(--line);
+}
+tbody td {
+  padding: 12px 14px;
+  border-bottom: 1px solid var(--line);
+  vertical-align: middle;
+}
+tbody tr:last-child td { border-bottom: 0; }
+tbody tr:hover { background: var(--bg); }
+.tag {
+  display: inline-block; padding: 3px 9px; border-radius: 999px;
+  font-size: 11px; font-weight: 600;
+  background: var(--bg-soft); color: var(--pink-deep);
+}
+.tag.pending { background: rgba(232,138,158,0.15); color: var(--accent); }
+.tag.confirmed { background: rgba(232,200,140,0.18); color: var(--gold); }
+.tag.ready { background: rgba(184,216,192,0.30); color: var(--mint-deep); }
+.tag.delivered { background: rgba(149,184,158,0.25); color: var(--mint-deep); }
+.tag.cancelled { background: rgba(150,150,150,0.18); color: var(--ink-soft); }
+.tag.paid { background: rgba(149,184,158,0.25); color: var(--mint-deep); }
+
+/* === TOOLBAR === */
+.toolbar {
+  display: flex; gap: 10px; flex-wrap: wrap; align-items: center;
+  background: var(--paper); border: 1px solid var(--line);
+  border-radius: 12px; padding: 12px 14px;
+  margin-bottom: 18px;
+}
+.toolbar select, .toolbar input {
+  padding: 8px 12px; border: 1px solid var(--line);
+  border-radius: 8px; font-size: 13px;
+  background: var(--bg); color: var(--ink);
+  font-family: 'Inter', sans-serif;
+}
+.toolbar select:focus, .toolbar input:focus {
+  outline: none; border-color: var(--pink-deep);
+}
+.toolbar label {
+  font-size: 11px; font-weight: 600;
+  color: var(--ink-soft); text-transform: uppercase;
+  letter-spacing: 0.8px;
+}
+
+/* === MODAL === */
+.modal-back {
+  position: fixed; inset: 0; background: rgba(43,38,32,0.55);
+  z-index: 200; display: none; align-items: flex-start; justify-content: center;
+  padding: 40px 20px; overflow-y: auto;
+  backdrop-filter: blur(4px);
+}
+.modal-back.visible { display: flex; }
+.modal {
+  background: var(--paper); border-radius: 22px;
+  padding: 28px; max-width: 540px; width: 100%;
+  box-shadow: 0 24px 70px rgba(0,0,0,0.3);
+}
+.modal h2 {
+  font-family: 'Cormorant Garamond', serif;
+  font-size: 28px; font-weight: 600; margin-bottom: 14px;
+}
+.modal-actions {
+  display: flex; gap: 8px; justify-content: flex-end; margin-top: 18px;
+}
+.modal-row { display: flex; gap: 10px; }
+.modal-row > * { flex: 1; }
+
+/* === TOAST === */
+.toast {
+  position: fixed; bottom: 24px; right: 24px;
+  background: var(--ink); color: var(--bg);
+  padding: 12px 18px; border-radius: 10px;
+  font-size: 14px; box-shadow: 0 10px 30px rgba(0,0,0,0.2);
+  z-index: 300; opacity: 0; transform: translateY(10px);
+  transition: all 0.25s;
+  max-width: 360px;
+}
+.toast.visible { opacity: 1; transform: translateY(0); }
+.toast.error { background: var(--accent); }
+.toast.success { background: var(--mint-deep); }
+
+/* === EMPTY STATE === */
+.empty {
+  text-align: center; padding: 60px 20px;
+  color: var(--ink-soft);
+  background: var(--paper); border: 1px dashed var(--line);
+  border-radius: 14px;
+}
+.empty .icon { font-size: 36px; margin-bottom: 8px; }
+
+/* === ORDER DETAIL === */
+.order-items {
+  font-size: 12px; color: var(--ink-soft);
+  max-width: 320px;
+}
+.order-items div { padding: 1px 0; }
+.items-breakdown {
+  display: flex; flex-direction: column; gap: 4px;
+  font-size: 12px;
+}
+.items-breakdown .row {
+  display: flex; justify-content: space-between; gap: 8px;
+}
+
+/* === RESPONSIVE === */
+@media (max-width: 880px) {
+  .app.visible { grid-template-columns: 1fr; }
+  .sidebar {
+    position: fixed; z-index: 50; width: 240px;
+    transform: translateX(-100%); transition: transform 0.25s;
+  }
+  .sidebar.open { transform: translateX(0); }
+  .main { padding: 20px; }
+  .page-head h1 { font-size: 28px; }
+  .menu-btn { display: block !important; }
+}
+.menu-btn {
+  display: none; background: var(--ink); color: #fff;
+  border: 0; padding: 8px 12px; border-radius: 8px;
+  font-size: 14px; margin-bottom: 12px; cursor: pointer;
+}
+
+/* === SECTIONS (only one visible at a time) === */
+.section { display: none; }
+.section.active { display: block; }
+
+/* === CHART (simple bar) === */
+.bar-chart { display: flex; align-items: flex-end; gap: 6px; height: 100px; margin-top: 8px; }
+.bar-chart .bar {
+  flex: 1; background: var(--pink-deep); border-radius: 4px 4px 0 0;
+  min-height: 4px; position: relative;
+  transition: background 0.2s;
+}
+.bar-chart .bar:hover { background: #c46f82; }
+.bar-chart .bar .lbl {
+  position: absolute; bottom: -18px; left: 0; right: 0;
+  text-align: center; font-size: 10px; color: var(--ink-soft);
+  white-space: nowrap;
+}
+
+/* === STYLES PER ITEM CARD === */
+.item-card {
+  background: var(--paper); border: 1px solid var(--line);
+  border-radius: 14px; padding: 16px;
+  display: flex; flex-direction: column; gap: 6px;
+}
+.item-card .item-name { font-weight: 600; font-size: 15px; }
+.item-card .item-desc { font-size: 12px; color: var(--ink-soft); flex: 1; }
+.item-card .item-meta { display: flex; gap: 8px; flex-wrap: wrap; font-size: 12px; color: var(--ink-soft); }
+.item-card .item-actions { display: flex; gap: 6px; margin-top: 8px; }
+</style>
+</head>
+<body>
+
+<!-- ============== LOGIN ============== -->
+<div id="login-screen" class="login-screen">
+  <div class="login-card">
+    <div class="brand">
+      <span class="brand-mark">M</span>
+      <span>MyMochis</span>
+    </div>
+    <h2 style="margin-top:18px">Panel de gestión</h2>
+    <p>Inicia sesión con tu email y clave</p>
+    <div id="login-error" class="login-error"></div>
+    <form id="login-form">
+      <div class="form-group">
+        <label>Email</label>
+        <input type="email" id="email" required placeholder="tu@email.com" autocomplete="email">
+      </div>
+      <div class="form-group">
+        <label>Clave</label>
+        <input type="password" id="password" required placeholder="••••••••" autocomplete="current-password">
+      </div>
+      <button type="submit" class="btn btn-primary btn-block">Entrar</button>
+    </form>
+    <div class="hint">¿Sin cuenta? El operador debe crearla vía <code style="background:var(--bg-soft);padding:1px 5px;border-radius:4px">POST /api/auth/register</code> la primera vez.</div>
+  </div>
+</div>
+
+<!-- ============== APP ============== -->
+<div id="app" class="app">
+
+  <aside id="sidebar" class="sidebar">
+    <div class="brand">
+      <span class="brand-mark">M</span>
+      <span>MyMochis</span>
+    </div>
+
+    <div class="nav-section">General</div>
+    <div class="nav-item active" data-section="dashboard">
+      <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><rect x="3" y="3" width="7" height="7"/><rect x="14" y="3" width="7" height="7"/><rect x="14" y="14" width="7" height="7"/><rect x="3" y="14" width="7" height="7"/></svg>
+      Dashboard
+    </div>
+    <div class="nav-item" data-section="orders">
+      <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M6 2L3 6v14a2 2 0 002 2h14a2 2 0 002-2V6l-3-4z"/><line x1="3" y1="6" x2="21" y2="6"/><path d="M16 10a4 4 0 01-8 0"/></svg>
+      Pedidos
+    </div>
+
+    <div class="nav-section">Catálogo</div>
+    <div class="nav-item" data-section="flavors">
+      <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><circle cx="12" cy="12" r="10"/><path d="M12 2a10 10 0 010 20"/></svg>
+      Sabores
+    </div>
+    <div class="nav-item" data-section="combos">
+      <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><rect x="3" y="3" width="7" height="7"/><rect x="14" y="3" width="7" height="7"/><rect x="3" y="14" width="7" height="7"/></svg>
+      Combos
+    </div>
+    <div class="nav-item" data-section="promos">
+      <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M20.59 13.41l-7.17 7.17a2 2 0 01-2.83 0L2 12V2h10l8.59 8.59a2 2 0 010 2.82z"/><line x1="7" y1="7" x2="7.01" y2="7"/></svg>
+      Promos
+    </div>
+
+    <div class="nav-section">Marketing</div>
+    <div class="nav-item" data-section="social">
+      <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><rect x="2" y="2" width="20" height="20" rx="5"/><path d="M16 11.37A4 4 0 1112.63 8 4 4 0 0116 11.37z"/><line x1="17.5" y1="6.5" x2="17.51" y2="6.5"/></svg>
+      Redes sociales
+    </div>
+
+    <div class="nav-section">Sistema</div>
+    <div class="nav-item" data-section="config">
+      <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><circle cx="12" cy="12" r="3"/><path d="M19.4 15a1.65 1.65 0 00.33 1.82l.06.06a2 2 0 01-2.83 2.83l-.06-.06a1.65 1.65 0 00-1.82-.33 1.65 1.65 0 00-1 1.51V21a2 2 0 01-4 0v-.09A1.65 1.65 0 009 19.4a1.65 1.65 0 00-1.82.33l-.06.06a2 2 0 01-2.83-2.83l.06-.06a1.65 1.65 0 00.33-1.82 1.65 1.65 0 00-1.51-1H3a2 2 0 010-4h.09A1.65 1.65 0 004.6 9a1.65 1.65 0 00-.33-1.82l-.06-.06a2 2 0 012.83-2.83l.06.06a1.65 1.65 0 001.82.33H9a1.65 1.65 0 001-1.51V3a2 2 0 014 0v.09a1.65 1.65 0 001 1.51 1.65 1.65 0 001.82-.33l.06-.06a2 2 0 012.83 2.83l-.06.06a1.65 1.65 0 00-.33 1.82V9a1.65 1.65 0 001.51 1H21a2 2 0 010 4h-.09a1.65 1.65 0 00-1.51 1z"/></svg>
+      Configuración
+    </div>
+
+    <div class="sidebar-footer">
+      <div class="user-pill" id="user-email"></div>
+      <button class="btn btn-ghost btn-block" id="logout-btn" style="margin-top:8px">Cerrar sesión</button>
+      <a href="index.html" class="btn btn-ghost btn-block" style="margin-top:6px;text-align:center">Ver landing →</a>
+    </div>
+  </aside>
+
+  <main class="main">
+    <button class="menu-btn" onclick="document.getElementById('sidebar').classList.toggle('open')">☰ Menú</button>
+
+    <!-- ============== DASHBOARD ============== -->
+    <section id="section-dashboard" class="section active">
+      <div class="page-head">
+        <div>
+          <h1>Dashboard</h1>
+          <div class="sub">Vista general de tu tienda</div>
+        </div>
+      </div>
+
+      <div class="grid grid-4" id="kpi-grid">
+        <div class="kpi"><div class="label">Pedidos hoy</div><div class="value" id="kpi-today-count">—</div><div class="hint" id="kpi-today-gross">$0</div></div>
+        <div class="kpi mint"><div class="label">Últimos 7 días</div><div class="value" id="kpi-7-count">—</div><div class="hint" id="kpi-7-gross">$0</div></div>
+        <div class="kpi"><div class="label">Total acumulado</div><div class="value" id="kpi-total">—</div><div class="hint" id="kpi-total-hint">0 pedidos</div></div>
+        <div class="kpi gold"><div class="label">Ticket promedio</div><div class="value" id="kpi-ticket">—</div><div class="hint">por pedido</div></div>
+      </div>
+
+      <div class="grid grid-2" style="margin-top:20px">
+        <div class="card">
+          <h3>Ventas últimos 14 días</h3>
+          <div class="bar-chart" id="chart-daily"></div>
+        </div>
+        <div class="card">
+          <h3>Top sabores</h3>
+          <div id="top-flavors"></div>
+        </div>
+      </div>
+
+      <div class="grid grid-2" style="margin-top:20px">
+        <div class="card">
+          <h3>Por estado</h3>
+          <div id="by-status"></div>
+        </div>
+        <div class="card">
+          <h3>Por día de recogida</h3>
+          <div id="by-day"></div>
+        </div>
+      </div>
+    </section>
+
+    <!-- ============== ORDERS ============== -->
+    <section id="section-orders" class="section">
+      <div class="page-head">
+        <div>
+          <h1>Pedidos</h1>
+          <div class="sub" id="orders-count">—</div>
+        </div>
+      </div>
+
+      <div class="toolbar">
+        <label>Estado</label>
+        <select id="filter-status">
+          <option value="">Todos</option>
+          <option value="pending">Pendientes</option>
+          <option value="confirmed">Confirmados</option>
+          <option value="ready">Listos</option>
+          <option value="delivered">Entregados</option>
+          <option value="cancelled">Cancelados</option>
+        </select>
+        <label>Día</label>
+        <select id="filter-day">
+          <option value="">Todos</option>
+          <option>Martes</option><option>Miércoles</option><option>Jueves</option><option>Viernes</option><option>Sábado</option>
+        </select>
+        <label style="margin-left:auto">Buscar</label>
+        <input type="text" id="filter-q" placeholder="nombre o teléfono...">
+      </div>
+
+      <div class="table-wrap">
+        <table>
+          <thead>
+            <tr>
+              <th>Fecha</th><th>Cliente</th><th>Día</th><th>Pedido</th>
+              <th>Total</th><th>Estado</th><th>Pago</th><th></th>
+            </tr>
+          </thead>
+          <tbody id="orders-body"></tbody>
+        </table>
+      </div>
+    </section>
+
+    <!-- ============== FLAVORS ============== -->
+    <section id="section-flavors" class="section">
+      <div class="page-head">
+        <div>
+          <h1>Sabores</h1>
+          <div class="sub">Catálogo de mochis individuales</div>
+        </div>
+        <div class="actions"><button class="btn btn-primary" onclick="openFlavorModal()">+ Nuevo sabor</button></div>
+      </div>
+      <div class="grid grid-3" id="flavors-grid"></div>
+    </section>
+
+    <!-- ============== COMBOS ============== -->
+    <section id="section-combos" class="section">
+      <div class="page-head">
+        <div>
+          <h1>Combos</h1>
+          <div class="sub">Packs y promociones</div>
+        </div>
+        <div class="actions"><button class="btn btn-primary" onclick="openComboModal()">+ Nuevo combo</button></div>
+      </div>
+      <div class="grid grid-3" id="combos-grid"></div>
+    </section>
+
+    <!-- ============== PROMOS ============== -->
+    <section id="section-promos" class="section">
+      <div class="page-head">
+        <div>
+          <h1>Promociones</h1>
+          <div class="sub">Códigos y descuentos</div>
+        </div>
+        <div class="actions"><button class="btn btn-primary" onclick="openPromoModal()">+ Nueva promo</button></div>
+      </div>
+      <div class="grid grid-3" id="promos-grid"></div>
+    </section>
+
+    <!-- ============== SOCIAL ============== -->
+    <section id="section-social" class="section">
+      <div class="page-head">
+        <div>
+          <h1>Redes sociales</h1>
+          <div class="sub">Cola de posts para Instagram, Facebook, TikTok</div>
+        </div>
+        <div class="actions"><button class="btn btn-primary" onclick="openSocialModal()">+ Nuevo post</button></div>
+      </div>
+      <div class="table-wrap">
+        <table>
+          <thead>
+            <tr><th>Fecha</th><th>Plataforma</th><th>Contenido</th><th>Estado</th><th></th></tr>
+          </thead>
+          <tbody id="social-body"></tbody>
+        </table>
+      </div>
+    </section>
+
+    <!-- ============== CONFIG ============== -->
+    <section id="section-config" class="section">
+      <div class="page-head">
+        <div>
+          <h1>Configuración</h1>
+          <div class="sub">Datos del negocio y contacto</div>
+        </div>
+      </div>
+      <div class="card" style="max-width:720px">
+        <form id="config-form">
+          <div class="modal-row">
+            <div class="form-group"><label>Nombre del negocio</label><input type="text" id="cfg-business_name" required></div>
+            <div class="form-group"><label>WhatsApp</label><input type="text" id="cfg-whatsapp_number" placeholder="573123456789"></div>
+          </div>
+          <div class="form-group"><label>Tagline</label><input type="text" id="cfg-tagline"></div>
+          <div class="form-group"><label>Descripción</label><textarea id="cfg-description" rows="3"></textarea></div>
+          <div class="modal-row">
+            <div class="form-group"><label>Instagram handle</label><input type="text" id="cfg-instagram_handle" placeholder="@mymochis.neiva"></div>
+            <div class="form-group"><label>Instagram URL</label><input type="text" id="cfg-instagram_url" placeholder="https://instagram.com/..."></div>
+          </div>
+          <div class="modal-row">
+            <div class="form-group"><label>Facebook URL</label><input type="text" id="cfg-facebook_url"></div>
+            <div class="form-group"><label>TikTok handle</label><input type="text" id="cfg-tiktok_handle" placeholder="@mymochis.neiva"></div>
+          </div>
+          <div class="form-group"><label>Dirección de recogida</label><input type="text" id="cfg-pickup_address"></div>
+          <div class="form-group"><label>Horario de recogida</label><input type="text" id="cfg-pickup_schedule"></div>
+          <div class="form-group"><label>Hero image URL</label><input type="text" id="cfg-hero_image_url" placeholder="img/hero-1.jpg"></div>
+          <div class="modal-actions">
+            <button type="submit" class="btn btn-primary">Guardar cambios</button>
+          </div>
+        </form>
+      </div>
+    </section>
+
+  </main>
+</div>
+
+<!-- ============== MODAL ============== -->
+<div id="modal-back" class="modal-back" onclick="if(event.target.id==='modal-back')closeModal()">
+  <div class="modal" onclick="event.stopPropagation()">
+    <div id="modal-content"></div>
+  </div>
+</div>
+
+<div id="toast" class="toast"></div>
+
+<script>
+const API = (location.hostname === 'localhost' || location.hostname === '127.0.0.1') ? 'http://localhost:3737/api' : '/api';
+const TOKEN_KEY = 'mymochis_token';
+
+const FLAVOR_PALETTE = {
+  'fresas-crema': '#e88a9e',
+  'chokis-cream': '#b8954e',
+  'blueberry': '#7a6db8',
+  'durazno-caramelizado': '#d88450',
+  'crema-pastelera': '#c4a866'
+};
+
+let _token = localStorage.getItem(TOKEN_KEY);
+let _user = null;
+let _orders = [], _flavors = [], _combos = [], _promos = [], _social = [], _config = null, _metrics = null;
+let _editingItem = null;
+
+function fmt(n) { return '$' + Number(n || 0).toLocaleString('es-CO'); }
+
+async function api(path, opts = {}) {
+  const headers = { 'Content-Type': 'application/json', ...(opts.headers || {}) };
+  if (_token) headers.Authorization = `Bearer ${_token}`;
+  const res = await fetch(API + path, { ...opts, headers });
+  const ct = res.headers.get('content-type') || '';
+  const body = ct.includes('json') ? await res.json() : await res.text();
+  if (!res.ok) {
+    const err = new Error(body?.message || body?.error || res.statusText);
+    err.status = res.status;
+    err.body = body;
+    throw err;
+  }
+  return body;
+}
+
+function toast(msg, kind = '') {
+  const t = document.getElementById('toast');
+  t.textContent = msg;
+  t.className = 'toast visible' + (kind ? ' ' + kind : '');
+  setTimeout(() => t.classList.remove('visible'), 2500);
+}
+
+// ============ AUTH ============
+document.getElementById('login-form').addEventListener('submit', async (e) => {
+  e.preventDefault();
+  const email = document.getElementById('email').value.trim();
+  const password = document.getElementById('password').value;
+  const errEl = document.getElementById('login-error');
+  errEl.classList.remove('visible');
+  try {
+    const { token, user } = await api('/auth/login', { method: 'POST', body: JSON.stringify({ email, password }) });
+    _token = token; _user = user;
+    localStorage.setItem(TOKEN_KEY, token);
+    enterApp();
+  } catch (e) {
+    errEl.textContent = e.status === 401 ? 'Email o clave incorrectos' : (e.message || 'Error');
+    errEl.classList.add('visible');
+  }
+});
+
+document.getElementById('logout-btn').onclick = () => {
+  _token = null; _user = null;
+  localStorage.removeItem(TOKEN_KEY);
+  document.getElementById('app').classList.remove('visible');
+  document.getElementById('login-screen').style.display = '';
+};
+
+async function enterApp() {
+  document.getElementById('login-screen').style.display = 'none';
+  document.getElementById('app').classList.add('visible');
+  document.getElementById('user-email').textContent = _user.email;
+  await loadAll();
+  showSection('dashboard');
+}
+
+async function loadAll() {
+  try {
+    const [me, orders, flavors, combos, promos, social, config, metrics] = await Promise.all([
+      api('/me'),
+      api('/orders'),
+      api('/flavors'),
+      api('/combos'),
+      api('/promos'),
+      api('/social'),
+      api('/config'),
+      api('/metrics')
+    ]);
+    _user = me.user;
+    _orders = orders;
+    _flavors = flavors;
+    _combos = combos;
+    _promos = promos;
+    _social = social;
+    _config = config;
+    _metrics = metrics;
+  } catch (e) {
+    if (e.status === 401) {
+      document.getElementById('logout-btn').click();
+    } else {
+      toast('Error cargando datos: ' + e.message, 'error');
+    }
+  }
+}
+
+// ============ NAV ============
+document.querySelectorAll('.nav-item').forEach(el => {
+  el.onclick = () => {
+    document.querySelectorAll('.nav-item').forEach(n => n.classList.remove('active'));
+    el.classList.add('active');
+    showSection(el.dataset.section);
+    document.getElementById('sidebar').classList.remove('open');
+  };
+});
+
+function showSection(name) {
+  document.querySelectorAll('.section').forEach(s => s.classList.remove('active'));
+  document.getElementById('section-' + name).classList.add('active');
+  render[name]?.();
+}
+
+// ============ RENDER ============
+const render = {
+  dashboard() {
+    if (!_metrics) return;
+    const m = _metrics;
+    document.getElementById('kpi-today-count').textContent = m.today.count;
+    document.getElementById('kpi-today-gross').textContent = fmt(m.today.gross);
+    document.getElementById('kpi-7-count').textContent = m.last_7_days.count;
+    document.getElementById('kpi-7-gross').textContent = fmt(m.last_7_days.gross);
+    document.getElementById('kpi-total').textContent = fmt(m.totals.gross);
+    document.getElementById('kpi-total-hint').textContent = `${m.totals.count} pedidos`;
+    document.getElementById('kpi-ticket').textContent = fmt(m.totals.avg_ticket);
+
+    const chart = document.getElementById('chart-daily');
+    const series = m.daily_series;
+    const max = Math.max(...series.map(s => s.total), 1);
+    chart.innerHTML = series.map(s => {
+      const h = Math.max(4, Math.round((s.total / max) * 90));
+      const day = s.date.slice(5);
+      return `<div class="bar" style="height:${h}px" title="${s.date}: ${fmt(s.total)}"><span class="lbl">${day}</span></div>`;
+    }).join('') || '<div style="opacity:0.5;font-size:13px">Sin ventas aún</div>';
+
+    const flavorNames = Object.fromEntries(_flavors.map(f => [f.id, f.name]));
+    document.getElementById('top-flavors').innerHTML = m.top_flavors.length
+      ? m.top_flavors.map(([id, qty]) => `<div style="display:flex;justify-content:space-between;padding:6px 0;border-bottom:1px solid var(--line)"><span>${flavorNames[id] || id}</span><strong>${qty}</strong></div>`).join('')
+      : '<div style="opacity:0.5;font-size:13px">Sin ventas aún</div>';
+
+    document.getElementById('by-status').innerHTML = Object.entries(m.by_status)
+      .map(([k, v]) => `<div style="display:flex;justify-content:space-between;padding:6px 0"><span class="tag ${k}">${k}</span><strong>${v}</strong></div>`).join('') || '<div style="opacity:0.5;font-size:13px">Sin pedidos</div>';
+
+    document.getElementById('by-day').innerHTML = Object.entries(m.by_pickup_day)
+      .map(([k, v]) => `<div style="display:flex;justify-content:space-between;padding:6px 0"><span>${k}</span><strong>${v}</strong></div>`).join('') || '<div style="opacity:0.5;font-size:13px">Sin pedidos</div>';
+  },
+
+  orders() {
+    const status = document.getElementById('filter-status').value;
+    const day = document.getElementById('filter-day').value;
+    const q = document.getElementById('filter-q').value.toLowerCase();
+    const filtered = _orders.filter(o => {
+      if (status && o.status !== status) return false;
+      if (day && o.pickup_day !== day) return false;
+      if (q && !((o.customer_name || '').toLowerCase().includes(q) || (o.customer_phone || '').toLowerCase().includes(q))) return false;
+      return true;
+    });
+    document.getElementById('orders-count').textContent = `${filtered.length} de ${_orders.length} pedidos`;
+    const tbody = document.getElementById('orders-body');
+    if (!filtered.length) {
+      tbody.innerHTML = `<tr><td colspan="8"><div class="empty"><div class="icon">📦</div>Sin pedidos</div></td></tr>`;
+      return;
+    }
+    const flavorNames = Object.fromEntries(_flavors.map(f => [f.id, f.name]));
+    tbody.innerHTML = filtered.map(o => {
+      const items = Object.entries(o.items || {}).map(([id, q]) => `${flavorNames[id] || id} × ${q}`).join(', ');
+      const combos = (o.combos || []).map(c => `Combo ${c.units}u`).join(', ');
+      const itemsHtml = [items, combos].filter(Boolean).join(' · ') || '—';
+      return `<tr>
+        <td><small>${(o.created_at || '').slice(0, 16).replace('T', ' ')}</small></td>
+        <td><strong>${escapeHtml(o.customer_name)}</strong><br><small style="color:var(--ink-soft)">${escapeHtml(o.customer_phone)}</small></td>
+        <td><small>${o.pickup_day}</small></td>
+        <td class="order-items">${escapeHtml(itemsHtml)}${o.notes ? `<br><em style="color:var(--gold)">📝 ${escapeHtml(o.notes)}</em>` : ''}</td>
+        <td><strong>${fmt(o.total)}</strong></td>
+        <td><span class="tag ${o.status}">${o.status}</span></td>
+        <td><span class="tag ${o.payment_status === 'paid' ? 'paid' : 'pending'}">${o.payment_status}</span></td>
+        <td><select onchange="updateOrderStatus('${o.id}', this.value)" style="padding:5px 8px;font-size:12px;border-radius:6px;border:1px solid var(--line);background:#fff">
+          <option value="">cambiar...</option>
+          <option value="pending">pending</option>
+          <option value="confirmed">confirmed</option>
+          <option value="ready">ready</option>
+          <option value="delivered">delivered</option>
+          <option value="cancelled">cancelled</option>
+        </select>
+          <button class="btn btn-sm btn-danger" onclick="deleteOrder('${o.id}')" title="Eliminar">🗑</button></td>
+      </tr>`;
+    }).join('');
+  },
+
+  flavors() {
+    const grid = document.getElementById('flavors-grid');
+    if (!_flavors.length) { grid.innerHTML = '<div class="empty">No hay sabores</div>'; return; }
+    grid.innerHTML = _flavors.map(f => `
+      <div class="item-card">
+        <div style="display:flex;align-items:center;gap:10px">
+          <div style="width:32px;height:32px;border-radius:50%;background:${f.color || FLAVOR_PALETTE[f.id] || '#e88a9e'};box-shadow:inset -3px -2px 6px rgba(0,0,0,0.15)"></div>
+          <div class="item-name">${escapeHtml(f.name)}</div>
+        </div>
+        <div class="item-desc">${escapeHtml(f.description || '')}</div>
+        <div class="item-meta">
+          <span><strong>${fmt(f.price)}</strong></span>
+          <span class="tag ${f.available ? 'paid' : 'cancelled'}">${f.available ? 'disponible' : 'no disponible'}</span>
+          <small>id: ${escapeHtml(f.id)}</small>
+        </div>
+        <div class="item-actions">
+          <button class="btn btn-sm btn-ghost" onclick='openFlavorModal(${JSON.stringify(f)})'>Editar</button>
+          <button class="btn btn-sm btn-danger" onclick="deleteFlavor('${f.id}')">Eliminar</button>
+        </div>
+      </div>
+    `).join('');
+  },
+
+  combos() {
+    const grid = document.getElementById('combos-grid');
+    if (!_combos.length) { grid.innerHTML = '<div class="empty">No hay combos</div>'; return; }
+    grid.innerHTML = _combos.map(c => `
+      <div class="item-card" style="${c.featured ? 'border:2px solid var(--pink-deep);' : ''}">
+        ${c.featured ? '<div style="font-size:11px;color:var(--pink-deep);font-weight:700;letter-spacing:1px">★ DESTACADO</div>' : ''}
+        <div class="item-name">${escapeHtml(c.name)}</div>
+        <div class="item-desc">${escapeHtml(c.description || '')}</div>
+        <div class="item-meta">
+          <span>${c.units} unidades</span>
+          <span><strong>${fmt(c.price)}</strong>${c.compare_at_price ? ` <s style="color:var(--ink-soft)">${fmt(c.compare_at_price)}</s>` : ''}</span>
+          <span class="tag ${c.available ? 'paid' : 'cancelled'}">${c.available ? 'disponible' : 'no'}</span>
+        </div>
+        <div class="item-actions">
+          <button class="btn btn-sm btn-ghost" onclick='openComboModal(${JSON.stringify(c)})'>Editar</button>
+          <button class="btn btn-sm btn-danger" onclick="deleteCombo('${c.id}')">Eliminar</button>
+        </div>
+      </div>
+    `).join('');
+  },
+
+  promos() {
+    const grid = document.getElementById('promos-grid');
+    if (!_promos.length) { grid.innerHTML = '<div class="empty">No hay promociones</div>'; return; }
+    grid.innerHTML = _promos.map(p => `
+      <div class="item-card">
+        <div class="item-name">${escapeHtml(p.name)}</div>
+        <div class="item-desc">código: <code>${escapeHtml(p.code || '—')}</code> · tipo: ${p.type}</div>
+        <div class="item-meta">
+          <span><strong>${p.type === 'percent' ? p.value + '%' : fmt(p.value)}</strong> desc</span>
+          <span class="tag ${p.active ? 'paid' : 'cancelled'}">${p.active ? 'activa' : 'inactiva'}</span>
+        </div>
+        <div class="item-actions">
+          <button class="btn btn-sm btn-ghost" onclick='openPromoModal(${JSON.stringify(p)})'>Editar</button>
+          <button class="btn btn-sm btn-danger" onclick="deletePromo('${p.id}')">Eliminar</button>
+        </div>
+      </div>
+    `).join('');
+  },
+
+  social() {
+    const tbody = document.getElementById('social-body');
+    if (!_social.length) { tbody.innerHTML = '<tr><td colspan="5"><div class="empty">Sin posts en cola</div></td></tr>'; return; }
+    tbody.innerHTML = _social.map(p => `
+      <tr>
+        <td><small>${(p.scheduled_for || p.created_at || '').slice(0, 16).replace('T', ' ')}</small></td>
+        <td><span class="tag">${p.platform}</span></td>
+        <td><div style="max-width:380px;white-space:pre-wrap;font-size:13px">${escapeHtml(p.content)}</div></td>
+        <td><span class="tag ${p.status === 'posted' ? 'paid' : p.status === 'failed' ? 'cancelled' : 'pending'}">${p.status}</span></td>
+        <td>
+          <button class="btn btn-sm btn-ghost" onclick='openSocialModal(${JSON.stringify(p)})'>Editar</button>
+          <button class="btn btn-sm btn-danger" onclick="deleteSocial('${p.id}')">🗑</button>
+        </td>
+      </tr>
+    `).join('');
+  },
+
+  config() {
+    if (!_config) return;
+    const c = _config;
+    document.getElementById('cfg-business_name').value = c.business_name || '';
+    document.getElementById('cfg-whatsapp_number').value = c.whatsapp_number || '';
+    document.getElementById('cfg-tagline').value = c.tagline || '';
+    document.getElementById('cfg-description').value = c.description || '';
+    document.getElementById('cfg-instagram_handle').value = c.instagram_handle || '';
+    document.getElementById('cfg-instagram_url').value = c.instagram_url || '';
+    document.getElementById('cfg-facebook_url').value = c.facebook_url || '';
+    document.getElementById('cfg-tiktok_handle').value = c.tiktok_handle || '';
+    document.getElementById('cfg-pickup_address').value = c.pickup_address || '';
+    document.getElementById('cfg-pickup_schedule').value = c.pickup_schedule || '';
+    document.getElementById('cfg-hero_image_url').value = c.hero_image_url || '';
+  }
+};
+
+function escapeHtml(s) {
+  return String(s || '').replace(/[&<>"']/g, c => ({ '&':'&amp;','<':'&lt;','>':'&gt;','"':'&quot;',"'":'&#39;' }[c]));
+}
+
+// ============ ORDERS ACTIONS ============
+async function updateOrderStatus(id, status) {
+  if (!status) return;
+  try {
+    await api(`/orders/${id}`, { method: 'PATCH', body: JSON.stringify({ status }) });
+    toast('Estado actualizado', 'success');
+    await loadAll();
+    render.orders();
+  } catch (e) { toast('Error: ' + e.message, 'error'); }
+}
+
+async function deleteOrder(id) {
+  if (!confirm('¿Eliminar este pedido?')) return;
+  try {
+    await api(`/orders/${id}`, { method: 'DELETE' });
+    toast('Pedido eliminado', 'success');
+    await loadAll();
+    render.orders();
+  } catch (e) { toast('Error: ' + e.message, 'error'); }
+}
+
+['filter-status', 'filter-day', 'filter-q'].forEach(id => {
+  document.getElementById(id).oninput = render.orders;
+});
+
+// ============ FLAVORS CRUD ============
+function openFlavorModal(flavor) {
+  _editingItem = flavor || null;
+  document.getElementById('modal-content').innerHTML = `
+    <h2>${flavor ? 'Editar' : 'Nuevo'} sabor</h2>
+    <form id="entity-form">
+      <div class="modal-row">
+        <div class="form-group"><label>ID (slug)</label><input type="text" id="f-id" value="${flavor?.id || ''}" ${flavor ? 'readonly' : ''} required placeholder="ej: fresas-crema"></div>
+        <div class="form-group"><label>Nombre</label><input type="text" id="f-name" value="${escapeHtml(flavor?.name || '')}" required></div>
+      </div>
+      <div class="form-group"><label>Descripción</label><textarea id="f-description" rows="2">${escapeHtml(flavor?.description || '')}</textarea></div>
+      <div class="modal-row">
+        <div class="form-group"><label>Precio (COP)</label><input type="number" id="f-price" value="${flavor?.price || 8000}" required></div>
+        <div class="form-group"><label>Color (hex)</label><input type="text" id="f-color" value="${flavor?.color || '#e88a9e'}"></div>
+      </div>
+      <div class="form-group"><label>Imagen URL (opcional)</label><input type="text" id="f-image_url" value="${escapeHtml(flavor?.image_url || '')}"></div>
+      <div class="modal-actions">
+        <button type="button" class="btn btn-ghost" onclick="closeModal()">Cancelar</button>
+        <button type="submit" class="btn btn-primary">Guardar</button>
+      </div>
+    </form>`;
+  document.getElementById('modal-back').classList.add('visible');
+  document.getElementById('entity-form').onsubmit = async (e) => {
+    e.preventDefault();
+    const body = {
+      id: document.getElementById('f-id').value.trim(),
+      name: document.getElementById('f-name').value.trim(),
+      description: document.getElementById('f-description').value.trim(),
+      price: Number(document.getElementById('f-price').value),
+      color: document.getElementById('f-color').value.trim(),
+      image_url: document.getElementById('f-image_url').value.trim() || null,
+      available: true,
+      sort_order: flavor?.sort_order || 99
+    };
+    try {
+      if (flavor) await api(`/flavors/${flavor.id}`, { method: 'PUT', body: JSON.stringify(body) });
+      else await api('/flavors', { method: 'POST', body: JSON.stringify(body) });
+      toast('Sabor guardado', 'success');
+      closeModal();
+      await loadAll(); render.flavors();
+    } catch (err) { toast('Error: ' + err.message, 'error'); }
+  };
+}
+
+async function deleteFlavor(id) {
+  if (!confirm('¿Eliminar este sabor?')) return;
+  try {
+    await api(`/flavors/${id}`, { method: 'DELETE' });
+    toast('Sabor eliminado', 'success');
+    await loadAll(); render.flavors();
+  } catch (e) { toast('Error: ' + e.message, 'error'); }
+}
+
+// ============ COMBOS CRUD ============
+function openComboModal(combo) {
+  _editingItem = combo || null;
+  document.getElementById('modal-content').innerHTML = `
+    <h2>${combo ? 'Editar' : 'Nuevo'} combo</h2>
+    <form id="entity-form">
+      <div class="form-group"><label>Nombre</label><input type="text" id="c-name" value="${escapeHtml(combo?.name || '')}" required></div>
+      <div class="form-group"><label>Descripción</label><textarea id="c-description" rows="2">${escapeHtml(combo?.description || '')}</textarea></div>
+      <div class="modal-row">
+        <div class="form-group"><label>Unidades</label><input type="number" id="c-units" value="${combo?.units || 4}" required min="1"></div>
+        <div class="form-group"><label>Precio (COP)</label><input type="number" id="c-price" value="${combo?.price || 28000}" required min="0"></div>
+      </div>
+      <div class="modal-row">
+        <div class="form-group"><label>Precio tachado (opcional)</label><input type="number" id="c-compare_at_price" value="${combo?.compare_at_price || ''}"></div>
+        <div class="form-group"><label>Orden</label><input type="number" id="c-sort_order" value="${combo?.sort_order || 0}"></div>
+      </div>
+      <div class="form-group"><label>Imagen URL</label><input type="text" id="c-image_url" value="${escapeHtml(combo?.image_url || '')}"></div>
+      <div class="form-group"><label style="display:flex;align-items:center;gap:8px;text-transform:none;letter-spacing:0;font-size:14px;color:var(--ink)"><input type="checkbox" id="c-featured" ${combo?.featured ? 'checked' : ''}> Destacado (aparece primero)</label></div>
+      <div class="form-group"><label style="display:flex;align-items:center;gap:8px;text-transform:none;letter-spacing:0;font-size:14px;color:var(--ink)"><input type="checkbox" id="c-available" ${combo?.available !== false ? 'checked' : ''}> Disponible</label></div>
+      <div class="modal-actions">
+        <button type="button" class="btn btn-ghost" onclick="closeModal()">Cancelar</button>
+        <button type="submit" class="btn btn-primary">Guardar</button>
+      </div>
+    </form>`;
+  document.getElementById('modal-back').classList.add('visible');
+  document.getElementById('entity-form').onsubmit = async (e) => {
+    e.preventDefault();
+    const body = {
+      name: document.getElementById('c-name').value.trim(),
+      description: document.getElementById('c-description').value.trim(),
+      units: Number(document.getElementById('c-units').value),
+      price: Number(document.getElementById('c-price').value),
+      compare_at_price: Number(document.getElementById('c-compare_at_price').value) || null,
+      sort_order: Number(document.getElementById('c-sort_order').value) || 0,
+      image_url: document.getElementById('c-image_url').value.trim() || null,
+      featured: document.getElementById('c-featured').checked,
+      available: document.getElementById('c-available').checked
+    };
+    try {
+      if (combo) await api(`/combos/${combo.id}`, { method: 'PUT', body: JSON.stringify(body) });
+      else await api('/combos', { method: 'POST', body: JSON.stringify(body) });
+      toast('Combo guardado', 'success');
+      closeModal();
+      await loadAll(); render.combos();
+    } catch (err) { toast('Error: ' + err.message, 'error'); }
+  };
+}
+
+async function deleteCombo(id) {
+  if (!confirm('¿Eliminar este combo?')) return;
+  try {
+    await api(`/combos/${id}`, { method: 'DELETE' });
+    toast('Combo eliminado', 'success');
+    await loadAll(); render.combos();
+  } catch (e) { toast('Error: ' + e.message, 'error'); }
+}
+
+// ============ PROMOS CRUD ============
+function openPromoModal(promo) {
+  _editingItem = promo || null;
+  document.getElementById('modal-content').innerHTML = `
+    <h2>${promo ? 'Editar' : 'Nueva'} promoción</h2>
+    <form id="entity-form">
+      <div class="form-group"><label>Nombre</label><input type="text" id="p-name" value="${escapeHtml(promo?.name || '')}" required></div>
+      <div class="modal-row">
+        <div class="form-group"><label>Código (opcional)</label><input type="text" id="p-code" value="${escapeHtml(promo?.code || '')}" placeholder="VERANO20"></div>
+        <div class="form-group"><label>Tipo</label><select id="p-type">
+          <option value="percent" ${promo?.type === 'percent' ? 'selected' : ''}>Porcentaje</option>
+          <option value="fixed" ${promo?.type === 'fixed' ? 'selected' : ''}>Monto fijo</option>
+          <option value="bxgy" ${promo?.type === 'bxgy' ? 'selected' : ''}>2x1 / BXGY</option>
+        </select></div>
+      </div>
+      <div class="modal-row">
+        <div class="form-group"><label>Valor</label><input type="number" id="p-value" value="${promo?.value || 10}" required></div>
+        <div class="form-group"><label>Compra mínima</label><input type="number" id="p-min_purchase" value="${promo?.min_purchase || ''}"></div>
+      </div>
+      <div class="form-group"><label style="display:flex;align-items:center;gap:8px;text-transform:none;letter-spacing:0;font-size:14px;color:var(--ink)"><input type="checkbox" id="p-active" ${promo?.active !== false ? 'checked' : ''}> Activa</label></div>
+      <div class="modal-actions">
+        <button type="button" class="btn btn-ghost" onclick="closeModal()">Cancelar</button>
+        <button type="submit" class="btn btn-primary">Guardar</button>
+      </div>
+    </form>`;
+  document.getElementById('modal-back').classList.add('visible');
+  document.getElementById('entity-form').onsubmit = async (e) => {
+    e.preventDefault();
+    const body = {
+      name: document.getElementById('p-name').value.trim(),
+      code: document.getElementById('p-code').value.trim().toUpperCase() || null,
+      type: document.getElementById('p-type').value,
+      value: Number(document.getElementById('p-value').value),
+      min_purchase: Number(document.getElementById('p-min_purchase').value) || null,
+      active: document.getElementById('p-active').checked
+    };
+    try {
+      if (promo) await api(`/promos/${promo.id}`, { method: 'PUT', body: JSON.stringify(body) });
+      else await api('/promos', { method: 'POST', body: JSON.stringify(body) });
+      toast('Promo guardada', 'success');
+      closeModal();
+      await loadAll(); render.promos();
+    } catch (err) { toast('Error: ' + err.message, 'error'); }
+  };
+}
+
+async function deletePromo(id) {
+  if (!confirm('¿Eliminar esta promo?')) return;
+  try {
+    await api(`/promos/${id}`, { method: 'DELETE' });
+    toast('Promo eliminada', 'success');
+    await loadAll(); render.promos();
+  } catch (e) { toast('Error: ' + e.message, 'error'); }
+}
+
+// ============ SOCIAL CRUD ============
+function openSocialModal(post) {
+  _editingItem = post || null;
+  document.getElementById('modal-content').innerHTML = `
+    <h2>${post ? 'Editar' : 'Nuevo'} post</h2>
+    <form id="entity-form">
+      <div class="modal-row">
+        <div class="form-group"><label>Plataforma</label><select id="s-platform">
+          <option value="instagram" ${post?.platform === 'instagram' ? 'selected' : ''}>Instagram</option>
+          <option value="facebook" ${post?.platform === 'facebook' ? 'selected' : ''}>Facebook</option>
+          <option value="tiktok" ${post?.platform === 'tiktok' ? 'selected' : ''}>TikTok</option>
+          <option value="whatsapp" ${post?.platform === 'whatsapp' ? 'selected' : ''}>WhatsApp status</option>
+        </select></div>
+        <div class="form-group"><label>Estado</label><select id="s-status">
+          <option value="draft" ${post?.status === 'draft' ? 'selected' : ''}>Borrador</option>
+          <option value="scheduled" ${post?.status === 'scheduled' ? 'selected' : ''}>Programado</option>
+          <option value="posted" ${post?.status === 'posted' ? 'selected' : ''}>Publicado</option>
+          <option value="failed" ${post?.status === 'failed' ? 'selected' : ''}>Fallido</option>
+        </select></div>
+      </div>
+      <div class="form-group"><label>Contenido</label><textarea id="s-content" rows="5" required placeholder="Caption del post...">${escapeHtml(post?.content || '')}</textarea></div>
+      <div class="form-group"><label>Imagen URL (opcional)</label><input type="text" id="s-image_url" value="${escapeHtml(post?.image_url || '')}"></div>
+      <div class="form-group"><label>Programado para</label><input type="datetime-local" id="s-scheduled_for" value="${post?.scheduled_for ? post.scheduled_for.slice(0, 16) : ''}"></div>
+      <div class="form-group"><label>Notas internas</label><input type="text" id="s-notes" value="${escapeHtml(post?.notes || '')}"></div>
+      <div class="modal-actions">
+        <button type="button" class="btn btn-ghost" onclick="closeModal()">Cancelar</button>
+        <button type="submit" class="btn btn-primary">Guardar</button>
+      </div>
+    </form>`;
+  document.getElementById('modal-back').classList.add('visible');
+  document.getElementById('entity-form').onsubmit = async (e) => {
+    e.preventDefault();
+    const body = {
+      platform: document.getElementById('s-platform').value,
+      status: document.getElementById('s-status').value,
+      content: document.getElementById('s-content').value.trim(),
+      image_url: document.getElementById('s-image_url').value.trim() || null,
+      scheduled_for: document.getElementById('s-scheduled_for').value || null,
+      notes: document.getElementById('s-notes').value.trim() || null
+    };
+    try {
+      if (post) await api(`/social/${post.id}`, { method: 'PUT', body: JSON.stringify(body) });
+      else await api('/social', { method: 'POST', body: JSON.stringify(body) });
+      toast('Post guardado', 'success');
+      closeModal();
+      await loadAll(); render.social();
+    } catch (err) { toast('Error: ' + err.message, 'error'); }
+  };
+}
+
+async function deleteSocial(id) {
+  if (!confirm('¿Eliminar este post?')) return;
+  try {
+    await api(`/social/${id}`, { method: 'DELETE' });
+    toast('Post eliminado', 'success');
+    await loadAll(); render.social();
+  } catch (e) { toast('Error: ' + e.message, 'error'); }
+}
+
+// ============ CONFIG ============
+document.getElementById('config-form').onsubmit = async (e) => {
+  e.preventDefault();
+  const body = {
+    business_name: document.getElementById('cfg-business_name').value.trim(),
+    whatsapp_number: document.getElementById('cfg-whatsapp_number').value.trim(),
+    tagline: document.getElementById('cfg-tagline').value.trim(),
+    description: document.getElementById('cfg-description').value.trim(),
+    instagram_handle: document.getElementById('cfg-instagram_handle').value.trim(),
+    instagram_url: document.getElementById('cfg-instagram_url').value.trim(),
+    facebook_url: document.getElementById('cfg-facebook_url').value.trim(),
+    tiktok_handle: document.getElementById('cfg-tiktok_handle').value.trim(),
+    pickup_address: document.getElementById('cfg-pickup_address').value.trim(),
+    pickup_schedule: document.getElementById('cfg-pickup_schedule').value.trim(),
+    hero_image_url: document.getElementById('cfg-hero_image_url').value.trim()
+  };
+  try {
+    await api('/config', { method: 'PUT', body: JSON.stringify(body) });
+    toast('Config guardada', 'success');
+    await loadAll();
+  } catch (err) { toast('Error: ' + err.message, 'error'); }
+};
+
+function closeModal() {
+  document.getElementById('modal-back').classList.remove('visible');
+}
+
+// ============ INIT ============
+(async function init() {
+  if (_token) {
+    try {
+      const me = await api('/me');
+      _user = me.user;
+      enterApp();
+    } catch {
+      _token = null;
+      localStorage.removeItem(TOKEN_KEY);
+    }
+  }
+})();
+</script>
+
+</body>
+</html>

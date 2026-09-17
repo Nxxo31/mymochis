@@ -1,12 +1,12 @@
-const CACHE = 'mochis-land-v3';
+const CACHE = 'mochis-land-v4';
 const PRECACHE = [
   './',
   'index.html',
-  'admin.html',
-  'site-config.js',
+  'manage.html',
+  'sw.js',
+  'manifest.json',
   'favicon.svg',
   'logo-mochis-land.svg',
-  'manifest.json',
   'og-image.png',
   'icon-192.png',
   'icon-512.png',
@@ -30,6 +30,7 @@ self.addEventListener('activate', e => {
 self.addEventListener('fetch', e => {
   const url = new URL(e.request.url);
   if (e.request.method !== 'GET' || url.origin !== self.location.origin) return;
+  if (url.pathname.startsWith('/api/')) return;
 
   e.respondWith(
     caches.match(e.request).then(cached => {

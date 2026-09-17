@@ -1,78 +1,116 @@
 # MyMochis
 
-Landing + panel operador para tienda de mochis artesanales en Neiva (dark kitchen, pedido por WhatsApp, recogida mar–sáb 3–7pm).
+Landing page para clientes + dashboard de gestión para el operador. Monolito Node.js + SQLite + frontend estático.
 
-Stack: HTML + CSS + JS vanilla (zero deps, zero build). PWA instalable. Funciona offline después de la primera carga.
+## Stack
+
+- **Node.js 24+** con `node:sqlite` (sin npm install de drivers nativos)
+- **Express** (única dependencia npm)
+- **SQLite** (archivo `data/mymochis.db`, WAL mode, auto-seed)
+- **Frontend estático** (HTML + CSS + JS vanilla, sin build step)
+- **JWT HS256 custom** (sin libs)
+- **scrypt** para passwords (built-in Node crypto)
+
+## Setup
+
+```bash
+npm install
+PORT=3737 NEXOMOCHIS_JWT_SECRET="$(node -e 'console.log(require("crypto").randomBytes(48).toString("hex"))')" npm start
+```
+
+Para desarrollo con auto-reload:
+```bash
+npm run dev
+```
+
+## URLs
+
+| Ruta | Para | Auth |
+|---|---|---|
+| `/` | Landing pública (cliente) | No |
+| `/manage.html` | Dashboard del operador | Sí (JWT) |
+| `/api/public` | Config + catálogo para landing | No |
+| `/api/health` | Health check | No |
+| `/api/auth/register` | Crear primer operador | No |
+| `/api/auth/login` | Login → JWT | No |
+| `/api/me` | Usuario actual | JWT |
+| `/api/config` | GET (público) / PUT (auth) | mixto |
+| `/api/flavors` | CRUD sabores | mixto |
+| `/api/combos` | CRUD combos | mixto |
+| `/api/orders` | POST (público) / GET, PATCH, DELETE (auth) | mixto |
+| `/api/promos` | CRUD promos | Auth |
+| `/api/social` | Cola de posts redes sociales | Auth |
+| `/api/metrics` | KPIs para dashboard | Auth |
+
+## Primer operador
+
+```bash
+curl -X POST http://localhost:3737/api/auth/register \
+  -H 'Content-Type: application/json' \
+  -d '{"email":"tu@email.com","password":"clave-segura","name":"Tu Nombre"}'
+```
+
+## Variables de entorno
+
+| Variable | Default | Descripción |
+|---|---|---|
+| `PORT` | `3737` | Puerto del servidor |
+| `NEXOMOCHIS_JWT_SECRET` | (dev fallback) | Secreto HMAC para JWT — rotar en producción |
+| `NEXOMOCHIS_CORS` | `*` | Access-Control-Allow-Origin |
+| `NEXOMOCHIS_DB_PATH` | `data/mymochis.db` | Path al SQLite |
 
 ## Estructura
 
-| archivo | qué hace |
-|---|---|
-| `index.html` | Landing pública con sabores, combos, carrito y form WhatsApp |
-| `admin.html` | Panel operador (clave `mymochis2026`) con registro manual + parser de mensajes |
-| `logo-mochis-land.svg` | Logo actual de la marca (usado por landing y PWA) |
-| `site-config.js` | Configuración editable de tienda: nombre, tema, Instagram, WhatsApp/link y catálogo base |
-| `favicon.svg` | Ícono adaptable (kanji 餅 sobre fondo crema) |
-| `og-image.png` | Preview 1200×630 PNG (WhatsApp/redes). El `.svg` es la fuente editable |
-| `og-image.svg` | Preview 1200×630 cuando alguien comparte el link (fuente SVG) |
-| `icon-192.png` / `icon-512.png` | Íconos PWA instalable |
-| `manifest.json` | PWA instalable (nombre, colores, íconos) |
-| `sw.js` | Service worker: cache-first para assets, network-first para HTML |
-
-## Flujo de pedidos
-
 ```
-Cliente                  Landing                WhatsApp                Operador
-  │  ── elige sabores ───►  │                       │                       │
-  │                         │ ── abre wa.me ───────► │ ── mensaje pre-armado►│
-  │                         │                       │                       │
-  │                         │                       │ ◄── confirma ─────────│
-  │                         │                       │                       │
-  │                         │                       │                       ├─► admin.html
-  │                         │                       │                       │   + Nuevo pedido
-  │                         │                       │                       │   (o Pegar mensaje)
-  │  ── recoge mar–sáb ────────────────────────────────────────────────────►│
+mymochis/
+├── server.js              # Express entry + static + routes
+├── src/
+│   ├── db.js              # SQLite + schema + seeds
+│   ├── auth.js            # JWT + scrypt
+│   └── routes/
+│       ├── auth.js        # register, login
+│       ├── me.js          # current user
+│       ├── config.js      # business config
+│       ├── flavors.js     # flavors CRUD
+│       ├── combos.js      # combos CRUD
+│       ├── orders.js      # orders CRUD + filters
+│       ├── promos.js      # promos CRUD
+│       ├── social.js      # social posts queue
+│       ├── metrics.js     # KPIs
+│       └── public.js      # public config bundle
+├── public/
+│   ├── index.html         # landing page (cliente)
+│   ├── manage.html        # dashboard (operador)
+│   ├── sw.js              # service worker (PWA)
+│   ├── manifest.json      # PWA manifest
+│   ├── favicon.svg
+│   └── img/               # fotos de producto
+└── data/
+    └── mymochis.db        # SQLite (auto-creado, gitignored)
 ```
 
-El admin guarda los pedidos en `localStorage` del navegador del operador. Es deliberadamente simple para MVP — un sólo operador, un sólo dispositivo. Cuando crezca el volumen se migra a backend (Supabase sugerido).
+## Flujo del cliente
 
-## Deploy — GitHub Pages (activo)
+1. Cliente abre `/` (landing).
+2. Elige sabores y/o combo → modal express.
+3. Confirma con su nombre + WhatsApp + día de recogida.
+4. JS abre `wa.me/` con mensaje pre-armado (cliente confirma el pedido directo al WhatsApp del operador).
+5. POST a `/api/orders` en paralelo → queda registrado en el dashboard.
 
-El sitio está publicado en GitHub Pages desde la rama `main`:
+## Flujo del operador
 
-**URL:** `https://nxxo31.github.io/mymochis/`
+1. Abre `/manage.html` → login (email + clave).
+2. Dashboard con KPIs del día, semana, total, ticket promedio + chart de 14 días + top sabores.
+3. **Pedidos**: tabla con filtros (estado, día, búsqueda). Cambiar status inline.
+4. **Sabores**: CRUD del catálogo (5 sabores sembrados al inicio).
+5. **Combos**: CRUD de combos con flag `featured`.
+6. **Promos**: códigos de descuento (percent / fixed / bxgy).
+7. **Redes sociales**: cola de posts (draft → scheduled → posted) para IG / FB / TikTok.
+8. **Configuración**: datos del negocio, WhatsApp, Instagram handle, horarios.
 
-Se activó vía la API de GitHub (Settings → Pages → Source: main / root). Cada `git push` a `main` re-deploya automáticamente en ~1 minuto. No hay build step — los archivos se sirven tal cual.
+## Notas de seguridad
 
-### Dominio personalizado (opcional)
-
-1. Settings → Pages → Custom domain: poner el dominio (ej. `mymochis.co`)
-2. En el DNS del dominio: `CNAME` → `nxxo31.github.io`
-3. GitHub emite el certificado HTTPS automáticamente
-
-## Configuración post-deploy
-
-1. Abrir `https://TU-URL/admin.html`
-2. Ingresar clave `mymochis2026`
-3. **Configurar WhatsApp** (botón ⚙ en footer de la landing, o `site-config.js` → `store.whatsapp` / `store.whatsappLink`)
-4. Ajustar marca/catálogo en `site-config.js` (`store`, `flavors`, `promos`) y recargar; la landing lee esa config al iniciar
-5. Probar el flujo: landing → carrito → confirmar → WhatsApp abre con mensaje
-6. Verificar que el OG image se vea al compartir: https://www.opengraph.xyz/url-preview/TU-URL
-
-## Pendientes del operador (no de código)
-
-- [ ] Reemplazar `WHATSAPP_NUMBER` real (ya está en modal de config)
-- [ ] Decidir si pickup es en local fijo (poner dirección en footer) o a convenir
-- [ ] Crear cuenta Instagram `@mymochis.neiva` y actualizar footer
-- [ ] Probar el form en móvil real (instalar la PWA)
-- [ ] Definir capacidad semanal (cuántos mochis puede producir por día) y mostrar "agotado" cuando llegue al límite
-
-## Limitaciones conocidas del MVP
-
-- **Admin no sincroniza entre dispositivos** — el operador debe usar siempre el mismo navegador/celular. Próxima iteración: Supabase.
-- **Parser de WPP es best-effort** — si el cliente edita mucho el mensaje pre-armado, los items no se detectan. Siempre revisar antes de guardar.
-- **No hay capacidad máxima** — se puede recibir más pedidos de los que se pueden producir. Solución: contador semanal visible y corte automático cuando llegue al límite.
-
-## Licencia
-
-Uso interno — MyMochis Neiva.
+- JWT firmado con HS256 + scrypt para passwords (no bcrypt, sin native build).
+- API key `NEXOMOCHIS_JWT_SECRET` debe ser rotada en producción (mínimo 32 chars).
+- `data/mymochis.db` está en `.gitignore` — nunca commitear.
+- Para exponer públicamente: usar HTTPS, validar CORS, rotar JWT secret.

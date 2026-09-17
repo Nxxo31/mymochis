@@ -1,0 +1,17 @@
+{
+  "name": "mymochis",
+  "version": "2.0.0",
+  "description": "MyMochis — landing de cliente + dashboard de gestión",
+  "type": "module",
+  "private": true,
+  "scripts": {
+    "start": "node server.js",
+    "dev": "node --watch server.js"
+  },
+  "dependencies": {
+    "express": "^4.21.2"
+  },
+  "engines": {
+    "node": ">=20.0.0"
+  }
+}

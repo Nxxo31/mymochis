@@ -668,7 +668,7 @@ footer .tagline { font-size: 13px; opacity: 0.65; margin-bottom: 24px; }
     <div class="footer-bottom">
       Cada semana, un lote nuevo · hecho con cariño en el Huila
       <a href="#" onclick="event.preventDefault(); openConfig()">⚙ Configurar</a>
-      <a href="admin.html">operador</a>
+      <a href="manage.html">operador</a>
     </div>
   </div>
 </footer>
@@ -730,9 +730,26 @@ footer .tagline { font-size: 13px; opacity: 0.65; margin-bottom: 24px; }
 </div>
 
 <script>
-const DEFAULT_WHATSAPP = '573000000000';
+const API_BASE = (location.hostname === 'localhost' || location.hostname === '127.0.0.1') ? 'http://localhost:3737/api' : '/api';
 const CONFIG_KEY = 'mymochis_wpp';
 
+let APP_CONFIG = null;
+
+async function loadConfig() {
+  try {
+    const res = await fetch(API_BASE + '/public');
+    if (res.ok) {
+      const data = await res.json();
+      APP_CONFIG = data.config;
+      if (data.flavors?.length) FLAVORS.length = 0, FLAVORS.push(...data.flavors.map(f => ({ id: f.id, name: f.name, price: f.price })));
+      if (data.combos?.length) COMBOS.length = 0, COMBOS.push(...data.combos);
+    }
+  } catch (e) {
+    console.warn('No se pudo cargar config del API, usando fallback local:', e.message);
+  }
+}
+
+const DEFAULT_WHATSAPP = (APP_CONFIG && APP_CONFIG.whatsapp_number) || '573000000000';
 const FLAVORS = [
   { id: 'fresas-crema', name: 'Fresas con crema', price: 8000 },
   { id: 'chokis-cream', name: 'Chokis & cream', price: 8000 },
@@ -740,13 +757,28 @@ const FLAVORS = [
   { id: 'durazno-caramelizado', name: 'Durazno caramelizado', price: 8000 },
   { id: 'crema-pastelera', name: 'Crema pastelera', price: 8000 }
 ];
+const COMBOS = [
+  { id: null, units: 4, price: 28000, name: 'Combo 4', description: 'Ideal para probar varios sabores.', compare_at_price: 32000 },
+  { id: null, units: 6, price: 39000, name: 'Combo 6', description: 'El favorito para compartir.', compare_at_price: 48000 },
+  { id: null, units: 12, price: 75000, name: 'Caja sorpresa 12', description: 'Surtida con todos los sabores.', compare_at_price: 96000 }
+];
 
 function getWppTarget() {
   return (localStorage.getItem(CONFIG_KEY) || '').trim() || DEFAULT_WHATSAPP;
 }
 function isConfigured() {
   const v = (localStorage.getItem(CONFIG_KEY) || '').trim();
-  return Boolean(v && v !== DEFAULT_WHATSAPP);
+  return Boolean(v && v !== DEFAULT_WHATSAPP && v !== '573000000000');
+}
+
+function applyServerConfig() {
+  if (!APP_CONFIG) return;
+  const root = document.documentElement;
+  const theme = APP_CONFIG.theme || {};
+  const setK = (k, v) => { if (v) root.style.setProperty('--' + k, v); };
+  setK('pink-deep', APP_CONFIG.primary || APP_CONFIG.primaryDeep);
+  setK('ink', APP_CONFIG.ink);
+  setK('bg', APP_CONFIG.soft || APP_CONFIG.bg);
 }
 
 function openConfig() {
@@ -765,6 +797,28 @@ function saveConfig() {
 let _comboUnits = 0;
 let _comboPrice = 0;
 let _flavors = {};
+
+async function saveOrderToApi(order) {
+  try {
+    const res = await fetch(API_BASE + '/orders', {
+      method: 'POST',
+      headers: { 'Content-Type': 'application/json' },
+      body: JSON.stringify({
+        id: order.id,
+        customer_name: order.name,
+        customer_phone: order.phone,
+        pickup_day: order.day,
+        items: order.items,
+        combos: order.combos,
+        total: order.total,
+        source: 'web'
+      })
+    });
+    if (!res.ok) console.warn('API order save:', res.status);
+  } catch (e) {
+    console.warn('API order save failed:', e.message);
+  }
+}
 
 function openQuickOrder(units, price) {
   if (!isConfigured()) { openConfig(); return; }
@@ -877,6 +931,8 @@ function sendWhatsApp() {
   history.push(order);
   localStorage.setItem('mymochis_orders', JSON.stringify(history));
 
+  saveOrderToApi(order);
+
   window.open(url, '_blank');
   closeModal();
   setTimeout(() => {
@@ -896,6 +952,12 @@ if (stickyCta && heroCta) {
   }, { threshold: 0.3 });
   obs.observe(heroCta);
 }
+
+// Cargar config del API al inicio
+loadConfig().then(() => {
+  applyServerConfig();
+  renderFlavors();
+});
 
 // PWA
 if ('serviceWorker' in navigator) {
