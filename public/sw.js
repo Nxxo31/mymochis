@@ -1,4 +1,4 @@
-const CACHE = 'mochis-land-v4';
+const CACHE = 'mochis-land-v5';
 const PRECACHE = [
   './',
   'index.html',

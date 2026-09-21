@@ -575,6 +575,226 @@ footer .tagline { font-size: 13px; opacity: 0.65; margin-bottom: 24px; }
 }
 .flavor-card .add-btn:hover { filter: brightness(1.08); transform: translateY(-1px); }
 .flavor-card .add-btn:active { transform: translateY(0); }
+
+/* === HOW IT WORKS === */
+.how-it-works { background: var(--paper); padding: 80px 24px; }
+.how-it-works .container,
+.releases .container,
+.social-strip .container { max-width: 1100px; margin: 0 auto; }
+.steps-grid {
+  display: grid;
+  grid-template-columns: repeat(3, 1fr);
+  gap: 32px;
+  margin-top: 48px;
+  position: relative;
+}
+.steps-grid::before {
+  content: '';
+  position: absolute;
+  top: 32px; left: 16.66%; right: 16.66%;
+  height: 2px;
+  background: repeating-linear-gradient(90deg, var(--line) 0 6px, transparent 6px 12px);
+  z-index: 0;
+}
+.step { text-align: center; position: relative; z-index: 1; }
+.step-num {
+  display: inline-flex; align-items: center; justify-content: center;
+  width: 64px; height: 64px;
+  border-radius: 50%;
+  background: #fff;
+  color: var(--pink-deep);
+  font-family: 'Fredoka', sans-serif;
+  font-size: 28px; font-weight: 700;
+  margin-bottom: 20px;
+  box-shadow: 0 8px 24px var(--shadow), 0 0 0 4px var(--bg-soft);
+}
+.step h3 {
+  font-family: 'Fredoka', sans-serif;
+  font-size: 22px; font-weight: 600;
+  color: var(--ink); margin-bottom: 8px;
+}
+.step p { color: var(--ink-soft); font-size: 14px; line-height: 1.6; max-width: 280px; margin: 0 auto; }
+
+/* === RELEASES === */
+.releases {
+  background: linear-gradient(135deg, var(--cyan-pale) 0%, var(--bg-soft) 100%);
+  padding: 80px 24px;
+}
+.releases-grid {
+  display: grid;
+  grid-template-columns: repeat(auto-fit, minmax(240px, 1fr));
+  gap: 20px;
+  margin-top: 40px;
+}
+.release-card {
+  background: #fff;
+  border-radius: 18px;
+  padding: 24px;
+  border: 1px solid var(--line);
+  box-shadow: 0 4px 16px var(--shadow-soft);
+  transition: transform 0.2s, box-shadow 0.2s;
+  position: relative;
+  overflow: hidden;
+}
+.release-card::before {
+  content: '';
+  position: absolute; top: 0; left: 0; right: 0;
+  height: 4px;
+  background: linear-gradient(90deg, var(--pink), var(--peach));
+}
+.release-card:hover { transform: translateY(-3px); box-shadow: 0 12px 32px var(--shadow); }
+.release-date {
+  font-family: 'Fredoka', sans-serif;
+  font-weight: 700; font-size: 22px;
+  color: var(--pink-deep); margin-bottom: 4px;
+  text-transform: capitalize;
+}
+.release-day {
+  color: var(--ink-soft);
+  font-size: 12px; font-weight: 600;
+  text-transform: uppercase;
+  letter-spacing: 1.5px; margin-bottom: 16px;
+}
+.release-items { list-style: none; font-size: 13px; color: var(--ink); }
+.release-items li {
+  padding: 6px 0;
+  display: flex; justify-content: space-between;
+  border-bottom: 1px dashed var(--line);
+}
+.release-items li:last-child { border-bottom: 0; }
+.release-items .ri-name { color: var(--ink); }
+.release-items .ri-qty { color: var(--mint-deep); font-weight: 600; font-family: 'Fredoka', sans-serif; }
+.release-status {
+  display: inline-block;
+  padding: 4px 12px; border-radius: 999px;
+  font-size: 11px; font-weight: 600;
+  letter-spacing: 0.8px; text-transform: uppercase;
+  margin-top: 14px;
+}
+.release-status.open { background: var(--mint); color: #fff; }
+.release-status.closed { background: var(--ink-soft); color: #fff; }
+.release-status.full { background: var(--pink-deep); color: #fff; }
+.release-empty {
+  text-align: center;
+  padding: 40px 24px;
+  color: var(--ink-soft);
+  background: #fff;
+  border-radius: 18px;
+  border: 1px dashed var(--line);
+  grid-column: 1/-1;
+}
+
+/* === FLAVOR FILTERS === */
+.flavor-filters {
+  display: flex; flex-wrap: wrap; gap: 8px;
+  justify-content: center;
+  margin: 24px 0 32px;
+}
+.filter-chip {
+  background: rgba(255,255,255,0.85);
+  border: 1px solid var(--line);
+  color: var(--ink);
+  padding: 8px 18px;
+  border-radius: 999px;
+  font-family: 'Fredoka', sans-serif;
+  font-size: 13px; font-weight: 500;
+  cursor: pointer;
+  transition: all 0.18s;
+}
+.filter-chip:hover { background: #fff; transform: translateY(-1px); }
+.filter-chip.active {
+  background: var(--ink); color: var(--bg);
+  border-color: var(--ink);
+}
+
+/* === HEADER SOCIAL BAR === */
+.social-bar { display: flex; align-items: center; gap: 6px; margin-right: 12px; }
+.social-icon {
+  width: 34px; height: 34px;
+  border-radius: 50%;
+  display: inline-flex; align-items: center; justify-content: center;
+  background: rgba(255,255,255,0.45);
+  color: var(--ink);
+  transition: all 0.18s;
+  text-decoration: none;
+}
+.social-icon:hover { background: var(--pink-deep); color: #fff; transform: translateY(-2px); }
+.social-icon svg { width: 16px; height: 16px; }
+
+/* === SOCIAL STRIP === */
+.social-strip {
+  background: var(--ink);
+  color: #fff;
+  padding: 32px 24px;
+}
+.social-strip-inner {
+  display: flex; align-items: center; justify-content: space-between;
+  gap: 24px; flex-wrap: wrap;
+}
+.social-strip-text {
+  font-family: 'Fredoka', sans-serif;
+  font-size: 17px; font-weight: 600;
+  letter-spacing: -0.2px;
+}
+.social-strip-text .ig { color: var(--pink); }
+.social-strip-links { display: flex; gap: 12px; }
+.social-strip-links a {
+  width: 42px; height: 42px;
+  border-radius: 50%;
+  background: rgba(255,255,255,0.1);
+  color: #fff;
+  display: inline-flex; align-items: center; justify-content: center;
+  transition: all 0.18s;
+  text-decoration: none;
+}
+.social-strip-links a:hover { background: var(--pink-deep); transform: translateY(-2px); }
+.social-strip-links svg { width: 19px; height: 19px; }
+
+/* === ENHANCED FOOTER === */
+.footer-grid {
+  display: grid;
+  grid-template-columns: 1.4fr 1fr 1fr;
+  gap: 40px;
+  padding: 56px 24px 32px;
+  text-align: left;
+}
+.footer-grid > div:first-child .brand {
+  justify-content: flex-start;
+  font-size: 26px;
+  margin-bottom: 0;
+}
+.footer-grid h4 {
+  font-family: 'Fredoka', sans-serif;
+  font-size: 13px; font-weight: 600;
+  text-transform: uppercase;
+  letter-spacing: 1.2px;
+  color: var(--bg-soft);
+  opacity: 0.6;
+  margin-bottom: 16px;
+}
+.footer-grid ul { list-style: none; }
+.footer-grid li,
+.footer-grid a { padding: 5px 0; color: var(--cream); font-size: 14px; text-decoration: none; transition: color 0.15s; }
+.footer-grid a:hover { color: var(--pink); }
+.footer-brand-text { font-size: 14px; color: var(--bg-soft); opacity: 0.75; line-height: 1.6; margin-top: 14px; }
+.footer-brand-text strong { color: var(--cream); opacity: 1; font-weight: 600; }
+.footer-bottom {
+  border-top: 1px solid rgba(255,255,255,0.1);
+  padding: 18px 24px;
+  display: flex; justify-content: space-between; gap: 12px; flex-wrap: wrap;
+  font-size: 12px; color: var(--bg-soft); opacity: 0.65;
+}
+.footer-bottom a { color: var(--bg-soft); opacity: 0.85; text-decoration: none; margin-left: 8px; border-bottom: 1px dotted rgba(255,255,255,0.3); }
+.footer-bottom a:hover { color: var(--pink); opacity: 1; }
+
+@media (max-width: 768px) {
+  .steps-grid { grid-template-columns: 1fr; gap: 28px; }
+  .steps-grid::before { display: none; }
+  .footer-grid { grid-template-columns: 1fr; gap: 28px; padding: 40px 24px 20px; }
+  .social-strip-inner { flex-direction: column; align-items: flex-start; }
+  .nav { padding: 12px 16px; }
+  .social-bar { display: none; }
+}
 </style>
 </head>
 <body>
@@ -585,6 +805,20 @@ footer .tagline { font-size: 13px; opacity: 0.65; margin-bottom: 24px; }
       <img src="logo-mochis-land.svg" alt="" class="brand-mark" width="44" height="44">
       <span class="brand-name">Mochi's <span class="dot">Land</span></span>
     </a>
+    <div class="social-bar">
+      <a class="social-icon" href="https://instagram.com/mymochis.neiva" target="_blank" rel="noopener" aria-label="Instagram">
+        <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><rect x="2" y="2" width="20" height="20" rx="5" ry="5"/><path d="M16 11.37A4 4 0 1 1 12.63 8 4 4 0 0 1 16 11.37z"/><line x1="17.5" y1="6.5" x2="17.51" y2="6.5"/></svg>
+      </a>
+      <a class="social-icon" href="https://facebook.com/mymochis.neiva" target="_blank" rel="noopener" aria-label="Facebook">
+        <svg viewBox="0 0 24 24" fill="currentColor"><path d="M18 2h-3a5 5 0 0 0-5 5v3H7v4h3v8h4v-8h3l1-4h-4V7a1 1 0 0 1 1-1h3z"/></svg>
+      </a>
+      <a class="social-icon" href="https://wa.me/573000000000" target="_blank" rel="noopener" aria-label="WhatsApp">
+        <svg viewBox="0 0 24 24" fill="currentColor"><path d="M17.5 14.4c-.3-.1-1.7-.8-1.9-.9-.3-.1-.5-.1-.7.1-.2.3-.7.9-.9 1.1-.2.2-.3.2-.6.1-.3-.1-1.2-.4-2.3-1.4-.9-.8-1.5-1.7-1.6-2-.2-.3 0-.5.1-.6.1-.1.3-.3.4-.5.1-.2.2-.3.3-.5.1-.2 0-.4 0-.5-.1-.1-.7-1.6-.9-2.2-.2-.6-.5-.5-.7-.5h-.6c-.2 0-.5.1-.8.4-.3.3-1 1-1 2.4s1.1 2.8 1.2 3c.1.2 2.1 3.3 5.2 4.6.7.3 1.3.5 1.7.6.7.2 1.4.2 1.9.1.6-.1 1.7-.7 2-1.4.2-.7.2-1.2.2-1.4-.1-.1-.3-.2-.6-.3z"/></svg>
+      </a>
+      <a class="social-icon" href="https://tiktok.com/@mymochis.neiva" target="_blank" rel="noopener" aria-label="TikTok">
+        <svg viewBox="0 0 24 24" fill="currentColor"><path d="M19.59 6.69a4.83 4.83 0 0 1-3.77-4.25V2h-3.45v13.67a2.89 2.89 0 0 1-5.2 1.74 2.89 2.89 0 0 1 2.31-4.64 2.93 2.93 0 0 1 .88.13V9.4a6.84 6.84 0 0 0-1-.05A6.33 6.33 0 0 0 5.8 20.1a6.34 6.34 0 0 0 10.86-4.43V8.65a8.16 8.16 0 0 0 4.77 1.52v-3.4a4.85 4.85 0 0 1-1.84-.08z"/></svg>
+      </a>
+    </div>
     <button class="nav-cta" onclick="openQuickOrder()">Pedir ahora</button>
   </div>
 </header>
@@ -617,12 +851,45 @@ footer .tagline { font-size: 13px; opacity: 0.65; margin-bottom: 24px; }
   </div>
 </section>
 
+<section class="how-it-works">
+  <div class="container">
+    <div class="section-head">
+      <span class="section-eyebrow">Cómo funciona</span>
+      <h2 class="section-title">Pide en 3 pasos</h2>
+      <p class="section-sub">Somos una <strong>cocina oculta</strong>: hacemos lotes frescos cada semana. Tú eliges, nosotros cocinamos, recoges sin filas.</p>
+    </div>
+    <div class="steps-grid">
+      <div class="step">
+        <div class="step-num">1</div>
+        <h3>Elige tus sabores</h3>
+        <p>Revisa los sabores y combos de la semana. Decide unidades y día de recogida desde WhatsApp o la web.</p>
+      </div>
+      <div class="step">
+        <div class="step-num">2</div>
+        <h3>Cocinamos el mismo día</h3>
+        <p>Producimos un lote nuevo por cada fecha abierta. Nada de congelado, nada de stock guardado.</p>
+      </div>
+      <div class="step">
+        <div class="step-num">3</div>
+        <h3>Recoge sin filas</h3>
+        <p>Mar–Sáb · 3pm a 7pm en nuestra cocina oculta en Neiva. Te confirmamos el punto exacto por WhatsApp.</p>
+      </div>
+    </div>
+  </div>
+</section>
+
 <section class="flavors" id="flavors">
   <div class="container">
     <div class="section-head">
       <span class="section-eyebrow">Sabores de la semana</span>
       <h2 class="section-title">Cinco sabores para tentar</h2>
       <p class="section-sub">Cada mochi se prepara el mismo día. Toca uno para sumarlo a tu pedido.</p>
+    </div>
+    <div class="flavor-filters" id="flavor-filters">
+      <button class="filter-chip active" data-filter="all">Todos</button>
+      <button class="filter-chip" data-filter="clasicos">Clásicos</button>
+      <button class="filter-chip" data-filter="frutales">Frutales</button>
+      <button class="filter-chip" data-filter="premium">Premium</button>
     </div>
     <div class="flavor-grid" id="flavor-cards-grid"></div>
   </div>
@@ -693,6 +960,19 @@ footer .tagline { font-size: 13px; opacity: 0.65; margin-bottom: 24px; }
   </div>
 </section>
 
+<section class="releases" id="releases">
+  <div class="container">
+    <div class="section-head">
+      <span class="section-eyebrow">Próximas salidas</span>
+      <h2 class="section-title">Fechas abiertas de la semana</h2>
+      <p class="section-sub">Cada fecha tiene unidades limitadas por sabor. Reserva con anticipación para asegurar tu combo favorito.</p>
+    </div>
+    <div class="releases-grid" id="releases-grid">
+      <div class="release-empty">Cargando fechas disponibles…</div>
+    </div>
+  </div>
+</section>
+
 <section class="why">
   <div class="container">
     <div class="section-head">
@@ -756,23 +1036,63 @@ footer .tagline { font-size: 13px; opacity: 0.65; margin-bottom: 24px; }
   <button class="cta" onclick="openQuickOrder(6, 39000)">Pedir ahora →</button>
 </div>
 
+<section class="social-strip">
+  <div class="container">
+    <div class="social-strip-inner">
+      <div class="social-strip-text">Síguenos · etiqueta <span class="ig">@mymochis.neiva</span> y te reposteamos</div>
+      <div class="social-strip-links">
+        <a href="https://instagram.com/mymochis.neiva" target="_blank" rel="noopener" aria-label="Instagram">
+          <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><rect x="2" y="2" width="20" height="20" rx="5" ry="5"/><path d="M16 11.37A4 4 0 1 1 12.63 8 4 4 0 0 1 16 11.37z"/><line x1="17.5" y1="6.5" x2="17.51" y2="6.5"/></svg>
+        </a>
+        <a href="https://facebook.com/mymochis.neiva" target="_blank" rel="noopener" aria-label="Facebook">
+          <svg viewBox="0 0 24 24" fill="currentColor"><path d="M18 2h-3a5 5 0 0 0-5 5v3H7v4h3v8h4v-8h3l1-4h-4V7a1 1 0 0 1 1-1h3z"/></svg>
+        </a>
+        <a href="https://wa.me/573000000000" target="_blank" rel="noopener" aria-label="WhatsApp">
+          <svg viewBox="0 0 24 24" fill="currentColor"><path d="M17.5 14.4c-.3-.1-1.7-.8-1.9-.9-.3-.1-.5-.1-.7.1-.2.3-.7.9-.9 1.1-.2.2-.3.2-.6.1-.3-.1-1.2-.4-2.3-1.4-.9-.8-1.5-1.7-1.6-2-.2-.3 0-.5.1-.6.1-.1.3-.3.4-.5.1-.2.2-.3.3-.5.1-.2 0-.4 0-.5-.1-.1-.7-1.6-.9-2.2-.2-.6-.5-.5-.7-.5h-.6c-.2 0-.5.1-.8.4-.3.3-1 1-1 2.4s1.1 2.8 1.2 3c.1.2 2.1 3.3 5.2 4.6.7.3 1.3.5 1.7.6.7.2 1.4.2 1.9.1.6-.1 1.7-.7 2-1.4.2-.7.2-1.2.2-1.4-.1-.1-.3-.2-.6-.3z"/></svg>
+        </a>
+        <a href="https://tiktok.com/@mymochis.neiva" target="_blank" rel="noopener" aria-label="TikTok">
+          <svg viewBox="0 0 24 24" fill="currentColor"><path d="M19.59 6.69a4.83 4.83 0 0 1-3.77-4.25V2h-3.45v13.67a2.89 2.89 0 0 1-5.2 1.74 2.89 2.89 0 0 1 2.31-4.64 2.93 2.93 0 0 1 .88.13V9.4a6.84 6.84 0 0 0-1-.05A6.33 6.33 0 0 0 5.8 20.1a6.34 6.34 0 0 0 10.86-4.43V8.65a8.16 8.16 0 0 0 4.77 1.52v-3.4a4.85 4.85 0 0 1-1.84-.08z"/></svg>
+        </a>
+      </div>
+    </div>
+  </div>
+</section>
+
 <footer>
   <div class="container">
-    <div class="brand">
-      <img src="logo-mochis-land.svg" alt="" class="brand-mark" width="56" height="56">
-      <span class="brand-name">Mochi's <span class="dot">Land</span></span>
-    </div>
-    <p class="tagline">Mochis artesanales hechos a mano en Neiva, Huila · Colombia</p>
-    <div class="footer-info">
-      <span>📍 Cocina oculta, Neiva</span>
-      <span>🕒 Mar–Sáb · 3pm a 7pm</span>
-      <span>💬 Pedidos por WhatsApp</span>
-      <span>📷 @mymochis.neiva</span>
+    <div class="footer-grid">
+      <div>
+        <div class="brand">
+          <img src="logo-mochis-land.svg" alt="" class="brand-mark" width="56" height="56">
+          <span class="brand-name">Mochi's <span class="dot">Land</span></span>
+        </div>
+        <p class="footer-brand-text">Mochis artesanales hechos a mano en Neiva, Huila · Colombia. Una <strong>cocina oculta con cronograma semanal</strong>: cada lote se prepara el mismo día de la recogida, sin congelar.</p>
+      </div>
+      <div>
+        <h4>Información</h4>
+        <ul>
+          <li>📍 Cocina oculta, Neiva</li>
+          <li>🕒 Mar–Sáb · 3pm a 7pm</li>
+          <li>💬 Pedidos por WhatsApp</li>
+          <li>📷 @mymochis.neiva</li>
+        </ul>
+      </div>
+      <div>
+        <h4>Cómo pedir</h4>
+        <ul>
+          <li><a href="#flavors">Ver sabores</a></li>
+          <li><a href="#combos">Combos</a></li>
+          <li><a href="#releases">Próximas salidas</a></li>
+          <li><a href="manage.html" rel="nofollow">Soy operador</a></li>
+        </ul>
+      </div>
     </div>
     <div class="footer-bottom">
-      Cada semana, un lote nuevo · hecho con cariño en el Huila
-      <a href="#" onclick="event.preventDefault(); openConfig()">⚙ Configurar</a>
-      <a href="manage.html">operador</a>
+      <span>Cada semana, un lote nuevo · hecho con cariño en el Huila</span>
+      <span>
+        <a href="#" onclick="event.preventDefault(); openConfig()">⚙ Configurar WhatsApp</a>
+        <a href="manage.html" rel="nofollow">operador</a>
+      </span>
     </div>
   </div>
 </footer>
@@ -873,7 +1193,7 @@ function renderFlavorCards() {
     const ribbon = cfg.ribbon;
     const ribbonHtml = ribbon ? `<div class="ribbon">${ribbon}</div>` : '';
     return `
-      <article class="flavor-card" style="--flavor-accent: ${accent}">
+      <article class="flavor-card" data-flavor-id="${f.id}" style="--flavor-accent: ${accent}">
         ${ribbonHtml}
         <div class="accent-stripe"></div>
         <div class="photo"><img src="${photo}" alt="${f.name}" loading="lazy"></div>
@@ -889,6 +1209,80 @@ function renderFlavorCards() {
       </article>
     `;
   }).join('');
+  applyFlavorFilter();
+}
+
+const FLAVOR_TAGS = {
+  'fresas-crema': ['frutales', 'clasicos'],
+  'chokis-cream': ['clasicos'],
+  'blueberry': ['frutales', 'premium'],
+  'durazno-caramelizado': ['frutales', 'premium'],
+  'crema-pastelera': ['clasicos']
+};
+
+function applyFlavorFilter() {
+  const active = document.querySelector('.filter-chip.active');
+  const filter = active ? active.dataset.filter : 'all';
+  document.querySelectorAll('.flavor-card').forEach(card => {
+    const id = card.dataset.flavorId;
+    const tags = FLAVOR_TAGS[id] || [];
+    const show = filter === 'all' || tags.includes(filter);
+    card.style.display = show ? '' : 'none';
+  });
+}
+
+function setupFlavorFilters() {
+  document.querySelectorAll('.filter-chip').forEach(chip => {
+    chip.addEventListener('click', () => {
+      document.querySelectorAll('.filter-chip').forEach(c => c.classList.remove('active'));
+      chip.classList.add('active');
+      applyFlavorFilter();
+    });
+  });
+}
+
+const FLAVOR_LABELS = {
+  'fresas-crema': 'Fresas con crema',
+  'chokis-cream': 'Chokis & cream',
+  'blueberry': 'Blueberry',
+  'durazno-caramelizado': 'Durazno caramelizado',
+  'crema-pastelera': 'Crema pastelera'
+};
+
+async function loadReleases() {
+  const grid = document.getElementById('releases-grid');
+  if (!grid) return;
+  try {
+    const res = await fetch(API_BASE + '/public');
+    if (!res.ok) throw new Error('API ' + res.status);
+    const data = await res.json();
+    const windows = (data.release_windows || []).filter(w => w.status === 'open').slice(0, 6);
+    if (!windows.length) {
+      grid.innerHTML = '<div class="release-empty">No hay fechas abiertas esta semana. Síguenos en Instagram <strong>@mymochis.neiva</strong> para enterarte cuando publiquemos la próxima.</div>';
+      return;
+    }
+    grid.innerHTML = windows.map(w => {
+      const date = new Date(w.release_date + 'T12:00:00');
+      const dayName = date.toLocaleDateString('es-CO', { weekday: 'long' });
+      const dateStr = date.toLocaleDateString('es-CO', { day: 'numeric', month: 'short' });
+      const items = (w.items || []).map(it => {
+        const remaining = (it.units_available || 0) - (it.units_sold || 0);
+        const label = FLAVOR_LABELS[it.flavor_id] || it.flavor_id || '';
+        return `<li><span class="ri-name">${label}</span><span class="ri-qty">${remaining} disp.</span></li>`;
+      }).join('');
+      return `
+        <div class="release-card">
+          <div class="release-date">${dateStr}</div>
+          <div class="release-day">${dayName}</div>
+          <ul class="release-items">${items || '<li><span class="ri-name">Sin unidades</span></li>'}</ul>
+          <span class="release-status open">Abierta</span>
+        </div>
+      `;
+    }).join('');
+  } catch (e) {
+    grid.innerHTML = '<div class="release-empty">No pudimos cargar las fechas. Escríbenos por WhatsApp para reservar tu pedido.</div>';
+    console.warn('Releases load failed:', e.message);
+  }
 }
 
 function quickAddFlavor(id) {
@@ -1105,6 +1499,8 @@ Promise.all([loadConfig(), loadMochisConfig()]).then(() => {
   applyServerConfig();
   renderFlavors();
   renderFlavorCards();
+  setupFlavorFilters();
+  loadReleases();
 });
 
 // PWA

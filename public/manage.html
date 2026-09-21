@@ -27,6 +27,12 @@
   --cyan-bright: #62D3EC;
   --cyan-pale: #E8F7FB;
   --cream: #FFF8E7;
+  --gold: #F9D85E;
+  --gold-deep: #A87E0F;
+  --lav: #A78BD9;
+  --brown: #7B4B26;
+  --navy: #1E2B36;
+  --navy-deep: #152028;
   --shadow: rgba(45,45,45,0.18);
   --shadow-soft: rgba(45,45,45,0.10);
   --accent: var(--pink-deep);
@@ -382,9 +388,180 @@ tbody tr:hover { background: var(--bg); }
 .item-card .item-desc { font-size: 12px; color: var(--ink-soft); flex: 1; }
 .item-card .item-meta { display: flex; gap: 8px; flex-wrap: wrap; font-size: 12px; color: var(--ink-soft); }
 .item-card .item-actions { display: flex; gap: 6px; margin-top: 8px; }
+
+/* ============================================================
+   MOCHI'S LAND · polish 2026-09-18 (patrones Little Moons /
+   Mochidoki / Crumbl / Milk Bar) — overrides al final, ganan
+   por cascada. Incluye fondo interactivo de mochis flotantes.
+   ============================================================ */
+
+/* === FONDO INTERACTIVO · scatter de mochis (patrón oficial) === */
+.bg-mochis {
+  position: fixed; inset: 0; z-index: 0;
+  overflow: hidden; pointer-events: none;
+}
+.orbit {
+  position: absolute; pointer-events: none;
+  transition: transform 0.6s cubic-bezier(0.22, 1, 0.36, 1);
+  will-change: transform;
+}
+.mochi {
+  width: var(--s, 48px); height: var(--s, 48px);
+  border-radius: 48% 52% 50% 50% / 52% 50% 54% 48%;
+  pointer-events: auto; cursor: pointer;
+  background:
+    radial-gradient(circle at 32% 28%, rgba(255,255,255,0.75), rgba(255,255,255,0) 45%),
+    var(--c, #fff);
+  box-shadow:
+    inset -5px -8px 12px rgba(45,45,45,0.14),
+    inset 4px 6px 10px rgba(255,255,255,0.55),
+    0 10px 22px rgba(45,45,45,0.12);
+  animation: mochi-drift var(--d, 9s) ease-in-out infinite alternate;
+  transition: scale 0.25s cubic-bezier(0.34, 1.56, 0.64, 1);
+}
+.mochi::before { /* relleno tipo cut-open (Little Moons) */
+  content: ''; position: absolute;
+  width: 58%; height: 58%; left: 21%; top: 21%;
+  border-radius: 50%;
+  background: radial-gradient(circle at 40% 35%, #FFFDF5, var(--fill, #FFF8E7));
+  opacity: 0; transform: scale(0.4);
+  transition: opacity 0.35s, transform 0.45s cubic-bezier(0.34, 1.56, 0.64, 1);
+}
+.mochi.open::before { opacity: 1; transform: scale(1); }
+.mochi:hover { scale: 1.12; }
+.mochi.squash { animation: mochi-squash 0.5s cubic-bezier(0.34, 1.56, 0.64, 1), mochi-drift var(--d, 9s) ease-in-out 0.5s infinite alternate; }
+@keyframes mochi-drift {
+  from { transform: translateY(0) rotate(-3deg); }
+  to   { transform: translateY(-16px) rotate(4deg); }
+}
+@keyframes mochi-squash {
+  0%   { transform: scale(1, 1); }
+  35%  { transform: scale(1.35, 0.6); }
+  70%  { transform: scale(0.85, 1.2); }
+  100% { transform: scale(1, 1); }
+}
+@media (prefers-reduced-motion: reduce) {
+  .mochi, .mochi.squash { animation: none; }
+  .orbit { transition: none; }
+}
+
+/* Capas: fondo fijo abajo, contenido encima */
+.login-screen, .app { position: relative; z-index: 1; }
+.login-screen {
+  background:
+    radial-gradient(circle at 30% 20%, rgba(98,211,236,0.35), transparent 55%),
+    radial-gradient(circle at 80% 80%, rgba(233,69,96,0.16), transparent 55%),
+    linear-gradient(180deg, rgba(232,247,251,0.82) 0%, rgba(184,232,242,0.82) 100%);
+}
+
+/* === LOGIN · tarjeta premium === */
+.login-card {
+  border: 1px solid rgba(98,211,236,0.45);
+  background: rgba(255,255,255,0.92);
+  backdrop-filter: blur(10px);
+  box-shadow: 0 24px 60px rgba(30,43,54,0.22), 0 2px 8px rgba(30,43,54,0.08);
+  animation: card-in 0.5s cubic-bezier(0.22, 1, 0.36, 1);
+}
+@keyframes card-in {
+  from { opacity: 0; transform: translateY(14px) scale(0.98); }
+  to   { opacity: 1; transform: none; }
+}
+
+/* === BOTONES · pill (Crumbl/Milk Bar) === */
+.btn { border-radius: 999px; padding: 11px 22px; letter-spacing: 0.2px; }
+.btn-sm { padding: 7px 14px; }
+.btn-primary { background: var(--pink); color: #fff; box-shadow: 0 4px 12px rgba(233,69,96,0.30); }
+.btn-primary:hover { background: var(--pink-deep); transform: translateY(-1px); box-shadow: 0 7px 18px rgba(233,69,96,0.38); }
+.btn-primary:active { transform: translateY(0); box-shadow: 0 2px 6px rgba(233,69,96,0.3); }
+.btn-danger:hover { background: rgba(233,69,96,0.08); }
+.btn:focus-visible {
+  outline: 3px solid rgba(98,211,236,0.7); outline-offset: 2px;
+}
+
+/* === INPUTS === */
+.form-group input, .form-group select, .form-group textarea {
+  border-radius: 12px; background: #fff;
+  transition: border-color 0.15s, box-shadow 0.15s;
+}
+.form-group input:focus, .form-group select:focus, .form-group textarea:focus {
+  border-color: var(--cyan-deep);
+  box-shadow: 0 0 0 3px rgba(98,211,236,0.28);
+}
+
+/* === SIDEBAR · navy premium (Mochidoki) === */
+.sidebar {
+  background: linear-gradient(180deg, var(--navy) 0%, var(--navy-deep) 100%);
+  padding: 22px 14px;
+}
+.nav-item { border-radius: 999px; padding: 10px 16px; font-weight: 500; }
+.nav-item:hover { background: rgba(255,255,255,0.07); }
+.nav-item.active {
+  background: linear-gradient(90deg, rgba(98,211,236,0.30), rgba(98,211,236,0.14));
+  color: #fff; font-weight: 600;
+  box-shadow: inset 0 0 0 1px rgba(98,211,236,0.35);
+}
+.nav-item.active svg { opacity: 1; color: var(--cyan-bright); }
+.sidebar .btn-ghost { border-color: rgba(255,255,255,0.22); color: var(--bg-soft); }
+.sidebar .btn-ghost:hover { background: rgba(255,255,255,0.08); }
+
+/* === KPI · hover lift + colores === */
+.kpi {
+  transition: transform 0.18s, box-shadow 0.18s;
+  border-radius: 18px;
+}
+.kpi:hover {
+  transform: translateY(-3px);
+  box-shadow: 0 12px 28px rgba(45,45,45,0.12);
+}
+.kpi .value { color: var(--pink); letter-spacing: -0.5px; }
+.kpi.gold .value { color: var(--gold-deep); }
+.kpi.gold::before { background: var(--gold); }
+
+/* === CARDS === */
+.card { border-radius: 18px; box-shadow: 0 2px 8px rgba(45,45,45,0.05); }
+.item-card { border-radius: 18px; transition: transform 0.18s, box-shadow 0.18s; }
+.item-card:hover { transform: translateY(-3px); box-shadow: 0 12px 26px rgba(45,45,45,0.12); }
+
+/* === TABLA === */
+.table-wrap { border-radius: 18px; box-shadow: 0 2px 8px rgba(45,45,45,0.05); }
+thead th { position: sticky; top: 0; z-index: 1; background: var(--cyan-pale); }
+tbody tr { transition: background 0.12s; }
+tbody tr:hover { background: rgba(98,211,236,0.10); }
+.tag { border-radius: 999px; padding: 4px 12px; letter-spacing: 0.3px; }
+.tag.confirmed { background: rgba(249,216,94,0.30); color: var(--gold-deep); }
+
+/* === TOOLBAR === */
+.toolbar { border-radius: 999px; padding: 8px 14px 8px 20px; }
+.toolbar select, .toolbar input { border-radius: 999px; background: #fff; }
+.toolbar select:focus, .toolbar input:focus {
+  border-color: var(--cyan-deep);
+  box-shadow: 0 0 0 3px rgba(98,211,236,0.28);
+}
+
+/* === MODAL · entrada suave === */
+.modal { animation: modal-in 0.3s cubic-bezier(0.22, 1, 0.36, 1); border-radius: 26px; }
+@keyframes modal-in {
+  from { opacity: 0; transform: translateY(16px) scale(0.97); }
+  to   { opacity: 1; transform: none; }
+}
+
+/* === TOAST === */
+.toast { border-radius: 999px; }
 </style>
 </head>
 <body>
+
+<!-- Fondo interactivo: mochis flotantes (colores oficiales de sabores) -->
+<div class="bg-mochis" id="bg-mochis" aria-hidden="true">
+  <div class="orbit" style="top:8%;  left:4%"><div class="mochi" style="--s:58px; --d:9s;  --c:#E94560; --fill:#FFE3EC"></div></div>
+  <div class="orbit" style="top:16%; left:88%"><div class="mochi" style="--s:46px; --d:11s; --c:#F9D85E; --fill:#FFF3C4"></div></div>
+  <div class="orbit" style="top:62%; left:2%"><div class="mochi" style="--s:38px; --d:13s; --c:#A78BD9; --fill:#EFE7FA"></div></div>
+  <div class="orbit" style="top:78%; left:90%"><div class="mochi" style="--s:64px; --d:10s; --c:#A8B545; --fill:#EFF3D6"></div></div>
+  <div class="orbit" style="top:42%; left:95%"><div class="mochi" style="--s:34px; --d:12s; --c:#7B4B26; --fill:#EFDFD3"></div></div>
+  <div class="orbit" style="top:88%; left:14%"><div class="mochi" style="--s:44px; --d:8s;  --c:#62D3EC; --fill:#E8F7FB"></div></div>
+  <div class="orbit" style="top:30%; left:96%"><div class="mochi" style="--s:30px; --d:14s; --c:#E94560; --fill:#FFE3EC"></div></div>
+  <div class="orbit" style="top:52%; left:6%"><div class="mochi" style="--s:28px; --d:10s; --c:#F9D85E; --fill:#FFF3C4"></div></div>
+</div>
 
 <!-- ============== LOGIN ============== -->
 <div id="login-screen" class="login-screen">
@@ -1218,6 +1395,40 @@ document.getElementById('config-form').onsubmit = async (e) => {
 function closeModal() {
   document.getElementById('modal-back').classList.remove('visible');
 }
+
+// ============ FONDO INTERACTIVO (mochis flotantes) ============
+(function bgMochis() {
+  const bg = document.getElementById('bg-mochis');
+  if (!bg) return;
+  const orbits = [...bg.querySelectorAll('.orbit')];
+  const mochis = [...bg.querySelectorAll('.mochi')];
+  const reduced = matchMedia('(prefers-reduced-motion: reduce)').matches;
+
+  if (!reduced) {
+    addEventListener('mousemove', (e) => {
+      const rx = e.clientX / innerWidth - 0.5;
+      const ry = e.clientY / innerHeight - 0.5;
+      orbits.forEach((o, i) => {
+        const d = (i % 4 + 1) * 9;
+        o.style.transform = `translate(${rx * d}px, ${ry * d}px)`;
+      });
+    }, { passive: true });
+  }
+
+  mochis.forEach((m, i) => {
+    // 1 de cada 3 mochis se "abre" (cut-open) con entrada escalonada
+    if (i % 3 === 0) setTimeout(() => m.classList.add('open'), 600 + i * 380);
+  });
+
+  bg.addEventListener('click', (e) => {
+    const m = e.target.closest('.mochi');
+    if (!m) return;
+    m.classList.remove('squash');
+    void m.offsetWidth;
+    m.classList.add('squash');
+    m.classList.toggle('open');
+  });
+})();
 
 // ============ INIT ============
 (async function init() {
