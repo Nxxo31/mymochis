@@ -249,22 +249,29 @@ export function init() {
   db.exec(SCHEMA);
   db.prepare('INSERT OR IGNORE INTO config (id) VALUES (1)').run();
 
-  const userCount = db.prepare('SELECT COUNT(*) as n FROM users').get().n;
-  if (userCount === 0) {
-    const adminEmail = process.env.ADMIN_EMAIL;
-    const adminPassword = process.env.ADMIN_PASSWORD;
-    if (adminEmail && adminPassword && adminPassword.length >= 8) {
+  db.exec("UPDATE users SET role = 'customer' WHERE role = 'admin' AND email != lower('admin@mymochis.app')");
+  db.exec("UPDATE config SET instagram_handle = '@my.mochiss', instagram_url = 'https://instagram.com/my.mochiss/', tiktok_handle = '@my.mochiss' WHERE id = 1 AND (instagram_handle = '@mymochis.neiva' OR instagram_handle IS NULL OR tiktok_handle IS NULL)");
+
+  const adminEmail = process.env.ADMIN_EMAIL;
+  const adminPassword = process.env.ADMIN_PASSWORD;
+  if (adminEmail && adminPassword && adminPassword.length >= 8) {
+    const adminEmailLower = adminEmail.toLowerCase().trim();
+    const existingAdmin = db.prepare('SELECT id, role FROM users WHERE email = ?').get(adminEmailLower);
+    if (!existingAdmin) {
       const salt = randomBytes(16).toString('hex');
       const hash = scryptSync(adminPassword, salt, 64).toString('hex');
       db.prepare(
         'INSERT INTO users (email, password_hash, password_salt, name, role) VALUES (?, ?, ?, ?, ?)'
-      ).run(adminEmail.toLowerCase().trim(), hash, salt, 'Admin', 'admin');
-      console.log(`[mymochis] admin seed creado: ${adminEmail}`);
-    } else if (adminEmail || adminPassword) {
-      console.warn('[mymochis] ADMIN_EMAIL/ADMIN_PASSWORD presentes pero password <8 chars — admin NO creado. Setear password >=8 chars o usar /register con role forzado.');
+      ).run(adminEmailLower, hash, salt, 'Admin', 'admin');
+      console.log(`[mymochis] admin seed creado: ${adminEmailLower}`);
+    } else if (existingAdmin.role !== 'admin') {
+      db.prepare("UPDATE users SET role = 'admin' WHERE id = ?").run(existingAdmin.id);
+      console.log(`[mymochis] admin role restaurado: ${adminEmailLower}`);
     } else {
-      console.warn('[mymochis] users vacío y sin ADMIN_EMAIL/ADMIN_PASSWORD — primer admin debe usar /register antes de lockdown');
+      console.log(`[mymochis] admin ya existe: ${adminEmailLower}`);
     }
+  } else if (adminEmail || adminPassword) {
+    console.warn('[mymochis] ADMIN_EMAIL/ADMIN_PASSWORD presentes pero password <8 chars — admin NO creado. Setear password >=8 chars o usar /register con role forzado.');
   }
 
   ensureColumn('config',  'delivery_immediate_enabled',        'INTEGER NOT NULL DEFAULT 0');

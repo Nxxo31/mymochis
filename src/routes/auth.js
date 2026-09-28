@@ -60,7 +60,7 @@ router.post('/register', (req, res) => {
 
   const { salt, hash } = hashPassword(password);
   const result = db.prepare(
-    'INSERT INTO users (email, password_hash, password_salt, name) VALUES (?, ?, ?, ?)'
+    "INSERT INTO users (email, password_hash, password_salt, name, role) VALUES (?, ?, ?, ?, 'customer')"
   ).run(emailLower, hash, salt, name || null);
 
   const userId = result.lastInsertRowid;
