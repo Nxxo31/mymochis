@@ -12,6 +12,11 @@
 <meta name="mobile-web-app-capable" content="yes">
 <meta name="format-detection" content="telephone=no">
 
+<meta http-equiv="Content-Security-Policy" content="default-src 'self'; script-src 'self' 'unsafe-inline' https://fonts.googleapis.com; style-src 'self' 'unsafe-inline' https://fonts.googleapis.com; font-src 'self' https://fonts.gstatic.com data:; img-src 'self' data: blob: https:; connect-src 'self'; frame-ancestors 'none'; base-uri 'self'; form-action 'self'">
+<meta http-equiv="X-Content-Type-Options" content="nosniff">
+<meta http-equiv="Referrer-Policy" content="strict-origin-when-cross-origin">
+<meta http-equiv="Permissions-Policy" content="geolocation=(), microphone=(), camera=()">
+
 <link rel="icon" type="image/svg+xml" href="favicon.svg">
 <link rel="apple-touch-icon" href="logo-mochis-land.svg">
 <link rel="manifest" href="manifest.json">
@@ -73,12 +78,35 @@
 html { scroll-behavior: smooth; }
 body {
   font-family: 'Inter', system-ui, sans-serif;
-  background: var(--bg);
+  background-color: var(--bg);
+  background-image:
+    radial-gradient(circle at 18% 12%, rgba(255,255,255,0.55) 0%, transparent 32%),
+    radial-gradient(circle at 82% 28%, rgba(233,69,96,0.08) 0%, transparent 28%),
+    radial-gradient(circle at 12% 78%, rgba(168,181,69,0.10) 0%, transparent 26%),
+    radial-gradient(circle at 88% 82%, rgba(249,216,94,0.10) 0%, transparent 30%),
+    url("data:image/svg+xml;utf8,<svg xmlns='http://www.w3.org/2000/svg' width='160' height='160' viewBox='0 0 160 160'><defs><pattern id='d' x='0' y='0' width='40' height='40' patternUnits='userSpaceOnUse'><circle cx='10' cy='10' r='1.4' fill='%23ffffff' opacity='0.35'/><circle cx='30' cy='25' r='1' fill='%23ffffff' opacity='0.22'/><circle cx='15' cy='32' r='0.8' fill='%23ffffff' opacity='0.18'/></pattern></defs><rect width='160' height='160' fill='url(%23d)'/></svg>"),
+    linear-gradient(180deg, #B8E8F2 0%, var(--bg) 50%, #A8DDE8 100%);
+  background-attachment: fixed, fixed, fixed, fixed, fixed, fixed;
   color: var(--ink);
   line-height: 1.55;
   font-weight: 400;
   -webkit-font-smoothing: antialiased;
   overflow-x: hidden;
+  min-height: 100vh;
+  position: relative;
+}
+body::before {
+  content: '';
+  position: fixed; inset: 0; z-index: -1;
+  pointer-events: none;
+  background-image:
+    radial-gradient(circle at 22% 8%, rgba(233,69,96,0.10) 0, rgba(233,69,96,0.10) 14px, transparent 15px),
+    radial-gradient(circle at 78% 12%, rgba(168,181,69,0.10) 0, rgba(168,181,69,0.10) 12px, transparent 13px),
+    radial-gradient(circle at 6% 64%, rgba(249,216,94,0.12) 0, rgba(249,216,94,0.12) 18px, transparent 19px),
+    radial-gradient(circle at 94% 70%, rgba(167,139,217,0.10) 0, rgba(167,139,217,0.10) 16px, transparent 17px),
+    radial-gradient(circle at 48% 92%, rgba(98,211,236,0.10) 0, rgba(98,211,236,0.10) 20px, transparent 21px);
+  background-repeat: no-repeat;
+  background-size: 100% 100%;
 }
 .serif { font-family: 'Fredoka', serif; }
 
@@ -229,16 +257,30 @@ section { padding: 72px 24px; position: relative; }
 .section-sub { color: var(--ink-soft); font-size: 15px; max-width: 540px; margin: 0 auto; }
 
 /* === COMBOS === */
-.combos { background: var(--paper); }
-.combos-grid {
-  display: grid; grid-template-columns: repeat(auto-fit, minmax(280px, 1fr));
-  gap: 24px;
+.combos { background: var(--paper); position: relative; }
+.combos::before {
+  content: '';
+  position: absolute; inset: 0;
+  background-image:
+    radial-gradient(circle at 8% 20%, rgba(255,182,193,0.08) 0, transparent 18px),
+    radial-gradient(circle at 92% 80%, rgba(168,181,69,0.08) 0, transparent 22px),
+    radial-gradient(circle at 50% 50%, rgba(98,211,236,0.04) 0, transparent 60%);
+  pointer-events: none;
+  z-index: 0;
 }
+.combos .container { position: relative; z-index: 1; }
+.combos-grid {
+  display: grid; grid-template-columns: repeat(3, 1fr);
+  gap: 28px;
+}
+@media (max-width: 920px) { .combos-grid { grid-template-columns: repeat(2, 1fr); } }
+@media (max-width: 620px) { .combos-grid { grid-template-columns: 1fr; } }
 .combo-card {
-  background: #fff; border-radius: 24px;
+  background: #fff; border-radius: 28px;
   border: 1px solid var(--line); overflow: hidden;
   display: flex; flex-direction: column;
   transition: transform 0.25s, box-shadow 0.25s;
+  box-shadow: 0 4px 18px rgba(168,181,69,0.08), 0 1px 3px rgba(45,45,45,0.04);
 }
 .combo-card:hover { transform: translateY(-4px); box-shadow: 0 18px 50px var(--shadow); }
 .combo-card.featured { border: 2px solid var(--pink-deep); position: relative; }
@@ -301,11 +343,22 @@ section { padding: 72px 24px; position: relative; }
 .combo-card.featured .combo-add:hover { background: #c46f82; }
 
 /* === WHY === */
-.why { background: var(--bg-soft); }
-.why-grid {
-  display: grid; grid-template-columns: repeat(auto-fit, minmax(220px, 1fr));
-  gap: 28px; max-width: 980px; margin: 0 auto;
+.why { background: var(--bg-soft); position: relative; }
+.why::before {
+  content: '';
+  position: absolute; inset: 0;
+  background-image:
+    radial-gradient(circle at 20% 30%, rgba(233,69,96,0.06) 0, transparent 24px),
+    radial-gradient(circle at 80% 70%, rgba(98,211,236,0.08) 0, transparent 28px);
+  pointer-events: none;
+  z-index: 0;
 }
+.why .container { position: relative; z-index: 1; }
+.why-grid {
+  display: grid; grid-template-columns: repeat(3, 1fr);
+  gap: 32px; max-width: 1080px; margin: 0 auto;
+}
+@media (max-width: 720px) { .why-grid { grid-template-columns: 1fr; } }
 .why-item { text-align: center; padding: 0 12px; }
 .why-icon {
   width: 64px; height: 64px; margin: 0 auto 16px;
@@ -516,22 +569,36 @@ footer .tagline { font-size: 13px; opacity: 0.65; margin-bottom: 24px; }
 }
 
 /* === FLAVOR CARDS (Popsy-style, configurable via mochis.config.json) === */
-.flavors { background: var(--cream); }
+.flavors { background: var(--cream); position: relative; }
+.flavors::before {
+  content: '';
+  position: absolute; inset: 0;
+  background-image:
+    radial-gradient(circle at 15% 25%, rgba(233,69,96,0.06) 0, transparent 22px),
+    radial-gradient(circle at 85% 75%, rgba(167,139,217,0.08) 0, transparent 26px),
+    radial-gradient(circle at 50% 100%, rgba(168,181,69,0.06) 0, transparent 30px);
+  pointer-events: none;
+  z-index: 0;
+}
+.flavors .container { position: relative; z-index: 1; }
 .flavor-grid {
   display: grid;
-  grid-template-columns: repeat(auto-fill, minmax(240px, 1fr));
-  gap: 26px;
+  grid-template-columns: repeat(3, 1fr);
+  gap: 28px;
   max-width: 1180px; margin: 0 auto;
 }
+@media (max-width: 920px) { .flavor-grid { grid-template-columns: repeat(2, 1fr); } }
+@media (max-width: 620px) { .flavor-grid { grid-template-columns: 1fr; } }
 .flavor-card {
   background: var(--white);
-  border-radius: 24px;
+  border-radius: 28px;
   overflow: hidden;
   position: relative;
   transition: transform 0.25s, box-shadow 0.25s;
   border: 1px solid var(--line);
   display: flex; flex-direction: column;
   --flavor-accent: var(--flavor-fresa);
+  box-shadow: 0 6px 22px rgba(168,181,69,0.08), 0 1px 4px rgba(45,45,45,0.04);
 }
 .flavor-card:hover {
   transform: translateY(-6px);
@@ -772,8 +839,8 @@ footer .tagline { font-size: 13px; opacity: 0.65; margin-bottom: 24px; }
 /* === ENHANCED FOOTER === */
 .footer-grid {
   display: grid;
-  grid-template-columns: 1.4fr 1fr 1fr;
-  gap: 40px;
+  grid-template-columns: 1.4fr 1fr 1fr 1fr;
+  gap: 36px;
   padding: 56px 24px 32px;
   text-align: left;
 }
@@ -793,10 +860,50 @@ footer .tagline { font-size: 13px; opacity: 0.65; margin-bottom: 24px; }
 }
 .footer-grid ul { list-style: none; }
 .footer-grid li,
-.footer-grid a { padding: 5px 0; color: var(--cream); font-size: 14px; text-decoration: none; transition: color 0.15s; }
+.footer-grid a { padding: 5px 0; color: var(--cream); font-size: 14px; text-decoration: none; transition: color 0.15s; display: flex; align-items: center; gap: 8px; }
 .footer-grid a:hover { color: var(--pink); }
 .footer-brand-text { font-size: 14px; color: var(--bg-soft); opacity: 0.75; line-height: 1.6; margin-top: 14px; }
 .footer-brand-text strong { color: var(--cream); opacity: 1; font-weight: 600; }
+
+.footer-operator {
+  background: rgba(255,255,255,0.06);
+  border: 1px solid rgba(255,255,255,0.12);
+  border-radius: 14px;
+  padding: 18px;
+  display: flex; flex-direction: column; gap: 10px;
+}
+.footer-operator .op-label {
+  font-family: 'Fredoka', sans-serif;
+  font-size: 12px; font-weight: 600;
+  letter-spacing: 1px; text-transform: uppercase;
+  color: var(--bg-soft); opacity: 0.55;
+}
+.footer-operator .op-link {
+  display: inline-flex; align-items: center; gap: 8px;
+  color: var(--cream);
+  font-size: 14px; font-weight: 500;
+  text-decoration: none;
+  padding: 10px 14px;
+  background: rgba(255,255,255,0.05);
+  border: 1px solid rgba(255,255,255,0.14);
+  border-radius: 10px;
+  transition: all 0.18s;
+}
+.footer-operator .op-link:hover {
+  background: var(--pink-deep);
+  border-color: var(--pink-deep);
+  color: #fff;
+}
+.footer-operator .op-link svg { width: 16px; height: 16px; }
+.footer-operator .op-hint { font-size: 11px; color: var(--bg-soft); opacity: 0.55; line-height: 1.45; }
+
+.footer-wave {
+  height: 36px;
+  background-image: url("data:image/svg+xml;utf8,<svg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 1200 36' preserveAspectRatio='none'><path d='M0 18 Q 150 0 300 18 T 600 18 T 900 18 T 1200 18 V 36 H 0 Z' fill='%232D2D2D'/></svg>");
+  background-size: 100% 100%;
+  background-repeat: no-repeat;
+}
+
 .footer-bottom {
   border-top: 1px solid rgba(255,255,255,0.1);
   padding: 18px 24px;
@@ -809,10 +916,13 @@ footer .tagline { font-size: 13px; opacity: 0.65; margin-bottom: 24px; }
 @media (max-width: 768px) {
   .steps-grid { grid-template-columns: 1fr; gap: 28px; }
   .steps-grid::before { display: none; }
-  .footer-grid { grid-template-columns: 1fr; gap: 28px; padding: 40px 24px 20px; }
+  .footer-grid { grid-template-columns: 1fr 1fr; gap: 28px; padding: 40px 24px 20px; }
   .social-strip-inner { flex-direction: column; align-items: flex-start; }
   .nav { padding: 12px 16px; }
   .social-bar { display: none; }
+}
+@media (max-width: 520px) {
+  .footer-grid { grid-template-columns: 1fr; }
 }
 </style>
 </head>
@@ -838,7 +948,7 @@ footer .tagline { font-size: 13px; opacity: 0.65; margin-bottom: 24px; }
         <svg viewBox="0 0 24 24" fill="currentColor"><path d="M19.59 6.69a4.83 4.83 0 0 1-3.77-4.25V2h-3.45v13.67a2.89 2.89 0 0 1-5.2 1.74 2.89 2.89 0 0 1 2.31-4.64 2.93 2.93 0 0 1 .88.13V9.4a6.84 6.84 0 0 0-1-.05A6.33 6.33 0 0 0 5.8 20.1a6.34 6.34 0 0 0 10.86-4.43V8.65a8.16 8.16 0 0 0 4.77 1.52v-3.4a4.85 4.85 0 0 1-1.84-.08z"/></svg>
       </a>
     </div>
-    <a class="admin-icon" href="/manage.html" aria-label="Panel de administración" title="Panel admin">
+    <a class="admin-icon" href="/manage.html" aria-label="Panel de administración" title="Panel admin" rel="nofollow" style="display:none">
       <svg viewBox="0 0 24 24" fill="currentColor" width="16" height="16"><path d="M12 1L3 5v6c0 5.5 3.8 10.7 9 12 5.2-1.3 9-6.5 9-12V5l-9-4zm0 6c1.1 0 2 .9 2 2s-.9 2-2 2-2-.9-2-2 .9-2 2-2zm0 10c-2.2 0-4.1-1.2-5.1-3 .5-1.7 2.3-2.8 5.1-2.8s4.6 1.1 5.1 2.8c-1 1.8-2.9 3-5.1 3z"/></svg>
     </a>
     <button class="nav-cta" onclick="openQuickOrder()">Pedir ahora</button>
@@ -1063,22 +1173,24 @@ footer .tagline { font-size: 13px; opacity: 0.65; margin-bottom: 24px; }
     <div class="social-strip-inner">
       <div class="social-strip-text">Síguenos · etiqueta <span class="ig">@mymochis.neiva</span> y te reposteamos</div>
       <div class="social-strip-links">
-        <a href="https://instagram.com/mymochis.neiva" target="_blank" rel="noopener" aria-label="Instagram">
+        <a href="https://instagram.com/mymochis.neiva" target="_blank" rel="noopener noreferrer" aria-label="Instagram">
           <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><rect x="2" y="2" width="20" height="20" rx="5" ry="5"/><path d="M16 11.37A4 4 0 1 1 12.63 8 4 4 0 0 1 16 11.37z"/><line x1="17.5" y1="6.5" x2="17.51" y2="6.5"/></svg>
         </a>
-        <a href="https://facebook.com/mymochis.neiva" target="_blank" rel="noopener" aria-label="Facebook">
+        <a href="https://facebook.com/mymochis.neiva" target="_blank" rel="noopener noreferrer" aria-label="Facebook">
           <svg viewBox="0 0 24 24" fill="currentColor"><path d="M18 2h-3a5 5 0 0 0-5 5v3H7v4h3v8h4v-8h3l1-4h-4V7a1 1 0 0 1 1-1h3z"/></svg>
         </a>
-        <a href="https://wa.me/573000000000" target="_blank" rel="noopener" aria-label="WhatsApp">
+        <a href="https://wa.me/573000000000" target="_blank" rel="noopener noreferrer" aria-label="WhatsApp">
           <svg viewBox="0 0 24 24" fill="currentColor"><path d="M17.5 14.4c-.3-.1-1.7-.8-1.9-.9-.3-.1-.5-.1-.7.1-.2.3-.7.9-.9 1.1-.2.2-.3.2-.6.1-.3-.1-1.2-.4-2.3-1.4-.9-.8-1.5-1.7-1.6-2-.2-.3 0-.5.1-.6.1-.1.3-.3.4-.5.1-.2.2-.3.3-.5.1-.2 0-.4 0-.5-.1-.1-.7-1.6-.9-2.2-.2-.6-.5-.5-.7-.5h-.6c-.2 0-.5.1-.8.4-.3.3-1 1-1 2.4s1.1 2.8 1.2 3c.1.2 2.1 3.3 5.2 4.6.7.3 1.3.5 1.7.6.7.2 1.4.2 1.9.1.6-.1 1.7-.7 2-1.4.2-.7.2-1.2.2-1.4-.1-.1-.3-.2-.6-.3z"/></svg>
         </a>
-        <a href="https://tiktok.com/@mymochis.neiva" target="_blank" rel="noopener" aria-label="TikTok">
+        <a href="https://tiktok.com/@mymochis.neiva" target="_blank" rel="noopener noreferrer" aria-label="TikTok">
           <svg viewBox="0 0 24 24" fill="currentColor"><path d="M19.59 6.69a4.83 4.83 0 0 1-3.77-4.25V2h-3.45v13.67a2.89 2.89 0 0 1-5.2 1.74 2.89 2.89 0 0 1 2.31-4.64 2.93 2.93 0 0 1 .88.13V9.4a6.84 6.84 0 0 0-1-.05A6.33 6.33 0 0 0 5.8 20.1a6.34 6.34 0 0 0 10.86-4.43V8.65a8.16 8.16 0 0 0 4.77 1.52v-3.4a4.85 4.85 0 0 1-1.84-.08z"/></svg>
         </a>
       </div>
     </div>
   </div>
 </section>
+
+<div class="footer-wave" aria-hidden="true"></div>
 
 <footer>
   <div class="container">
@@ -1105,15 +1217,24 @@ footer .tagline { font-size: 13px; opacity: 0.65; margin-bottom: 24px; }
           <li><a href="#flavors">Ver sabores</a></li>
           <li><a href="#combos">Combos</a></li>
           <li><a href="#releases">Próximas salidas</a></li>
-          <li><a href="manage.html" rel="nofollow">Soy operador</a></li>
         </ul>
+      </div>
+      <div>
+        <h4>Operador</h4>
+        <div class="footer-operator">
+          <span class="op-label">Acceso interno</span>
+          <a class="op-link" href="manage.html" rel="nofollow" aria-label="Iniciar sesión como operador">
+            <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M12 1L3 5v6c0 5.5 3.8 10.7 9 12 5.2-1.3 9-6.5 9-12V5l-9-4zm0 6c1.1 0 2 .9 2 2s-.9 2-2 2-2-.9-2-2 .9-2 2-2zm0 10c-2.2 0-4.1-1.2-5.1-3 .5-1.7 2.3-2.8 5.1-2.8s4.6 1.1 5.1 2.8c-1 1.8-2.9 3-5.1 3z"/></svg>
+            Iniciar sesión
+          </a>
+          <span class="op-hint">Solo personal autorizado · intentos limitados · IP registrada</span>
+        </div>
       </div>
     </div>
     <div class="footer-bottom">
       <span>Cada semana, un lote nuevo · hecho con cariño en el Huila</span>
       <span>
         <a href="#" onclick="event.preventDefault(); openConfig()">⚙ Configurar WhatsApp</a>
-        <a href="manage.html" rel="nofollow">operador</a>
       </span>
     </div>
   </div>

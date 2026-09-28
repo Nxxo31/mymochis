@@ -1,4 +1,6 @@
 import express from 'express';
+import helmet from 'helmet';
+import rateLimit from 'express-rate-limit';
 import { dirname, join } from 'node:path';
 import { fileURLToPath } from 'node:url';
 import { init } from './src/db.js';
@@ -31,13 +33,76 @@ init();
 
 const app = express();
 
+app.set('trust proxy', 1);
+
+app.use(helmet({
+  contentSecurityPolicy: {
+    useDefaults: false,
+    directives: {
+      defaultSrc: ["'self'"],
+      scriptSrc: ["'self'", "'unsafe-inline'", 'https://fonts.googleapis.com'],
+      styleSrc: ["'self'", "'unsafe-inline'", 'https://fonts.googleapis.com'],
+      fontSrc: ["'self'", 'https://fonts.gstatic.com', 'data:'],
+      imgSrc: ["'self'", 'data:', 'blob:', 'https:'],
+      connectSrc: ["'self'"],
+      mediaSrc: ["'self'"],
+      objectSrc: ["'none'"],
+      frameSrc: ["'none'"],
+      frameAncestors: ["'none'"],
+      formAction: ["'self'"],
+      baseUri: ["'self'"],
+      manifestSrc: ["'self'"],
+    },
+  },
+  crossOriginEmbedderPolicy: false,
+  crossOriginOpenerPolicy: { policy: 'same-origin' },
+  crossOriginResourcePolicy: { policy: 'same-site' },
+  referrerPolicy: { policy: 'strict-origin-when-cross-origin' },
+  hsts: { maxAge: 15552000, includeSubDomains: true, preload: false },
+  noSniff: true,
+  frameguard: { action: 'deny' },
+  xssFilter: true,
+  hidePoweredBy: true,
+}));
+
 app.use((req, res, next) => {
+  res.setHeader('Permissions-Policy', 'geolocation=(), microphone=(), camera=(), payment=(), usb=(), magnetometer=(), gyroscope=(), accelerometer=()');
   res.setHeader('Access-Control-Allow-Origin', CORS_ORIGIN);
   res.setHeader('Access-Control-Allow-Methods', 'GET, POST, PUT, PATCH, DELETE, OPTIONS');
   res.setHeader('Access-Control-Allow-Headers', 'Content-Type, Authorization');
+  res.setHeader('Access-Control-Max-Age', '600');
   if (req.method === 'OPTIONS') return res.sendStatus(204);
   next();
 });
+
+const generalLimiter = rateLimit({
+  windowMs: 60 * 1000,
+  max: 120,
+  standardHeaders: true,
+  legacyHeaders: false,
+  message: { error: 'rate_limited', message: 'Demasiadas solicitudes, intenta en un minuto' },
+});
+
+const authLimiter = rateLimit({
+  windowMs: 15 * 60 * 1000,
+  max: 20,
+  standardHeaders: true,
+  legacyHeaders: false,
+  skipSuccessfulRequests: true,
+  message: { error: 'rate_limited', message: 'Demasiados intentos, espera 15 minutos' },
+});
+
+const uploadLimiter = rateLimit({
+  windowMs: 60 * 1000,
+  max: 30,
+  standardHeaders: true,
+  legacyHeaders: false,
+  message: { error: 'rate_limited', message: 'Demasiadas subidas, intenta más tarde' },
+});
+
+app.use('/api/', generalLimiter);
+app.use('/api/auth', authLimiter);
+app.use('/api/uploads', uploadLimiter);
 
 app.use(express.json({ limit: '256kb' }));
 
@@ -61,8 +126,19 @@ app.use('/api/metrics', metricsRoutes);
 app.use('/api/public', publicRoutes);
 app.use('/api/uploads', uploadsRoutes);
 
-app.use('/uploads', express.static(UPLOAD_DIR, { maxAge: '30d', immutable: true }));
-app.use(express.static(PUBLIC_DIR, { extensions: ['html'], maxAge: '5m' }));
+app.use('/uploads', express.static(UPLOAD_DIR, { maxAge: '30d', immutable: true, setHeaders: (res) => {
+  res.setHeader('X-Content-Type-Options', 'nosniff');
+  res.setHeader('Cache-Control', 'public, max-age=2592000, immutable');
+}}));
+
+app.use(express.static(PUBLIC_DIR, {
+  extensions: ['html'],
+  maxAge: '5m',
+  setHeaders: (res, filePath) => {
+    if (filePath.endsWith('.html')) res.setHeader('Cache-Control', 'no-cache');
+    res.setHeader('X-Content-Type-Options', 'nosniff');
+  },
+}));
 
 app.use((req, res, next) => {
   if (req.path.startsWith('/api/')) return res.status(404).json({ error: 'not_found' });
@@ -79,4 +155,5 @@ app.listen(PORT, () => {
   console.log(`[mymochis] listening on http://localhost:${PORT}`);
   console.log(`[mymochis] static: ${PUBLIC_DIR}`);
   console.log(`[mymochis] uploads: ${UPLOAD_DIR}`);
+  console.log(`[mymochis] security: helmet + rate-limit active`);
 });
