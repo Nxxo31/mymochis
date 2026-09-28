@@ -282,6 +282,53 @@ tbody tr:hover { background: var(--bg); }
   letter-spacing: 0.8px;
 }
 
+/* === SUB-TABS (Entregas) === */
+.subtabs {
+  display: flex; gap: 6px; flex-wrap: wrap;
+  background: var(--paper); border: 1px solid var(--line);
+  border-radius: 999px; padding: 6px;
+  margin-bottom: 18px;
+  box-shadow: 0 1px 2px var(--shadow-soft);
+}
+.subtabs .pill {
+  padding: 8px 16px; border-radius: 999px;
+  font-size: 13px; font-weight: 600; cursor: pointer;
+  color: var(--ink-soft); background: transparent;
+  border: 0; transition: all 0.15s;
+  font-family: 'Inter', sans-serif;
+}
+.subtabs .pill:hover { background: var(--bg-soft); color: var(--ink); }
+.subtabs .pill.active {
+  background: var(--pink-deep); color: #fff;
+  box-shadow: 0 2px 6px rgba(199,51,80,0.30);
+}
+.subtab-panel { display: none; }
+.subtab-panel.active { display: block; }
+
+/* === ENTREGAS extras === */
+.cfg-group {
+  background: var(--paper); border: 1px solid var(--line);
+  border-radius: 14px; padding: 18px 20px; margin-bottom: 14px;
+}
+.cfg-group h3 {
+  font-family: 'Fredoka', serif; font-size: 18px; font-weight: 600;
+  color: var(--cyan-deep); margin-bottom: 12px;
+}
+.cfg-group .hint { font-size: 12px; color: var(--ink-soft); margin-top: 4px; }
+.tag.status-draft { background: rgba(150,150,150,0.18); color: var(--ink-soft); }
+.tag.status-open { background: rgba(149,184,158,0.30); color: var(--mint-deep); }
+.tag.status-closed { background: rgba(232,138,158,0.15); color: var(--accent); }
+.tag.status-completed { background: rgba(98,211,236,0.25); color: var(--cyan-deep); }
+.payout-row { display: flex; gap: 8px; align-items: center; padding: 8px 0; border-bottom: 1px dashed var(--line); }
+.payout-row:last-child { border-bottom: 0; }
+.payout-row .star { color: var(--gold); font-size: 16px; }
+.expand-btn { background: none; border: 0; color: var(--cyan-deep); cursor: pointer; font-weight: 600; font-size: 13px; padding: 4px 8px; border-radius: 6px; }
+.expand-btn:hover { background: var(--bg-soft); }
+.items-repeater { background: var(--bg); border: 1px dashed var(--line); border-radius: 10px; padding: 10px; margin: 8px 0; }
+.item-row { display: flex; gap: 8px; align-items: center; margin-bottom: 6px; }
+.item-row select, .item-row input { flex: 1; padding: 6px 10px; border: 1px solid var(--line); border-radius: 6px; font-size: 13px; font-family: 'Inter', sans-serif; }
+.item-row button { background: rgba(232,138,158,0.18); color: var(--accent); border: 0; border-radius: 6px; padding: 6px 10px; cursor: pointer; font-weight: 600; }
+
 /* === MODAL === */
 .modal-back {
   position: fixed; inset: 0; background: rgba(43,38,32,0.55);
@@ -607,6 +654,12 @@ tbody tr:hover { background: rgba(98,211,236,0.10); }
       Pedidos
     </div>
 
+    <div class="nav-section">Logística</div>
+    <div class="nav-item" data-section="entregas">
+      <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><rect x="1" y="3" width="15" height="13"/><polygon points="16 8 20 8 23 11 23 16 16 16 16 8"/><circle cx="5.5" cy="18.5" r="2.5"/><circle cx="18.5" cy="18.5" r="2.5"/></svg>
+      Entregas
+    </div>
+
     <div class="nav-section">Catálogo</div>
     <div class="nav-item" data-section="flavors">
       <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><circle cx="12" cy="12" r="10"/><path d="M12 2a10 10 0 010 20"/></svg>
@@ -776,6 +829,28 @@ tbody tr:hover { background: rgba(98,211,236,0.10); }
           <tbody id="social-body"></tbody>
         </table>
       </div>
+    </section>
+
+    <!-- ============== ENTREGAS ============== -->
+    <section id="section-entregas" class="section">
+      <div class="page-head">
+        <div>
+          <h1>Entregas</h1>
+          <div class="sub">Inmediato, horarios, ventanas de salida y métodos de pago</div>
+        </div>
+      </div>
+
+      <div class="subtabs" id="entregas-tabs">
+        <button class="pill active" data-sub="inmediato">Inmediato</button>
+        <button class="pill" data-sub="horarios">Horarios</button>
+        <button class="pill" data-sub="ventanas">Ventanas</button>
+        <button class="pill" data-sub="pagos">Métodos de pago</button>
+      </div>
+
+      <div id="entregas-inmediato" class="subtab-panel active"></div>
+      <div id="entregas-horarios" class="subtab-panel"></div>
+      <div id="entregas-ventanas" class="subtab-panel"></div>
+      <div id="entregas-pagos" class="subtab-panel"></div>
     </section>
 
     <!-- ============== CONFIG ============== -->
@@ -1368,6 +1443,481 @@ async function deleteSocial(id) {
     await loadAll(); render.social();
   } catch (e) { toast('Error: ' + e.message, 'error'); }
 }
+
+// ============ ENTREGAS ============
+const ENTREGAS_DAYS = ['Domingo','Lunes','Martes','Miércoles','Jueves','Viernes','Sábado'];
+
+document.querySelectorAll('#entregas-tabs .pill').forEach(p => {
+  p.onclick = () => {
+    document.querySelectorAll('#entregas-tabs .pill').forEach(x => x.classList.remove('active'));
+    p.classList.add('active');
+    document.querySelectorAll('.subtab-panel').forEach(x => x.classList.remove('active'));
+    document.getElementById('entregas-' + p.dataset.sub).classList.add('active');
+    render.entregasSub(p.dataset.sub);
+  };
+});
+
+render.entregas = function() {
+  const active = document.querySelector('#entregas-tabs .pill.active');
+  render.entregasSub(active ? active.dataset.sub : 'inmediato');
+};
+
+render.entregasSub = function(sub) {
+  if (sub === 'inmediato') render.entregasInmediato();
+  else if (sub === 'horarios') render.entregasHorarios();
+  else if (sub === 'ventanas') render.entregasVentanas();
+  else if (sub === 'pagos') render.entregasPagos();
+};
+
+render.entregasInmediato = async function() {
+  const el = document.getElementById('entregas-inmediato');
+  try {
+    const cfg = await api('/delivery-config');
+    el.innerHTML = `
+      <form id="delivery-config-form">
+        <div class="cfg-group">
+          <h3>Estado del servicio</h3>
+          <div class="form-group"><label style="display:flex;align-items:center;gap:8px;text-transform:none;letter-spacing:0;font-size:14px;color:var(--ink)"><input type="checkbox" id="dc-enabled" ${cfg.delivery_immediate_enabled ? 'checked' : ''}> Habilitar entrega inmediata</label></div>
+        </div>
+        <div class="cfg-group">
+          <h3>Costos y zona</h3>
+          <div class="modal-row">
+            <div class="form-group"><label>Tarifa de domicilio (centavos COP)</label><input type="number" id="dc-fee" value="${cfg.delivery_immediate_fee_cents || 0}" min="0"><div class="hint">5000 = $50 COP</div></div>
+            <div class="form-group"><label>Pedido mínimo (centavos COP)</label><input type="number" id="dc-min" value="${cfg.delivery_immediate_min_order_cents || 0}" min="0"><div class="hint">Pedidos menores serán rechazados</div></div>
+          </div>
+          <div class="modal-row">
+            <div class="form-group"><label>Radio (km)</label><input type="number" id="dc-radius" value="${cfg.delivery_immediate_radius_km || 5}" step="0.5" min="0"></div>
+            <div class="form-group"><label>ETA (minutos)</label><input type="number" id="dc-eta" value="${cfg.delivery_immediate_eta_minutes || 45}" min="0"></div>
+          </div>
+        </div>
+        <div class="cfg-group">
+          <h3>Centro de la zona</h3>
+          <div class="form-group"><label>Etiqueta</label><input type="text" id="dc-label" value="${escapeHtml(cfg.delivery_zone_label || '')}" placeholder="ej: Neiva urbana"></div>
+          <div class="modal-row">
+            <div class="form-group"><label>Latitud</label><input type="number" id="dc-lat" value="${cfg.delivery_zone_center_lat || ''}" step="0.0001"></div>
+            <div class="form-group"><label>Longitud</label><input type="number" id="dc-lng" value="${cfg.delivery_zone_center_lng || ''}" step="0.0001"></div>
+          </div>
+          <div class="form-group"><label>Cutoff por defecto (horas)</label><input type="number" id="dc-cutoff" value="${cfg.delivery_default_cutoff_hours || 8}" min="0" max="168"><div class="hint">Horas antes del cierre para hacer pedidos programados</div></div>
+        </div>
+        <div class="modal-actions">
+          <button type="submit" class="btn btn-primary">Guardar cambios</button>
+        </div>
+      </form>`;
+    document.getElementById('delivery-config-form').onsubmit = async (e) => {
+      e.preventDefault();
+      const body = {
+        delivery_immediate_enabled: document.getElementById('dc-enabled').checked ? 1 : 0,
+        delivery_immediate_fee_cents: Number(document.getElementById('dc-fee').value),
+        delivery_immediate_min_order_cents: Number(document.getElementById('dc-min').value),
+        delivery_immediate_radius_km: Number(document.getElementById('dc-radius').value),
+        delivery_immediate_eta_minutes: Number(document.getElementById('dc-eta').value),
+        delivery_zone_label: document.getElementById('dc-label').value.trim(),
+        delivery_zone_center_lat: Number(document.getElementById('dc-lat').value),
+        delivery_zone_center_lng: Number(document.getElementById('dc-lng').value),
+        delivery_default_cutoff_hours: Number(document.getElementById('dc-cutoff').value)
+      };
+      try {
+        await api('/delivery-config', { method: 'PUT', body: JSON.stringify(body) });
+        toast('Config guardada', 'success');
+        render.entregasInmediato();
+      } catch (err) { toast('Error: ' + err.message, 'error'); }
+    };
+  } catch (e) { el.innerHTML = `<div class="card">Error: ${escapeHtml(e.message)}</div>`; }
+};
+
+render.entregasHorarios = async function() {
+  const el = document.getElementById('entregas-horarios');
+  try {
+    const rows = await api('/delivery-schedule?include_inactive=1');
+    el.innerHTML = `
+      <div class="page-head" style="margin-bottom:14px"><div><div class="sub">${rows.length} horarios</div></div><div class="actions"><button class="btn btn-primary" onclick="openScheduleModal()">+ Nuevo horario</button></div></div>
+      <div class="table-wrap"><table><thead><tr><th>Día</th><th>Horario</th><th>Modalidad</th><th>Cutoff</th><th>Orden</th><th>Notas</th><th></th></tr></thead><tbody>
+      ${rows.map(r => `<tr>
+        <td><strong>${ENTREGAS_DAYS[r.day_of_week]}</strong></td>
+        <td>${r.start_time} – ${r.end_time}</td>
+        <td><span class="tag">${r.mode}</span></td>
+        <td>${r.cutoff_offset_hours}h</td>
+        <td>${r.sort_order}</td>
+        <td>${escapeHtml(r.notes || '')}</td>
+        <td>
+          <button class="btn btn-sm btn-ghost" onclick='openScheduleModal(${JSON.stringify(r)})'>Editar</button>
+          <button class="btn btn-sm btn-danger" onclick="deleteSchedule(${r.id})">Eliminar</button>
+        </td>
+      </tr>`).join('')}
+      </tbody></table></div>`;
+  } catch (e) { el.innerHTML = `<div class="card">Error: ${escapeHtml(e.message)}</div>`; }
+};
+
+window.openScheduleModal = function(s) {
+  s = s || null;
+  document.getElementById('modal-content').innerHTML = `
+    <h2>${s ? 'Editar' : 'Nuevo'} horario</h2>
+    <form id="entity-form">
+      <div class="modal-row">
+        <div class="form-group"><label>Día</label><select id="s-day">${ENTREGAS_DAYS.map((d, i) => `<option value="${i}" ${s?.day_of_week === i ? 'selected' : ''}>${d}</option>`).join('')}</select></div>
+        <div class="form-group"><label>Modalidad</label><select id="s-mode">
+          <option value="pickup" ${s?.mode === 'pickup' ? 'selected' : ''}>Pickup</option>
+          <option value="delivery" ${s?.mode === 'delivery' ? 'selected' : ''}>Delivery</option>
+          <option value="both" ${(!s || s.mode === 'both') ? 'selected' : ''}>Ambos</option>
+        </select></div>
+      </div>
+      <div class="modal-row">
+        <div class="form-group"><label>Inicio (HH:MM)</label><input type="time" id="s-start" value="${s?.start_time || '15:00'}" required></div>
+        <div class="form-group"><label>Fin (HH:MM)</label><input type="time" id="s-end" value="${s?.end_time || '19:00'}" required></div>
+      </div>
+      <div class="modal-row">
+        <div class="form-group"><label>Cutoff (h antes)</label><input type="number" id="s-cutoff" value="${s?.cutoff_offset_hours ?? 8}" min="0" max="168"></div>
+        <div class="form-group"><label>Orden</label><input type="number" id="s-sort" value="${s?.sort_order ?? 0}"></div>
+      </div>
+      <div class="form-group"><label style="display:flex;align-items:center;gap:8px;text-transform:none;letter-spacing:0;font-size:14px;color:var(--ink)"><input type="checkbox" id="s-active" ${!s || s.active !== 0 ? 'checked' : ''}> Activo</label></div>
+      <div class="form-group"><label>Notas</label><input type="text" id="s-notes" value="${escapeHtml(s?.notes || '')}"></div>
+      <div class="modal-actions">
+        <button type="button" class="btn btn-ghost" onclick="closeModal()">Cancelar</button>
+        <button type="submit" class="btn btn-primary">Guardar</button>
+      </div>
+    </form>`;
+  document.getElementById('modal-back').classList.add('visible');
+  document.getElementById('entity-form').onsubmit = async (e) => {
+    e.preventDefault();
+    const body = {
+      day_of_week: Number(document.getElementById('s-day').value),
+      start_time: document.getElementById('s-start').value,
+      end_time: document.getElementById('s-end').value,
+      mode: document.getElementById('s-mode').value,
+      cutoff_offset_hours: Number(document.getElementById('s-cutoff').value),
+      sort_order: Number(document.getElementById('s-sort').value),
+      active: document.getElementById('s-active').checked ? 1 : 0,
+      notes: document.getElementById('s-notes').value.trim() || null
+    };
+    try {
+      if (s) await api(`/delivery-schedule/${s.id}`, { method: 'PUT', body: JSON.stringify(body) });
+      else await api('/delivery-schedule', { method: 'POST', body: JSON.stringify(body) });
+      toast('Horario guardado', 'success');
+      closeModal();
+      render.entregasHorarios();
+    } catch (err) { toast('Error: ' + err.message, 'error'); }
+  };
+};
+
+window.deleteSchedule = async function(id) {
+  if (!confirm('¿Eliminar este horario?')) return;
+  try {
+    await api(`/delivery-schedule/${id}`, { method: 'DELETE' });
+    toast('Horario eliminado', 'success');
+    render.entregasHorarios();
+  } catch (e) { toast('Error: ' + e.message, 'error'); }
+};
+
+render.entregasVentanas = async function() {
+  const el = document.getElementById('entregas-ventanas');
+  try {
+    const rows = await api('/release-windows?include_all=1');
+    el.innerHTML = `
+      <div class="page-head" style="margin-bottom:14px"><div><div class="sub">${rows.length} ventanas — para editar items, duplica + elimina la original</div></div><div class="actions"><button class="btn btn-primary" onclick="openWindowModal()">+ Nueva ventana</button></div></div>
+      <div class="table-wrap"><table><thead><tr><th>Fecha</th><th>Cutoff</th><th>Status</th><th>Items</th><th>Notas</th><th></th></tr></thead><tbody>
+      ${rows.map(r => `<tr>
+        <td><strong>${r.release_date}</strong></td>
+        <td>${(r.cutoff_at || '').replace('T', ' ').slice(0, 16)}</td>
+        <td><span class="tag status-${r.status}">${r.status}</span></td>
+        <td style="max-width:340px">${(r.items || []).map(it => `<span class="tag" style="background:var(--bg-soft);color:var(--ink);margin-right:4px">${escapeHtml(it.flavor_name)} × ${it.units_available}</span>`).join('')}</td>
+        <td>${escapeHtml(r.notes || '')}</td>
+        <td>
+          <button class="btn btn-sm btn-ghost" onclick='openWindowModal(${JSON.stringify(r)})'>Editar</button>
+          <button class="btn btn-sm btn-ghost" onclick='duplicateWindow(${JSON.stringify(r)})'>Duplicar</button>
+          <button class="btn btn-sm btn-danger" onclick="deleteWindow(${r.id})">Eliminar</button>
+        </td>
+      </tr>`).join('')}
+      </tbody></table></div>`;
+  } catch (e) { el.innerHTML = `<div class="card">Error: ${escapeHtml(e.message)}</div>`; }
+};
+
+window.openWindowModal = async function(w) {
+  w = w || null;
+  let flavors = _flavors;
+  if (!flavors || !flavors.length) {
+    try { flavors = await api('/flavors'); _flavors = flavors; } catch {}
+  }
+  if (!flavors || !flavors.length) {
+    toast('No hay sabores creados. Crea al menos uno primero.', 'error');
+    return;
+  }
+  window._windowItems = (w?.items || []).map(it => ({ flavor_id: it.flavor_id, units_available: it.units_available }));
+  if (!window._windowItems.length) window._windowItems.push({ flavor_id: flavors[0].id, units_available: 10 });
+
+  const renderItems = () => window._windowItems.map((it, idx) => `
+    <div class="item-row" data-idx="${idx}">
+      <select class="item-flavor">
+        ${flavors.map(f => `<option value="${f.id}" ${Number(it.flavor_id) === Number(f.id) ? 'selected' : ''}>${escapeHtml(f.name)}</option>`).join('')}
+      </select>
+      <input type="number" class="item-units" value="${it.units_available}" min="0" placeholder="unidades" style="max-width:120px">
+      <button type="button" onclick="removeItemRow(${idx})">×</button>
+    </div>`).join('');
+
+  document.getElementById('modal-content').innerHTML = `
+    <h2>${w ? 'Editar' : 'Nueva'} ventana de salida</h2>
+    <form id="entity-form">
+      <div class="modal-row">
+        <div class="form-group"><label>Fecha de salida (YYYY-MM-DD)</label><input type="date" id="w-date" value="${w?.release_date || ''}" required></div>
+        <div class="form-group"><label>Status</label><select id="w-status">
+          <option value="draft" ${w?.status === 'draft' ? 'selected' : ''}>draft</option>
+          <option value="open" ${(!w || w.status === 'open') ? 'selected' : ''}>open</option>
+          <option value="closed" ${w?.status === 'closed' ? 'selected' : ''}>closed</option>
+          <option value="completed" ${w?.status === 'completed' ? 'selected' : ''}>completed</option>
+        </select></div>
+      </div>
+      <div class="form-group"><label>Cutoff (fecha y hora)</label><input type="datetime-local" id="w-cutoff" value="${w?.cutoff_at ? w.cutoff_at.slice(0, 16) : ''}" required></div>
+      <div class="form-group"><label>Notas</label><input type="text" id="w-notes" value="${escapeHtml(w?.notes || '')}"></div>
+      <div class="form-group"><label>Items (sabor × unidades disponibles)</label>
+        <div class="items-repeater" id="items-list">${renderItems()}</div>
+        <button type="button" class="btn btn-ghost btn-sm" onclick="addItemRow()" style="margin-top:6px">+ Agregar sabor</button>
+      </div>
+      <div class="modal-actions">
+        <button type="button" class="btn btn-ghost" onclick="closeModal()">Cancelar</button>
+        <button type="submit" class="btn btn-primary">Guardar</button>
+      </div>
+    </form>`;
+  document.getElementById('modal-back').classList.add('visible');
+
+  window.addItemRow = function() {
+    window._windowItems.push({ flavor_id: flavors[0].id, units_available: 10 });
+    document.getElementById('items-list').innerHTML = renderItems();
+    syncItemsFromDOM();
+  };
+  window.removeItemRow = function(idx) {
+    window._windowItems.splice(idx, 1);
+    if (!window._windowItems.length) window._windowItems.push({ flavor_id: flavors[0].id, units_available: 10 });
+    document.getElementById('items-list').innerHTML = renderItems();
+    syncItemsFromDOM();
+  };
+  function syncItemsFromDOM() {
+    document.querySelectorAll('#items-list .item-row').forEach((row, i) => {
+      const sel = row.querySelector('.item-flavor');
+      const inp = row.querySelector('.item-units');
+      if (sel) sel.onchange = () => { window._windowItems[i].flavor_id = Number(sel.value); };
+      if (inp) inp.oninput = () => { window._windowItems[i].units_available = Number(inp.value); };
+    });
+  }
+  syncItemsFromDOM();
+
+  document.getElementById('entity-form').onsubmit = async (e) => {
+    e.preventDefault();
+    syncItemsFromDOM();
+    const release_date = document.getElementById('w-date').value;
+    const cutoff_at = document.getElementById('w-cutoff').value;
+    const status = document.getElementById('w-status').value;
+    const notes = document.getElementById('w-notes').value.trim() || null;
+    try {
+      if (w) {
+        if (confirm('El backend sólo permite editar fecha/cutoff/status/notas. Para cambiar items, duplica la ventana, edita los items en la copia y elimina la original. ¿Guardar cambios de fecha/estado?')) {
+          await api(`/release-windows/${w.id}`, { method: 'PUT', body: JSON.stringify({ release_date, cutoff_at, status, notes }) });
+          toast('Ventana actualizada', 'success');
+          closeModal();
+          render.entregasVentanas();
+        }
+      } else {
+        await api('/release-windows', { method: 'POST', body: JSON.stringify({ release_date, cutoff_at, status, notes, items: window._windowItems }) });
+        toast('Ventana creada', 'success');
+        closeModal();
+        render.entregasVentanas();
+      }
+    } catch (err) { toast('Error: ' + err.message, 'error'); }
+  };
+};
+
+window.duplicateWindow = function(w) {
+  openWindowModal({
+    release_date: '',
+    cutoff_at: '',
+    status: 'draft',
+    notes: (w.notes ? w.notes + ' ' : '') + '(copia de #' + w.id + ')',
+    items: (w.items || []).map(it => ({ flavor_id: it.flavor_id, units_available: it.units_available }))
+  });
+};
+
+window.deleteWindow = async function(id) {
+  if (!confirm('¿Eliminar esta ventana y todos sus items?')) return;
+  try {
+    await api(`/release-windows/${id}`, { method: 'DELETE' });
+    toast('Ventana eliminada', 'success');
+    render.entregasVentanas();
+  } catch (e) { toast('Error: ' + e.message, 'error'); }
+};
+
+render.entregasPagos = async function() {
+  const el = document.getElementById('entregas-pagos');
+  try {
+    const methods = await api('/payment-methods?include_inactive=1');
+    if (!methods.length) {
+      el.innerHTML = `
+        <div class="page-head" style="margin-bottom:14px"><div><div class="sub">Sin métodos aún</div></div><div class="actions"><button class="btn btn-primary" onclick="openPaymentModal()">+ Nuevo método</button></div></div>
+        <div class="card">No hay métodos de pago configurados.</div>`;
+      return;
+    }
+    el.innerHTML = `
+      <div class="page-head" style="margin-bottom:14px"><div><div class="sub">${methods.length} métodos</div></div><div class="actions"><button class="btn btn-primary" onclick="openPaymentModal()">+ Nuevo método</button></div></div>
+      ${methods.map(m => `
+        <div class="cfg-group">
+          <div style="display:flex;justify-content:space-between;align-items:start;gap:12px;flex-wrap:wrap">
+            <div style="flex:1;min-width:240px">
+              <h3 style="margin-bottom:4px">${escapeHtml(m.label)} <span style="color:var(--ink-soft);font-weight:400;font-size:13px;font-family:Inter">(${escapeHtml(m.code)})</span></h3>
+              ${m.instructions ? `<div style="font-size:13px;color:var(--ink-soft);margin-bottom:4px">${escapeHtml(m.instructions)}</div>` : ''}
+              ${m.qr_url ? `<div style="font-size:12px;color:var(--cyan-deep)">QR: ${escapeHtml(m.qr_url)}</div>` : ''}
+              <div style="font-size:12px;color:var(--ink-soft);margin-top:4px">Orden: ${m.sort_order} · ${m.active ? '✓ activo' : 'inactivo'}</div>
+            </div>
+            <div style="display:flex;gap:6px;flex-wrap:wrap">
+              <button class="expand-btn" data-toggle-payouts="${m.id}">▸ Cuentas (${(m.payout_accounts || []).length})</button>
+              <button class="btn btn-sm btn-ghost" onclick='openPaymentModal(${JSON.stringify(m)})'>Editar</button>
+              <button class="btn btn-sm btn-danger" onclick="deletePayment(${m.id})">Eliminar</button>
+            </div>
+          </div>
+          <div id="payouts-${m.id}" style="display:none;margin-top:10px;border-top:1px dashed var(--line);padding-top:8px"></div>
+          <div id="payouts-add-${m.id}" style="display:none;margin-top:8px">
+            <button class="btn btn-sm btn-primary" data-add-payout="${m.id}">+ Agregar cuenta</button>
+          </div>
+        </div>
+      `).join('')}`;
+    el.querySelectorAll('[data-toggle-payouts]').forEach(btn => {
+      btn.onclick = () => togglePayouts(Number(btn.dataset.togglePayouts));
+    });
+    el.querySelectorAll('[data-add-payout]').forEach(btn => {
+      btn.onclick = () => openPayoutModal(Number(btn.dataset.addPayout));
+    });
+  } catch (e) { el.innerHTML = `<div class="card">Error: ${escapeHtml(e.message)}</div>`; }
+};
+
+window.togglePayouts = async function(methodId) {
+  const wrap = document.getElementById('payouts-' + methodId);
+  const addWrap = document.getElementById('payouts-add-' + methodId);
+  const tog = document.querySelector('[data-toggle-payouts="' + methodId + '"]');
+  if (wrap.style.display !== 'none') {
+    wrap.style.display = 'none'; addWrap.style.display = 'none';
+    if (tog) tog.textContent = tog.textContent.replace('▾', '▸');
+    return;
+  }
+  try {
+    const rows = await api('/payout-accounts?method_id=' + methodId);
+    if (!rows.length) { wrap.innerHTML = '<div style="font-size:13px;color:var(--ink-soft);padding:8px">Sin cuentas aún.</div>'; }
+    else {
+      wrap.innerHTML = rows.map(p => `
+        <div class="payout-row">
+          ${p.is_default ? '<span class="star" title="Predeterminada">★</span>' : '<span style="display:inline-block;width:16px"></span>'}
+          <div style="flex:1"><strong>${escapeHtml(p.holder_name)}</strong> <span style="color:var(--ink-soft);font-size:12px">${escapeHtml(p.account_ref)}</span></div>
+          <button class="expand-btn" data-edit-payout='${JSON.stringify({ methodId, p })}'>Editar</button>
+          <button class="expand-btn" data-delete-payout='${p.id}' style="color:var(--accent)">Eliminar</button>
+        </div>`).join('');
+      wrap.querySelectorAll('[data-edit-payout]').forEach(b => {
+        b.onclick = () => { const { methodId, p } = JSON.parse(b.dataset.editPayout); openPayoutModal(methodId, p); };
+      });
+      wrap.querySelectorAll('[data-delete-payout]').forEach(b => {
+        b.onclick = () => deletePayout(Number(b.dataset.deletePayout), methodId);
+      });
+    }
+    wrap.style.display = 'block'; addWrap.style.display = 'block';
+    if (tog) tog.textContent = `▾ Cuentas (${rows.length})`;
+  } catch (e) { toast('Error: ' + e.message, 'error'); }
+};
+
+window.openPaymentModal = function(m) {
+  m = m || null;
+  document.getElementById('modal-content').innerHTML = `
+    <h2>${m ? 'Editar' : 'Nuevo'} método de pago</h2>
+    <form id="entity-form">
+      <div class="modal-row">
+        <div class="form-group"><label>Código</label><input type="text" id="pm-code" value="${escapeHtml(m?.code || '')}" ${m ? 'readonly' : ''} required placeholder="ej: nequi, daviplata"></div>
+        <div class="form-group"><label>Etiqueta</label><input type="text" id="pm-label" value="${escapeHtml(m?.label || '')}" required></div>
+      </div>
+      <div class="form-group"><label>Instrucciones</label><textarea id="pm-instructions" rows="2">${escapeHtml(m?.instructions || '')}</textarea></div>
+      <div class="modal-row">
+        <div class="form-group"><label>QR URL (opcional)</label><input type="text" id="pm-qr" value="${escapeHtml(m?.qr_url || '')}"></div>
+        <div class="form-group"><label>Orden</label><input type="number" id="pm-sort" value="${m?.sort_order ?? 0}"></div>
+      </div>
+      <div class="form-group"><label style="display:flex;align-items:center;gap:8px;text-transform:none;letter-spacing:0;font-size:14px;color:var(--ink)"><input type="checkbox" id="pm-active" ${!m || m.active !== 0 ? 'checked' : ''}> Activo</label></div>
+      <div class="modal-actions">
+        <button type="button" class="btn btn-ghost" onclick="closeModal()">Cancelar</button>
+        <button type="submit" class="btn btn-primary">Guardar</button>
+      </div>
+    </form>`;
+  document.getElementById('modal-back').classList.add('visible');
+  document.getElementById('entity-form').onsubmit = async (e) => {
+    e.preventDefault();
+    const body = {
+      code: document.getElementById('pm-code').value.trim(),
+      label: document.getElementById('pm-label').value.trim(),
+      instructions: document.getElementById('pm-instructions').value.trim() || null,
+      qr_url: document.getElementById('pm-qr').value.trim() || null,
+      sort_order: Number(document.getElementById('pm-sort').value),
+      active: document.getElementById('pm-active').checked ? 1 : 0
+    };
+    try {
+      if (m) await api(`/payment-methods/${m.id}`, { method: 'PUT', body: JSON.stringify(body) });
+      else await api('/payment-methods', { method: 'POST', body: JSON.stringify(body) });
+      toast('Método guardado', 'success');
+      closeModal();
+      render.entregasPagos();
+    } catch (err) { toast('Error: ' + err.message, 'error'); }
+  };
+};
+
+window.deletePayment = async function(id) {
+  if (!confirm('¿Eliminar este método y todas sus cuentas asociadas?')) return;
+  try {
+    await api(`/payment-methods/${id}`, { method: 'DELETE' });
+    toast('Método eliminado', 'success');
+    render.entregasPagos();
+  } catch (e) { toast('Error: ' + e.message, 'error'); }
+};
+
+window.openPayoutModal = function(methodId, p) {
+  p = p || null;
+  document.getElementById('modal-content').innerHTML = `
+    <h2>${p ? 'Editar' : 'Nueva'} cuenta de pago</h2>
+    <form id="entity-form">
+      <div class="form-group"><label>Titular</label><input type="text" id="pa-holder" value="${escapeHtml(p?.holder_name || '')}" required></div>
+      <div class="form-group"><label>Referencia (celular / número de cuenta)</label><input type="text" id="pa-ref" value="${escapeHtml(p?.account_ref || '')}" required></div>
+      <div class="form-group"><label style="display:flex;align-items:center;gap:8px;text-transform:none;letter-spacing:0;font-size:14px;color:var(--ink)"><input type="checkbox" id="pa-default" ${p?.is_default ? 'checked' : ''}> Predeterminada (las otras cuentas de este método se desactivarán)</label></div>
+      <div class="modal-actions">
+        <button type="button" class="btn btn-ghost" onclick="closeModal()">Cancelar</button>
+        <button type="submit" class="btn btn-primary">Guardar</button>
+      </div>
+    </form>`;
+  document.getElementById('modal-back').classList.add('visible');
+  document.getElementById('entity-form').onsubmit = async (e) => {
+    e.preventDefault();
+    const holder_name = document.getElementById('pa-holder').value.trim();
+    const account_ref = document.getElementById('pa-ref').value.trim();
+    const is_default = document.getElementById('pa-default').checked ? 1 : 0;
+    try {
+      if (p) await api(`/payout-accounts/${p.id}`, { method: 'PUT', body: JSON.stringify({ holder_name, account_ref, is_default }) });
+      else await api('/payout-accounts', { method: 'POST', body: JSON.stringify({ method_id: methodId, holder_name, account_ref, is_default }) });
+      toast('Cuenta guardada', 'success');
+      closeModal();
+      const wrap = document.getElementById('payouts-' + methodId);
+      if (wrap) {
+        wrap.style.display = 'none';
+        const tog = document.querySelector('[data-toggle-payouts="' + methodId + '"]');
+        if (tog) tog.textContent = tog.textContent.replace('▾', '▸');
+        await togglePayouts(methodId);
+      } else {
+        render.entregasPagos();
+      }
+    } catch (err) { toast('Error: ' + err.message, 'error'); }
+  };
+};
+
+window.deletePayout = async function(id, methodId) {
+  if (!confirm('¿Eliminar esta cuenta?')) return;
+  try {
+    await api(`/payout-accounts/${id}`, { method: 'DELETE' });
+    toast('Cuenta eliminada', 'success');
+    const wrap = document.getElementById('payouts-' + methodId);
+    if (wrap) {
+      wrap.style.display = 'none';
+      const tog = document.querySelector('[data-toggle-payouts="' + methodId + '"]');
+      if (tog) tog.textContent = tog.textContent.replace('▾', '▸');
+      await togglePayouts(methodId);
+    }
+  } catch (e) { toast('Error: ' + e.message, 'error'); }
+};
 
 // ============ CONFIG ============
 document.getElementById('config-form').onsubmit = async (e) => {
