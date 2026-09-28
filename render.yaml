@@ -1,0 +1,27 @@
+services:
+  - type: web
+    name: mymochis
+    runtime: node
+    plan: free
+    region: ohio
+    buildCommand: npm install
+    startCommand: npm start
+    healthCheckPath: /api/health
+    autoDeploy: true
+    envVars:
+      - key: NODE_ENV
+        value: production
+      - key: NEXOMOCHIS_CORS
+        value: https://mymochis.onrender.com
+      - key: NEXOMOCHIS_JWT_SECRET
+        generateValue: true
+      - key: NEXOMOCHIS_DB_PATH
+        value: /var/data/mymochis.db
+      - key: NEXOMOCHIS_UPLOAD_DIR
+        value: /var/data/uploads
+      - key: CONTACT_EMAIL
+        value: nxstudioing31@gmail.com
+    disk:
+      name: mymochis-data
+      mountPath: /var/data
+      sizeGB: 1

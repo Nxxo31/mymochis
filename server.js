@@ -18,9 +18,11 @@ import paymentMethodsRoutes from './src/routes/payment-methods.js';
 import payoutAccountsRoutes from './src/routes/payout-accounts.js';
 import releaseWindowsRoutes from './src/routes/release-windows.js';
 import publicRoutes from './src/routes/public.js';
+import uploadsRoutes from './src/routes/uploads.js';
 
 const __dirname = dirname(fileURLToPath(import.meta.url));
 const PUBLIC_DIR = join(__dirname, 'public');
+const UPLOAD_DIR = process.env.NEXOMOCHIS_UPLOAD_DIR || join(__dirname, 'data', 'uploads');
 
 const PORT = Number(process.env.PORT || 3737);
 const CORS_ORIGIN = process.env.NEXOMOCHIS_CORS || '*';
@@ -57,7 +59,9 @@ app.use('/api/release-windows', releaseWindowsRoutes);
 app.use('/api/social', socialRoutes);
 app.use('/api/metrics', metricsRoutes);
 app.use('/api/public', publicRoutes);
+app.use('/api/uploads', uploadsRoutes);
 
+app.use('/uploads', express.static(UPLOAD_DIR, { maxAge: '30d', immutable: true }));
 app.use(express.static(PUBLIC_DIR, { extensions: ['html'], maxAge: '5m' }));
 
 app.use((req, res, next) => {
@@ -74,4 +78,5 @@ app.use((err, req, res, next) => {
 app.listen(PORT, () => {
   console.log(`[mymochis] listening on http://localhost:${PORT}`);
   console.log(`[mymochis] static: ${PUBLIC_DIR}`);
+  console.log(`[mymochis] uploads: ${UPLOAD_DIR}`);
 });

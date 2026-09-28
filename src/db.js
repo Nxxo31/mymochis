@@ -175,6 +175,19 @@ CREATE TABLE IF NOT EXISTS delivery_schedule (
 
 CREATE INDEX IF NOT EXISTS idx_delivery_schedule_dow ON delivery_schedule(day_of_week, active);
 
+CREATE TABLE IF NOT EXISTS uploads (
+  filename TEXT PRIMARY KEY,
+  originalname TEXT NOT NULL,
+  mimetype TEXT NOT NULL,
+  size INTEGER NOT NULL,
+  uploaded_at TEXT NOT NULL DEFAULT (datetime('now')),
+  uploaded_by INTEGER REFERENCES users(id) ON DELETE SET NULL,
+  category TEXT,
+  alt_text TEXT
+);
+
+CREATE INDEX IF NOT EXISTS idx_uploads_category ON uploads(category, uploaded_at DESC);
+
 CREATE TABLE IF NOT EXISTS geocoded_addresses (
   id INTEGER PRIMARY KEY AUTOINCREMENT,
   raw_address TEXT UNIQUE NOT NULL,
