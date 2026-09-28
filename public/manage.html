@@ -594,6 +594,126 @@ tbody tr:hover { background: rgba(98,211,236,0.10); }
 
 /* === TOAST === */
 .toast { border-radius: 999px; }
+
+/* === UPLOAD · drop-zone + gallery === */
+.drop-zone {
+  border: 2px dashed rgba(98,211,236,0.55);
+  border-radius: 18px;
+  padding: 28px 24px;
+  text-align: center;
+  background: rgba(232,247,251,0.45);
+  cursor: pointer;
+  transition: background 0.15s, border-color 0.15s;
+  margin-bottom: 18px;
+}
+.drop-zone:hover { background: rgba(232,247,251,0.75); }
+.drop-zone.dragover {
+  background: rgba(168,181,69,0.18);
+  border-color: var(--mint-deep);
+}
+.drop-zone .icon { font-size: 36px; line-height: 1; margin-bottom: 6px; }
+.drop-zone .label { font-weight: 600; color: var(--navy); }
+.drop-zone .hint { font-size: 12px; color: var(--ink-soft); margin-top: 4px; }
+.drop-zone .progress {
+  margin-top: 10px;
+  height: 6px;
+  background: rgba(45,45,45,0.08);
+  border-radius: 999px;
+  overflow: hidden;
+  display: none;
+}
+.drop-zone .progress.visible { display: block; }
+.drop-zone .progress > .bar {
+  height: 100%;
+  background: linear-gradient(90deg, var(--cyan-bright), var(--mint));
+  width: 0%;
+  transition: width 0.2s;
+}
+.upload-gallery {
+  display: grid;
+  grid-template-columns: repeat(auto-fill, minmax(180px, 1fr));
+  gap: 12px;
+  margin-bottom: 24px;
+}
+.upload-thumb {
+  background: #fff;
+  border: 1px solid var(--line);
+  border-radius: 14px;
+  overflow: hidden;
+  display: flex;
+  flex-direction: column;
+  transition: transform 0.15s, box-shadow 0.15s;
+}
+.upload-thumb:hover {
+  transform: translateY(-2px);
+  box-shadow: 0 8px 18px rgba(45,45,45,0.10);
+}
+.upload-thumb .preview {
+  height: 130px;
+  background: var(--bg-soft);
+  display: flex; align-items: center; justify-content: center;
+  overflow: hidden;
+}
+.upload-thumb .preview img {
+  width: 100%; height: 100%; object-fit: cover;
+}
+.upload-thumb .preview.video {
+  background: var(--navy);
+  color: #fff;
+  font-size: 11px;
+  flex-direction: column; gap: 4px;
+}
+.upload-thumb .meta {
+  padding: 8px 10px 4px;
+  font-size: 12px;
+  color: var(--ink-soft);
+  overflow: hidden;
+}
+.upload-thumb .meta .name {
+  color: var(--ink);
+  font-weight: 600;
+  white-space: nowrap;
+  overflow: hidden;
+  text-overflow: ellipsis;
+}
+.upload-thumb .meta .size {
+  font-size: 11px;
+  opacity: 0.7;
+}
+.upload-thumb .actions {
+  display: flex; gap: 6px;
+  padding: 6px 10px 10px;
+}
+.upload-thumb .actions .btn {
+  flex: 1; padding: 6px 8px;
+  font-size: 11px;
+}
+.upload-section-head {
+  display: flex; align-items: center; justify-content: space-between;
+  margin-bottom: 10px;
+}
+.upload-section-head h3 {
+  font-family: 'Fredoka', serif;
+  font-size: 18px;
+  font-weight: 600;
+}
+.upload-section-head .category-pick {
+  display: flex; gap: 6px; flex-wrap: wrap;
+}
+.upload-section-head .category-pick .chip {
+  padding: 4px 10px;
+  border-radius: 999px;
+  background: var(--bg-soft);
+  color: var(--ink-soft);
+  font-size: 11px;
+  font-weight: 600;
+  cursor: pointer;
+  border: 0;
+}
+.upload-section-head .category-pick .chip.active {
+  background: var(--cyan-bright);
+  color: #fff;
+}
 </style>
 </head>
 <body>
@@ -785,6 +905,26 @@ tbody tr:hover { background: rgba(98,211,236,0.10); }
         </div>
         <div class="actions"><button class="btn btn-primary" onclick="openFlavorModal()">+ Nuevo sabor</button></div>
       </div>
+
+      <div class="upload-section-head">
+        <h3>📤 Imágenes</h3>
+        <div class="category-pick" id="flavor-upload-cats">
+          <button class="chip active" data-cat="flavor">flavor</button>
+          <button class="chip" data-cat="combo">combo</button>
+          <button class="chip" data-cat="social">social</button>
+          <button class="chip" data-cat="hero">hero</button>
+          <button class="chip" data-cat="general">general</button>
+        </div>
+      </div>
+      <div class="drop-zone" id="flavor-drop">
+        <div class="icon">📁</div>
+        <div class="label">Arrastra imágenes aquí</div>
+        <div class="hint">o haz clic · JPG, PNG, WebP, GIF, AVIF · MP4, WebM, MOV · PDF · máx 25MB c/u · 8 archivos</div>
+        <div class="progress"><div class="bar"></div></div>
+        <input type="file" id="flavor-file" accept="image/jpeg,image/png,image/webp,image/gif,image/avif,video/mp4,video/webm,video/quicktime,application/pdf" multiple hidden>
+      </div>
+      <div class="upload-gallery" id="flavor-gallery"></div>
+
       <div class="grid grid-3" id="flavors-grid"></div>
     </section>
 
@@ -969,6 +1109,7 @@ async function enterApp() {
   document.getElementById('login-screen').style.display = 'none';
   document.getElementById('app').classList.add('visible');
   document.getElementById('user-email').textContent = _user.email;
+  initUploadZone();
   await loadAll();
   showSection('dashboard');
 }
@@ -1016,6 +1157,7 @@ function showSection(name) {
   document.querySelectorAll('.section').forEach(s => s.classList.remove('active'));
   document.getElementById('section-' + name).classList.add('active');
   render[name]?.();
+  if (name === 'flavors' || name === 'combos') renderUploadGallery();
 }
 
 // ============ RENDER ============
@@ -1235,7 +1377,7 @@ function openFlavorModal(flavor) {
         <div class="form-group"><label>Precio (COP)</label><input type="number" id="f-price" value="${flavor?.price || 8000}" required></div>
         <div class="form-group"><label>Color (hex)</label><input type="text" id="f-color" value="${flavor?.color || '#e88a9e'}"></div>
       </div>
-      <div class="form-group"><label>Imagen URL (opcional)</label><input type="text" id="f-image_url" value="${escapeHtml(flavor?.image_url || '')}"></div>
+      <div class="form-group"><label>Imagen URL (opcional)</label><div style="display:flex;gap:8px"><input type="text" id="f-image_url" value="${escapeHtml(flavor?.image_url || '')}" placeholder="/uploads/xxx.jpg" style="flex:1"><button type="button" class="btn btn-ghost btn-sm" onclick="pickUploadFor('flavor','f-image_url')">📤 Elegir</button></div>${flavor?.image_url ? `<div id="f-image_preview" style="margin-top:6px"><img src="${escapeHtml(flavor.image_url)}" alt="" style="max-height:80px;border-radius:8px;border:1px solid var(--line)"></div>` : ''}</div>
       <div class="modal-actions">
         <button type="button" class="btn btn-ghost" onclick="closeModal()">Cancelar</button>
         <button type="submit" class="btn btn-primary">Guardar</button>
@@ -1273,6 +1415,176 @@ async function deleteFlavor(id) {
   } catch (e) { toast('Error: ' + e.message, 'error'); }
 }
 
+// ============ UPLOADS · drag-drop + gallery ============
+const ALLOWED_UPLOAD_MIMES = new Set(['image/jpeg','image/png','image/webp','image/gif','image/avif','video/mp4','video/webm','video/quicktime','application/pdf']);
+const MAX_UPLOAD_BYTES = 25 * 1024 * 1024;
+let _uploadCategory = 'flavor';
+let _uploads = [];
+
+function setUploadCategory(cat) {
+  _uploadCategory = cat;
+  document.querySelectorAll('#flavor-upload-cats .chip').forEach(el => {
+    el.classList.toggle('active', el.dataset.cat === cat);
+  });
+  renderUploadGallery();
+}
+
+function initUploadZone() {
+  const drop = document.getElementById('flavor-drop');
+  const fileInput = document.getElementById('flavor-file');
+  if (!drop || !fileInput) return;
+
+  document.querySelectorAll('#flavor-upload-cats .chip').forEach(el => {
+    el.onclick = () => setUploadCategory(el.dataset.cat);
+  });
+
+  drop.addEventListener('click', (e) => {
+    if (e.target.tagName === 'INPUT') return;
+    fileInput.click();
+  });
+  fileInput.addEventListener('change', () => {
+    if (fileInput.files?.length) uploadFiles(fileInput.files, _uploadCategory).then(() => { fileInput.value = ''; });
+  });
+
+  ['dragenter','dragover'].forEach(ev => drop.addEventListener(ev, (e) => {
+    e.preventDefault(); e.stopPropagation();
+    drop.classList.add('dragover');
+  }));
+  ['dragleave','drop'].forEach(ev => drop.addEventListener(ev, (e) => {
+    e.preventDefault(); e.stopPropagation();
+    if (ev === 'dragleave' && drop.contains(e.relatedTarget)) return;
+    drop.classList.remove('dragover');
+  }));
+  drop.addEventListener('drop', (e) => {
+    const dt = e.dataTransfer;
+    if (dt?.files?.length) uploadFiles(dt.files, _uploadCategory);
+  });
+}
+
+async function uploadFiles(fileList, category) {
+  const files = Array.from(fileList).slice(0, 8);
+  const bad = files.filter(f => !ALLOWED_UPLOAD_MIMES.has(f.type));
+  if (bad.length) { toast(`Tipo no permitido: ${bad[0].type}`, 'error'); return; }
+  const tooBig = files.filter(f => f.size > MAX_UPLOAD_BYTES);
+  if (tooBig.length) { toast(`Archivo > 25MB: ${tooBig[0].name}`, 'error'); return; }
+  if (!files.length) return;
+
+  const fd = new FormData();
+  for (const f of files) fd.append('files', f);
+  fd.append('category', category);
+
+  const drop = document.getElementById('flavor-drop');
+  const progress = drop?.querySelector('.progress');
+  const bar = drop?.querySelector('.progress > .bar');
+  progress?.classList.add('visible');
+  if (bar) bar.style.width = '0%';
+
+  try {
+    const xhr = new XMLHttpRequest();
+    const result = await new Promise((resolve, reject) => {
+      xhr.open('POST', API + '/uploads');
+      xhr.setRequestHeader('Authorization', 'Bearer ' + _token);
+      xhr.upload.onprogress = (e) => {
+        if (e.lengthComputable && bar) bar.style.width = `${Math.round(e.loaded / e.total * 100)}%`;
+      };
+      xhr.onload = () => {
+        if (xhr.status >= 200 && xhr.status < 300) resolve(JSON.parse(xhr.responseText));
+        else reject(new Error(`HTTP ${xhr.status}`));
+      };
+      xhr.onerror = () => reject(new Error('network error'));
+      xhr.send(fd);
+    });
+    toast(`${result.files.length} archivo(s) subido(s)`, 'success');
+    renderUploadGallery();
+  } catch (err) {
+    toast('Error subiendo: ' + err.message, 'error');
+  } finally {
+    setTimeout(() => progress?.classList.remove('visible'), 600);
+  }
+}
+
+async function renderUploadGallery() {
+  const gallery = document.getElementById('flavor-gallery');
+  if (!gallery) return;
+  try {
+    const { files } = await api(`/uploads?category=${encodeURIComponent(_uploadCategory)}&t=${Date.now()}`);
+    _uploads = files;
+    if (!files.length) {
+      gallery.innerHTML = '<div style="grid-column:1/-1;text-align:center;color:var(--ink-soft);font-size:12px;padding:14px">Sin archivos en esta categoría. Arrastra o haz clic para subir.</div>';
+      return;
+    }
+    gallery.innerHTML = files.map(f => {
+      const isImg = (f.mimetype || '').startsWith('image/');
+      const isVid = (f.mimetype || '').startsWith('video/');
+      const preview = isImg
+        ? `<div class="preview"><img src="${escapeHtml(f.url)}" alt="${escapeHtml(f.originalname)}" loading="lazy"></div>`
+        : isVid
+          ? `<div class="preview video">🎥 ${escapeHtml((f.mimetype.split('/')[1] || '').toUpperCase())}</div>`
+          : `<div class="preview">📄 ${escapeHtml((f.mimetype.split('/')[1] || 'file').toUpperCase())}</div>`;
+      const sizeKb = Math.round((f.size || 0) / 1024);
+      return `
+        <div class="upload-thumb" data-filename="${escapeHtml(f.filename)}">
+          ${preview}
+          <div class="meta">
+            <div class="name" title="${escapeHtml(f.originalname)}">${escapeHtml(f.originalname)}</div>
+            <div class="size">${sizeKb} KB · ${escapeHtml(f.category || '')}</div>
+          </div>
+          <div class="actions">
+            <button class="btn btn-sm btn-primary" onclick="useUpload('${escapeHtml(f.filename)}')">Usar</button>
+            <button class="btn btn-sm btn-ghost" onclick="copyUpload('${escapeHtml(f.url)}')">Copiar</button>
+            <button class="btn btn-sm btn-danger" onclick="deleteUpload('${escapeHtml(f.filename)}')">🗑</button>
+          </div>
+        </div>`;
+    }).join('');
+  } catch (e) {
+    gallery.innerHTML = `<div style="grid-column:1/-1;color:var(--accent);font-size:12px">Error cargando galería: ${escapeHtml(e.message)}</div>`;
+  }
+}
+
+async function deleteUpload(filename) {
+  if (!confirm('¿Eliminar este archivo?')) return;
+  try {
+    await api(`/uploads/${encodeURIComponent(filename)}`, { method: 'DELETE' });
+    toast('Archivo eliminado', 'success');
+    renderUploadGallery();
+  } catch (e) { toast('Error: ' + e.message, 'error'); }
+}
+
+async function copyUpload(url) {
+  try {
+    await navigator.clipboard.writeText(url);
+    toast('URL copiada al portapapeles', 'success');
+  } catch {
+    toast('No se pudo copiar', 'error');
+  }
+}
+
+function useUpload(filename) {
+  const file = _uploads.find(f => f.filename === filename);
+  if (!file) return;
+  const targetInputId = _pendingUploadTarget;
+  if (targetInputId && document.getElementById(targetInputId)) {
+    document.getElementById(targetInputId).value = file.url;
+    document.getElementById(targetInputId).dispatchEvent(new Event('input'));
+    toast('Imagen aplicada al campo', 'success');
+  } else {
+    copyUpload(file.url);
+    toast('Sin campo destino · URL copiada', '');
+  }
+  _pendingUploadTarget = null;
+}
+
+let _pendingUploadTarget = null;
+function pickUploadFor(category, inputId) {
+  setUploadCategory(category);
+  _pendingUploadTarget = inputId;
+  showSection('flavors');
+  setTimeout(() => {
+    document.getElementById('flavor-gallery')?.scrollIntoView({ behavior: 'smooth', block: 'center' });
+    toast('Selecciona una imagen o arrastra para subir', '');
+  }, 50);
+}
+
 // ============ COMBOS CRUD ============
 function openComboModal(combo) {
   _editingItem = combo || null;
@@ -1289,7 +1601,7 @@ function openComboModal(combo) {
         <div class="form-group"><label>Precio tachado (opcional)</label><input type="number" id="c-compare_at_price" value="${combo?.compare_at_price || ''}"></div>
         <div class="form-group"><label>Orden</label><input type="number" id="c-sort_order" value="${combo?.sort_order || 0}"></div>
       </div>
-      <div class="form-group"><label>Imagen URL</label><input type="text" id="c-image_url" value="${escapeHtml(combo?.image_url || '')}"></div>
+      <div class="form-group"><label>Imagen URL</label><div style="display:flex;gap:8px"><input type="text" id="c-image_url" value="${escapeHtml(combo?.image_url || '')}" placeholder="/uploads/xxx.jpg" style="flex:1"><button type="button" class="btn btn-ghost btn-sm" onclick="pickUploadFor('combo','c-image_url')">📤 Elegir</button></div>${combo?.image_url ? `<div id="c-image_preview" style="margin-top:6px"><img src="${escapeHtml(combo.image_url)}" alt="" style="max-height:80px;border-radius:8px;border:1px solid var(--line)"></div>` : ''}</div>
       <div class="form-group"><label style="display:flex;align-items:center;gap:8px;text-transform:none;letter-spacing:0;font-size:14px;color:var(--ink)"><input type="checkbox" id="c-featured" ${combo?.featured ? 'checked' : ''}> Destacado (aparece primero)</label></div>
       <div class="form-group"><label style="display:flex;align-items:center;gap:8px;text-transform:none;letter-spacing:0;font-size:14px;color:var(--ink)"><input type="checkbox" id="c-available" ${combo?.available !== false ? 'checked' : ''}> Disponible</label></div>
       <div class="modal-actions">
