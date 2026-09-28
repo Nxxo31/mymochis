@@ -1,6 +1,6 @@
-import { Router } from 'express';
+﻿import { Router } from 'express';
 import { db } from '../db.js';
-import { authMiddleware } from '../auth.js';
+import { authMiddleware, requireRole } from '../auth.js';
 
 const router = Router();
 
@@ -9,7 +9,7 @@ router.get('/', (req, res) => {
   res.json(row);
 });
 
-router.put('/', authMiddleware, (req, res) => {
+router.put('/', [authMiddleware, requireRole('admin')], (req, res) => {
   const allowed = [
     'business_name', 'tagline', 'description',
     'whatsapp_number', 'instagram_handle', 'instagram_url',
@@ -29,3 +29,4 @@ router.put('/', authMiddleware, (req, res) => {
 });
 
 export default router;
+

@@ -1,6 +1,6 @@
-import { Router } from 'express';
+﻿import { Router } from 'express';
 import { db } from '../db.js';
-import { authMiddleware } from '../auth.js';
+import { authMiddleware, requireRole } from '../auth.js';
 
 const router = Router();
 
@@ -32,7 +32,7 @@ router.get('/:id', (req, res) => {
   res.json(row);
 });
 
-router.post('/', authMiddleware, (req, res) => {
+router.post('/', [authMiddleware, requireRole('admin')], (req, res) => {
   const err = validate(req.body);
   if (err) return res.status(400).json({ error: 'bad_request', message: err });
   const { day_of_week, start_time, end_time, mode, cutoff_offset_hours = 8, active = 1, sort_order = 0, notes = null } = req.body;
@@ -43,7 +43,7 @@ router.post('/', authMiddleware, (req, res) => {
   res.status(201).json(db.prepare('SELECT * FROM delivery_schedule WHERE id = ?').get(info.lastInsertRowid));
 });
 
-router.put('/:id', authMiddleware, (req, res) => {
+router.put('/:id', [authMiddleware, requireRole('admin')], (req, res) => {
   const existing = db.prepare('SELECT id FROM delivery_schedule WHERE id = ?').get(req.params.id);
   if (!existing) return res.status(404).json({ error: 'not_found' });
   const allowed = ['day_of_week', 'start_time', 'end_time', 'mode', 'cutoff_offset_hours', 'active', 'sort_order', 'notes'];
@@ -58,10 +58,11 @@ router.put('/:id', authMiddleware, (req, res) => {
   res.json(db.prepare('SELECT * FROM delivery_schedule WHERE id = ?').get(req.params.id));
 });
 
-router.delete('/:id', authMiddleware, (req, res) => {
+router.delete('/:id', [authMiddleware, requireRole('admin')], (req, res) => {
   const result = db.prepare('DELETE FROM delivery_schedule WHERE id = ?').run(req.params.id);
   if (result.changes === 0) return res.status(404).json({ error: 'not_found' });
   res.json({ ok: true });
 });
 
 export default router;
+

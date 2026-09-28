@@ -58,3 +58,13 @@ export function authMiddleware(req, res, next) {
   req.user = payload;
   next();
 }
+
+export function requireRole(...allowed) {
+  return (req, res, next) => {
+    if (!req.user) return res.status(401).json({ error: 'unauthorized', message: 'Autenticación requerida' });
+    if (!allowed.includes(req.user.role)) {
+      return res.status(403).json({ error: 'forbidden', message: 'Rol insuficiente para esta operación' });
+    }
+    next();
+  };
+}

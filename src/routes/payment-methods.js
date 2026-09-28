@@ -1,6 +1,6 @@
-import { Router } from 'express';
+﻿import { Router } from 'express';
 import { db } from '../db.js';
-import { authMiddleware } from '../auth.js';
+import { authMiddleware, requireRole } from '../auth.js';
 
 const router = Router();
 
@@ -25,7 +25,7 @@ router.get('/:id', (req, res) => {
   res.json(row);
 });
 
-router.post('/', authMiddleware, (req, res) => {
+router.post('/', [authMiddleware, requireRole('admin')], (req, res) => {
   const { code, label, instructions, qr_url, sort_order = 0, active = 1 } = req.body || {};
   if (!code || !label) return res.status(400).json({ error: 'bad_request', message: 'code y label son obligatorios' });
   try {
@@ -38,7 +38,7 @@ router.post('/', authMiddleware, (req, res) => {
   }
 });
 
-router.put('/:id', authMiddleware, (req, res) => {
+router.put('/:id', [authMiddleware, requireRole('admin')], (req, res) => {
   const existing = db.prepare('SELECT id FROM payment_methods WHERE id = ?').get(req.params.id);
   if (!existing) return res.status(404).json({ error: 'not_found' });
   const allowed = ['code', 'label', 'instructions', 'qr_url', 'sort_order', 'active'];
@@ -51,10 +51,11 @@ router.put('/:id', authMiddleware, (req, res) => {
   res.json(rowToPaymentMethod(db.prepare('SELECT * FROM payment_methods WHERE id = ?').get(req.params.id)));
 });
 
-router.delete('/:id', authMiddleware, (req, res) => {
+router.delete('/:id', [authMiddleware, requireRole('admin')], (req, res) => {
   const result = db.prepare('DELETE FROM payment_methods WHERE id = ?').run(req.params.id);
   if (result.changes === 0) return res.status(404).json({ error: 'not_found' });
   res.json({ ok: true });
 });
 
 export default router;
+

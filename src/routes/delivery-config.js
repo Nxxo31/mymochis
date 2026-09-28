@@ -1,6 +1,6 @@
-import { Router } from 'express';
+﻿import { Router } from 'express';
 import { db } from '../db.js';
-import { authMiddleware } from '../auth.js';
+import { authMiddleware, requireRole } from '../auth.js';
 
 const router = Router();
 
@@ -23,7 +23,7 @@ router.get('/', (req, res) => {
   res.json(deliveryConfig);
 });
 
-router.put('/', authMiddleware, (req, res) => {
+router.put('/', [authMiddleware, requireRole('admin')], (req, res) => {
   const existing = db.prepare('SELECT id FROM config WHERE id = 1').get();
   if (!existing) return res.status(404).json({ error: 'not_found' });
   const updates = {};
@@ -40,3 +40,4 @@ router.put('/', authMiddleware, (req, res) => {
 });
 
 export default router;
+

@@ -1,6 +1,6 @@
-import { Router } from 'express';
+﻿import { Router } from 'express';
 import { db } from '../db.js';
-import { authMiddleware } from '../auth.js';
+import { authMiddleware, requireRole } from '../auth.js';
 
 const router = Router();
 
@@ -33,12 +33,12 @@ router.get('/:id', (req, res) => {
   res.json(row);
 });
 
-router.post('/', authMiddleware, (req, res) => {
+router.post('/', [authMiddleware, requireRole('admin')], (req, res) => {
   const { release_date, cutoff_at, status = 'draft', notes = null, items = [] } = req.body || {};
   if (!release_date || !cutoff_at) return res.status(400).json({ error: 'bad_request', message: 'release_date y cutoff_at son obligatorios' });
   if (!/^\d{4}-\d{2}-\d{2}$/.test(release_date)) return res.status(400).json({ error: 'bad_request', message: 'release_date debe ser YYYY-MM-DD' });
   if (!VALID_STATUS.includes(status)) return res.status(400).json({ error: 'bad_request', message: `status debe ser uno de: ${VALID_STATUS.join(',')}` });
-  if (!Array.isArray(items) || items.length === 0) return res.status(400).json({ error: 'bad_request', message: 'items debe ser un array no vacío' });
+  if (!Array.isArray(items) || items.length === 0) return res.status(400).json({ error: 'bad_request', message: 'items debe ser un array no vacÃ­o' });
 
   const windowStmt = db.prepare('INSERT INTO release_windows (release_date, cutoff_at, status, notes) VALUES (?, ?, ?, ?)');
   const itemStmt = db.prepare('INSERT INTO release_items (window_id, flavor_id, units_available) VALUES (?, ?, ?)');
@@ -62,14 +62,14 @@ router.post('/', authMiddleware, (req, res) => {
   res.status(201).json(rowToWindow(db.prepare('SELECT * FROM release_windows WHERE id = ?').get(windowId)));
 });
 
-router.put('/:id', authMiddleware, (req, res) => {
+router.put('/:id', [authMiddleware, requireRole('admin')], (req, res) => {
   const existing = db.prepare('SELECT id FROM release_windows WHERE id = ?').get(req.params.id);
   if (!existing) return res.status(404).json({ error: 'not_found' });
   const allowed = ['release_date', 'cutoff_at', 'status', 'notes'];
   const updates = {};
   for (const k of allowed) if (k in req.body) updates[k] = req.body[k];
   if ('status' in updates && !VALID_STATUS.includes(updates.status)) {
-    return res.status(400).json({ error: 'bad_request', message: `status inválido` });
+    return res.status(400).json({ error: 'bad_request', message: `status invÃ¡lido` });
   }
   if (Object.keys(updates).length === 0) return res.status(400).json({ error: 'no_fields' });
   const setSql = Object.keys(updates).map(k => `${k} = ?`).join(', ');
@@ -77,10 +77,11 @@ router.put('/:id', authMiddleware, (req, res) => {
   res.json(rowToWindow(db.prepare('SELECT * FROM release_windows WHERE id = ?').get(req.params.id)));
 });
 
-router.delete('/:id', authMiddleware, (req, res) => {
+router.delete('/:id', [authMiddleware, requireRole('admin')], (req, res) => {
   const result = db.prepare('DELETE FROM release_windows WHERE id = ?').run(req.params.id);
   if (result.changes === 0) return res.status(404).json({ error: 'not_found' });
   res.json({ ok: true });
 });
 
 export default router;
+

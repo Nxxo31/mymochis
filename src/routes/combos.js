@@ -1,6 +1,6 @@
-import { Router } from 'express';
+﻿import { Router } from 'express';
 import { db } from '../db.js';
-import { authMiddleware } from '../auth.js';
+import { authMiddleware, requireRole } from '../auth.js';
 
 const router = Router();
 
@@ -11,7 +11,7 @@ router.get('/', (req, res) => {
   res.json(rows.map(r => ({ ...r, available: !!r.available, featured: !!r.featured })));
 });
 
-router.post('/', authMiddleware, (req, res) => {
+router.post('/', [authMiddleware, requireRole('admin')], (req, res) => {
   const { name, units, price, description, compare_at_price, available, featured, image_url, sort_order } = req.body || {};
   if (!name || units == null || price == null) return res.status(400).json({ error: 'bad_request', message: 'name, units, price son obligatorios' });
   const result = db.prepare(
@@ -20,7 +20,7 @@ router.post('/', authMiddleware, (req, res) => {
   res.status(201).json(db.prepare('SELECT * FROM combos WHERE id = ?').get(result.lastInsertRowid));
 });
 
-router.put('/:id', authMiddleware, (req, res) => {
+router.put('/:id', [authMiddleware, requireRole('admin')], (req, res) => {
   const existing = db.prepare('SELECT * FROM combos WHERE id = ?').get(req.params.id);
   if (!existing) return res.status(404).json({ error: 'not_found' });
   const allowed = ['name', 'units', 'price', 'description', 'compare_at_price', 'available', 'featured', 'image_url', 'sort_order'];
@@ -34,10 +34,11 @@ router.put('/:id', authMiddleware, (req, res) => {
   res.json(db.prepare('SELECT * FROM combos WHERE id = ?').get(req.params.id));
 });
 
-router.delete('/:id', authMiddleware, (req, res) => {
+router.delete('/:id', [authMiddleware, requireRole('admin')], (req, res) => {
   const result = db.prepare('DELETE FROM combos WHERE id = ?').run(req.params.id);
   if (result.changes === 0) return res.status(404).json({ error: 'not_found' });
   res.json({ ok: true });
 });
 
 export default router;
+

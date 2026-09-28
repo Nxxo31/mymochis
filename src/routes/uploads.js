@@ -1,9 +1,9 @@
-import { Router } from 'express';
+﻿import { Router } from 'express';
 import multer from 'multer';
 import { existsSync, mkdirSync, unlinkSync, statSync } from 'node:fs';
 import { join, extname, basename } from 'node:path';
 import { randomBytes } from 'node:crypto';
-import { authMiddleware } from '../auth.js';
+import { authMiddleware, requireRole } from '../auth.js';
 import { db } from '../db.js';
 
 const router = Router();
@@ -41,7 +41,7 @@ const upload = multer({
   },
 });
 
-router.post('/', authMiddleware, upload.array('files', 8), (req, res) => {
+router.post('/', [authMiddleware, requireRole('admin')], upload.array('files', 8), (req, res) => {
   if (!req.files || req.files.length === 0) {
     return res.status(400).json({ error: 'no_files', message: 'No se recibieron archivos' });
   }
@@ -67,7 +67,7 @@ router.post('/', authMiddleware, upload.array('files', 8), (req, res) => {
   res.status(201).json({ ok: true, files });
 });
 
-router.get('/', authMiddleware, (req, res) => {
+router.get('/', [authMiddleware, requireRole('admin')], (req, res) => {
   const category = req.query.category;
   const rows = category
     ? db.prepare(
@@ -81,7 +81,7 @@ router.get('/', authMiddleware, (req, res) => {
   res.json({ files: rows.map((r) => ({ ...r, url: `/uploads/${r.filename}` })) });
 });
 
-router.delete('/:filename', authMiddleware, (req, res) => {
+router.delete('/:filename', [authMiddleware, requireRole('admin')], (req, res) => {
   const safe = basename(req.params.filename);
   if (safe !== req.params.filename) {
     return res.status(400).json({ error: 'bad_filename' });
@@ -99,3 +99,4 @@ router.delete('/:filename', authMiddleware, (req, res) => {
 });
 
 export default router;
+

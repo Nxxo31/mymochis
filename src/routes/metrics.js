@@ -1,10 +1,10 @@
-import { Router } from 'express';
+﻿import { Router } from 'express';
 import { db } from '../db.js';
-import { authMiddleware } from '../auth.js';
+import { authMiddleware, requireRole } from '../auth.js';
 
 const router = Router();
 
-router.get('/', authMiddleware, (req, res) => {
+router.get('/', [authMiddleware, requireRole('admin')], (req, res) => {
   const all = db.prepare(`SELECT id, created_at, total, status, payment_status, customer_name, items_json, combos_json FROM orders`).all();
 
   const byDay = {};
@@ -65,3 +65,4 @@ router.get('/', authMiddleware, (req, res) => {
 });
 
 export default router;
+

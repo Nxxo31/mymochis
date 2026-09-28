@@ -1,10 +1,10 @@
-import { Router } from 'express';
+﻿import { Router } from 'express';
 import { db } from '../db.js';
-import { authMiddleware } from '../auth.js';
+import { authMiddleware, requireRole } from '../auth.js';
 
 const router = Router();
 
-router.get('/', authMiddleware, (req, res) => {
+router.get('/', [authMiddleware, requireRole('admin')], (req, res) => {
   const { method_id } = req.query;
   let rows;
   if (method_id) {
@@ -20,13 +20,13 @@ router.get('/', authMiddleware, (req, res) => {
   res.json(rows);
 });
 
-router.get('/:id', authMiddleware, (req, res) => {
+router.get('/:id', [authMiddleware, requireRole('admin')], (req, res) => {
   const row = db.prepare('SELECT * FROM payout_accounts WHERE id = ?').get(req.params.id);
   if (!row) return res.status(404).json({ error: 'not_found' });
   res.json(row);
 });
 
-router.post('/', authMiddleware, (req, res) => {
+router.post('/', [authMiddleware, requireRole('admin')], (req, res) => {
   const { method_id, holder_name, account_ref, is_default = 0 } = req.body || {};
   if (!method_id || !holder_name || !account_ref) {
     return res.status(400).json({ error: 'bad_request', message: 'method_id, holder_name, account_ref son obligatorios' });
@@ -42,7 +42,7 @@ router.post('/', authMiddleware, (req, res) => {
   res.status(201).json(db.prepare('SELECT * FROM payout_accounts WHERE id = ?').get(info.lastInsertRowid));
 });
 
-router.put('/:id', authMiddleware, (req, res) => {
+router.put('/:id', [authMiddleware, requireRole('admin')], (req, res) => {
   const existing = db.prepare('SELECT * FROM payout_accounts WHERE id = ?').get(req.params.id);
   if (!existing) return res.status(404).json({ error: 'not_found' });
   const allowed = ['holder_name', 'account_ref', 'is_default'];
@@ -58,10 +58,11 @@ router.put('/:id', authMiddleware, (req, res) => {
   res.json(db.prepare('SELECT * FROM payout_accounts WHERE id = ?').get(req.params.id));
 });
 
-router.delete('/:id', authMiddleware, (req, res) => {
+router.delete('/:id', [authMiddleware, requireRole('admin')], (req, res) => {
   const result = db.prepare('DELETE FROM payout_accounts WHERE id = ?').run(req.params.id);
   if (result.changes === 0) return res.status(404).json({ error: 'not_found' });
   res.json({ ok: true });
 });
 
 export default router;
+

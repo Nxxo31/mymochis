@@ -1,6 +1,6 @@
-import { Router } from 'express';
+﻿import { Router } from 'express';
 import { db } from '../db.js';
-import { authMiddleware } from '../auth.js';
+import { authMiddleware, requireRole } from '../auth.js';
 
 const router = Router();
 
@@ -21,7 +21,7 @@ router.get('/:id', (req, res) => {
   res.json(row);
 });
 
-router.post('/', authMiddleware, (req, res) => {
+router.post('/', [authMiddleware, requireRole('admin')], (req, res) => {
   const { name, slug, sort_order = 0, active = 1 } = req.body || {};
   if (!name || !slug) return res.status(400).json({ error: 'bad_request', message: 'name y slug son obligatorios' });
   if (!SLUG_RE.test(slug)) return res.status(400).json({ error: 'bad_request', message: 'slug debe ser kebab-case (a-z, 0-9, -)' });
@@ -34,13 +34,13 @@ router.post('/', authMiddleware, (req, res) => {
   }
 });
 
-router.put('/:id', authMiddleware, (req, res) => {
+router.put('/:id', [authMiddleware, requireRole('admin')], (req, res) => {
   const existing = db.prepare('SELECT id FROM categories WHERE id = ?').get(req.params.id);
   if (!existing) return res.status(404).json({ error: 'not_found' });
   const allowed = ['name', 'slug', 'sort_order', 'active'];
   const updates = {};
   for (const k of allowed) if (k in req.body) updates[k] = req.body[k];
-  if ('slug' in updates && !SLUG_RE.test(updates.slug)) return res.status(400).json({ error: 'bad_request', message: 'slug inválido' });
+  if ('slug' in updates && !SLUG_RE.test(updates.slug)) return res.status(400).json({ error: 'bad_request', message: 'slug invÃ¡lido' });
   if ('active' in updates) updates.active = updates.active ? 1 : 0;
   if (Object.keys(updates).length === 0) return res.status(400).json({ error: 'no_fields' });
   const setSql = Object.keys(updates).map(k => `${k} = ?`).join(', ');
@@ -48,10 +48,11 @@ router.put('/:id', authMiddleware, (req, res) => {
   res.json(db.prepare('SELECT * FROM categories WHERE id = ?').get(req.params.id));
 });
 
-router.delete('/:id', authMiddleware, (req, res) => {
+router.delete('/:id', [authMiddleware, requireRole('admin')], (req, res) => {
   const result = db.prepare('DELETE FROM categories WHERE id = ?').run(req.params.id);
   if (result.changes === 0) return res.status(404).json({ error: 'not_found' });
   res.json({ ok: true });
 });
 
 export default router;
+
