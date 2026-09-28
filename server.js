@@ -21,6 +21,7 @@ import payoutAccountsRoutes from './src/routes/payout-accounts.js';
 import releaseWindowsRoutes from './src/routes/release-windows.js';
 import publicRoutes from './src/routes/public.js';
 import uploadsRoutes from './src/routes/uploads.js';
+import usersRoutes from './src/routes/users.js';
 
 const __dirname = dirname(fileURLToPath(import.meta.url));
 const PUBLIC_DIR = join(__dirname, 'public');
@@ -125,6 +126,7 @@ app.use('/api/social', socialRoutes);
 app.use('/api/metrics', metricsRoutes);
 app.use('/api/public', publicRoutes);
 app.use('/api/uploads', uploadsRoutes);
+app.use('/api/users', usersRoutes);
 
 app.use('/uploads', express.static(UPLOAD_DIR, { maxAge: '30d', immutable: true, setHeaders: (res) => {
   res.setHeader('X-Content-Type-Options', 'nosniff');
