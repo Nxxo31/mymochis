@@ -64,8 +64,8 @@ router.post('/register', (req, res) => {
   ).run(emailLower, hash, salt, name || null);
 
   const userId = result.lastInsertRowid;
-  const token = signJwt({ sub: userId, email: emailLower, role: 'admin' });
-  res.status(201).json({ token, user: { id: userId, email: emailLower, name: name || null, role: 'admin' } });
+  const token = signJwt({ sub: userId, email: emailLower, role: 'customer' });
+  res.status(201).json({ token, user: { id: userId, email: emailLower, name: name || null, role: 'customer' } });
 });
 
 router.post('/login', (req, res) => {

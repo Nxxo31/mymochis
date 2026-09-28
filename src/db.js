@@ -2,6 +2,7 @@ import { DatabaseSync } from 'node:sqlite';
 import { mkdirSync, existsSync } from 'node:fs';
 import { dirname, join } from 'node:path';
 import { fileURLToPath } from 'node:url';
+import { scryptSync, randomBytes } from 'node:crypto';
 
 const __dirname = dirname(fileURLToPath(import.meta.url));
 const DB_PATH = process.env.NEXOMOCHIS_DB_PATH || join(__dirname, '..', 'data', 'mymochis.db');
@@ -21,7 +22,7 @@ CREATE TABLE IF NOT EXISTS users (
   password_hash TEXT NOT NULL,
   password_salt TEXT NOT NULL,
   name TEXT,
-  role TEXT NOT NULL DEFAULT 'admin',
+  role TEXT NOT NULL DEFAULT 'customer',
   created_at TEXT NOT NULL DEFAULT (datetime('now'))
 );
 
@@ -31,10 +32,10 @@ CREATE TABLE IF NOT EXISTS config (
   tagline TEXT DEFAULT 'Mochis artesanales hechos a mano en Neiva',
   description TEXT,
   whatsapp_number TEXT DEFAULT '573000000000',
-  instagram_handle TEXT DEFAULT '@mymochis.neiva',
-  instagram_url TEXT DEFAULT 'https://instagram.com/mymochis.neiva',
+  instagram_handle TEXT DEFAULT '@my.mochiss',
+  instagram_url TEXT DEFAULT 'https://instagram.com/my.mochiss/',
   facebook_url TEXT,
-  tiktok_handle TEXT,
+  tiktok_handle TEXT DEFAULT '@my.mochiss',
   pickup_address TEXT DEFAULT 'Cocina oculta en Neiva',
   pickup_schedule TEXT DEFAULT 'Mar–Sáb · 3pm a 7pm',
   hero_image_url TEXT,
@@ -247,6 +248,24 @@ function ensureColumn(table, column, definition) {
 export function init() {
   db.exec(SCHEMA);
   db.prepare('INSERT OR IGNORE INTO config (id) VALUES (1)').run();
+
+  const userCount = db.prepare('SELECT COUNT(*) as n FROM users').get().n;
+  if (userCount === 0) {
+    const adminEmail = process.env.ADMIN_EMAIL;
+    const adminPassword = process.env.ADMIN_PASSWORD;
+    if (adminEmail && adminPassword && adminPassword.length >= 8) {
+      const salt = randomBytes(16).toString('hex');
+      const hash = scryptSync(adminPassword, salt, 64).toString('hex');
+      db.prepare(
+        'INSERT INTO users (email, password_hash, password_salt, name, role) VALUES (?, ?, ?, ?, ?)'
+      ).run(adminEmail.toLowerCase().trim(), hash, salt, 'Admin', 'admin');
+      console.log(`[mymochis] admin seed creado: ${adminEmail}`);
+    } else if (adminEmail || adminPassword) {
+      console.warn('[mymochis] ADMIN_EMAIL/ADMIN_PASSWORD presentes pero password <8 chars — admin NO creado. Setear password >=8 chars o usar /register con role forzado.');
+    } else {
+      console.warn('[mymochis] users vacío y sin ADMIN_EMAIL/ADMIN_PASSWORD — primer admin debe usar /register antes de lockdown');
+    }
+  }
 
   ensureColumn('config',  'delivery_immediate_enabled',        'INTEGER NOT NULL DEFAULT 0');
   ensureColumn('config',  'delivery_immediate_fee_cents',      'INTEGER NOT NULL DEFAULT 5000');

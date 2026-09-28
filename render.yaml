@@ -21,6 +21,10 @@ services:
         value: /var/data/uploads
       - key: CONTACT_EMAIL
         value: nxstudioing31@gmail.com
+      - key: ADMIN_EMAIL
+        value: admin@mymochis.app
+      - key: ADMIN_PASSWORD
+        generateValue: true
     disk:
       name: mymochis-data
       mountPath: /var/data
