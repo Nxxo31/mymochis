@@ -264,11 +264,17 @@ export function init() {
         'INSERT INTO users (email, password_hash, password_salt, name, role) VALUES (?, ?, ?, ?, ?)'
       ).run(adminEmailLower, hash, salt, 'Admin', 'admin');
       console.log(`[mymochis] admin seed creado: ${adminEmailLower}`);
-    } else if (existingAdmin.role !== 'admin') {
-      db.prepare("UPDATE users SET role = 'admin' WHERE id = ?").run(existingAdmin.id);
-      console.log(`[mymochis] admin role restaurado: ${adminEmailLower}`);
     } else {
-      console.log(`[mymochis] admin ya existe: ${adminEmailLower}`);
+      if (existingAdmin.role !== 'admin') {
+        db.prepare("UPDATE users SET role = 'admin' WHERE id = ?").run(existingAdmin.id);
+        console.log(`[mymochis] admin role restaurado: ${adminEmailLower}`);
+      }
+      if (process.env.ADMIN_PASSWORD_RESET === 'true') {
+        const salt = randomBytes(16).toString('hex');
+        const hash = scryptSync(adminPassword, salt, 64).toString('hex');
+        db.prepare('UPDATE users SET password_hash = ?, password_salt = ? WHERE id = ?').run(hash, salt, existingAdmin.id);
+        console.log(`[mymochis] admin password rotada via ADMIN_PASSWORD_RESET: ${adminEmailLower}`);
+      }
     }
   } else if (adminEmail || adminPassword) {
     console.warn('[mymochis] ADMIN_EMAIL/ADMIN_PASSWORD presentes pero password <8 chars — admin NO creado. Setear password >=8 chars o usar /register con role forzado.');

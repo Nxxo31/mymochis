@@ -124,3 +124,33 @@ test('login con password incorrecta → 401', async () => {
   const { status } = await api('POST', '/api/auth/login', { body: { email: ADMIN_EMAIL, password: 'wrong-password' } });
   assert.equal(status, 401);
 });
+
+test('ADMIN_PASSWORD_RESET=true rota la password del admin existente', async () => {
+  child.kill();
+  await new Promise(r => child.once('exit', r));
+
+  const NEWPASS = 'RotatedPass456!';
+  child = spawn(process.execPath, ['server.js'], {
+    cwd: ROOT,
+    env: {
+      ...process.env,
+      PORT: String(PORT),
+      NEXOMOCHIS_DB_PATH: join(tmpDir, 'test.db'),
+      NEXOMOCHIS_UPLOAD_DIR: join(tmpDir, 'uploads'),
+      NEXOMOCHIS_JWT_SECRET: 'test-secret-not-for-production',
+      ADMIN_EMAIL,
+      ADMIN_PASSWORD: NEWPASS,
+      ADMIN_PASSWORD_RESET: 'true',
+      NODE_ENV: 'test',
+    },
+    stdio: 'ignore',
+  });
+  await waitReady();
+
+  const oldLogin = await api('POST', '/api/auth/login', { body: { email: ADMIN_EMAIL, password: ADMIN_PASSWORD } });
+  assert.equal(oldLogin.status, 401, 'password vieja rechazada tras reset');
+
+  const newLogin = await api('POST', '/api/auth/login', { body: { email: ADMIN_EMAIL, password: NEWPASS } });
+  assert.equal(newLogin.status, 200, 'login con password nueva OK');
+  assert.equal(newLogin.json.user.role, 'admin');
+});

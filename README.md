@@ -53,8 +53,9 @@ npm run dev
 | `CONTACT_EMAIL` | literal | `nxstudioing31@gmail.com` |
 | `ADMIN_EMAIL` | literal | `admin@mymochis.app` |
 | `ADMIN_PASSWORD` | `generateValue: true` | Seed admin en primer deploy, consultar Render dashboard si se pierde |
+| `ADMIN_PASSWORD_RESET` | literal, opcional | Si vale `true`, al arrancar actualiza la password del admin existente al valor actual de `ADMIN_PASSWORD`. Usar para rotar y luego borrar la variable |
 
-El seed admin (`init()` en `src/db.js`) crea `admin@mymochis.app` con role `'admin'` solo si la tabla `users` está vacía o si el email no existe. **Idempotente** — re-deploys no duplican.
+El seed admin (`init()` en `src/db.js`) crea `admin@mymochis.app` con role `'admin'` solo si el email no existe; restaura el role si fue demoteado; y con `ADMIN_PASSWORD_RESET=true` rota la password al valor del env. **Idempotente** — re-deploys no duplican. Para rotar en producción: setear `ADMIN_PASSWORD` nuevo + `ADMIN_PASSWORD_RESET=true` → redeploy → login → quitar `ADMIN_PASSWORD_RESET`.
 
 ## Endpoints
 
