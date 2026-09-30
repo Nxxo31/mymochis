@@ -137,11 +137,12 @@ a:hover { text-decoration: underline; }
 .sidebar {
   background: var(--ink);
   color: var(--bg-soft);
-  padding: 22px 16px;
+  padding: 22px 16px 0;
   position: sticky; top: 0; height: 100vh;
   display: flex; flex-direction: column; gap: 4px;
   overflow-y: auto;
 }
+.sidebar > * { flex-shrink: 0; }
 .sidebar .brand {
   display: flex; align-items: center; gap: 10px;
   font-family: 'Fredoka', serif;
@@ -166,7 +167,7 @@ a:hover { text-decoration: underline; }
 .nav-item:hover { background: rgba(255,255,255,0.05); }
 .nav-item.active { background: rgba(244,168,184,0.18); color: #fff; }
 .nav-item svg { width: 18px; height: 18px; opacity: 0.85; }
-.sidebar-footer { margin-top: auto; padding-top: 12px; border-top: 1px solid rgba(255,255,255,0.1); }
+.sidebar-footer { margin-top: auto; padding: 12px 0 22px; border-top: 1px solid rgba(255,255,255,0.1); position: sticky; bottom: 0; background: var(--ink); }
 .user-pill {
   padding: 8px 12px; font-size: 12px;
   color: var(--bg-soft); opacity: 0.7;
@@ -1262,7 +1263,7 @@ const render = {
       .map(([k, v]) => `<div style="display:flex;justify-content:space-between;padding:6px 0"><span class="tag ${k}">${k}</span><strong>${v}</strong></div>`).join('') || '<div style="opacity:0.5;font-size:13px">Sin pedidos</div>';
 
     document.getElementById('by-day').innerHTML = Object.entries(m.by_pickup_day)
-      .map(([k, v]) => `<div style="display:flex;justify-content:space-between;padding:6px 0"><span>${k}</span><strong>${v}</strong></div>`).join('') || '<div style="opacity:0.5;font-size:13px">Sin pedidos</div>';
+      .map(([k, v]) => `<div style="display:flex;justify-content:space-between;padding:6px 0"><span>${k === 'undefined' || k === 'null' || !k ? 'Sin día' : k}</span><strong>${v}</strong></div>`).join('') || '<div style="opacity:0.5;font-size:13px">Sin pedidos</div>';
   },
 
   orders() {

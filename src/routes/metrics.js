@@ -5,7 +5,7 @@ import { authMiddleware, requireRole } from '../auth.js';
 const router = Router();
 
 router.get('/', [authMiddleware, requireRole('admin')], (req, res) => {
-  const all = db.prepare(`SELECT id, created_at, total, status, payment_status, customer_name, items_json, combos_json FROM orders`).all();
+  const all = db.prepare(`SELECT id, created_at, total, status, payment_status, customer_name, items_json, combos_json, pickup_day FROM orders`).all();
 
   const byDay = {};
   const byStatus = { pending: 0, confirmed: 0, ready: 0, delivered: 0, cancelled: 0 };
