@@ -2,7 +2,7 @@
 
 Landing page para clientes + dashboard de gestión para el operador. Monolito Node.js + SQLite + frontend estático.
 
-**Estado**: v2.0.0 cerrado · Deploy producción: https://mymochis.onrender.com
+**Estado**: v2.0.0 cerrado · Decisión 2026-10-08: **sin SaaS multi-tenant**; arquitectura objetivo autónoma en `PROJECT.md` · Deploy legacy: https://mymochis.onrender.com
 
 ## Stack
 
@@ -32,7 +32,26 @@ Para desarrollo con auto-reload:
 npm run dev
 ```
 
-## Producción (Render)
+## Deploy autónomo recomendado (actual)
+
+Arquitectura y runbook completo: `PROJECT.md` (sección "Arquitectura autónoma single-tenant con deploy gratuito").
+
+Resumen:
+
+```bash
+cp .env.production.example .env.production
+nano .env.production
+docker compose --env-file .env.production up -d --build
+bash scripts/stack-smoke.sh "https://$DOMAIN"
+```
+
+Backup diario cifrado a Cloudflare R2:
+
+```cron
+17 4 * * * cd /opt/mymochis && /usr/bin/env bash scripts/backup-mymochis.sh >> /var/log/mymochis-backup.log 2>&1
+```
+
+## Producción legacy (Render)
 
 - URL: https://mymochis.onrender.com
 - Plan: free (Ohio region)
@@ -154,10 +173,10 @@ mymochis/
 
 ## Notas de cierre (v2.0.0)
 
-MyMochis queda cerrado como single-tenant en Render. Migración futura:
+MyMochis queda cerrado como **single-tenant autónomo**. Decisión 2026-10-08: **no se continúa MyMochis Studio multi-tenant** para este negocio; el objetivo es que el amigo opere sin depender de Sebas.
 
-- **Plan**: Convertir MyMochis en **tenant de MyMochis Studio** (multi-tenant OSS stack: Hetzner + Coolify + Neon + Auth.js, ADR-005).
-- **Trigger**: cuando se sature el free tier de Render (1GB disk, cold start, no scale) o cuando se quiera ofrecer como producto a otros negocios de mochi/repostería artesanal.
-- **Pasos**: provisionar Neon branch `mymochis` → migrar schema → adapter pg en `db.js` → deploy en Coolify con subdomain `mymochis.mymochis.app`.
+- **Arquitectura objetivo**: `PROJECT.md`.
+- **Deploy recomendado**: Oracle Cloud Always Free VM + Caddy + Docker + SQLite/uploads persistentes + backups cifrados a Cloudflare R2.
+- **Escalación futura opcional**: Cloudflare Workers/D1/R2 si se acepta migración serverless; no reabrir multi-tenant salvo cambio de modelo de negocio.
 
-Para retomar la conversación: ver `dark-memory` proyecto `default` memory `#130` (sesión completa 2026-09-28) y memoria actualizada de este cierre.
+Para retomar la conversación: ver `dark-memory` proyecto `default` memory `#130` (sesión completa 2026-09-28), `#167` (reencuadre mymochis-studio) y la decisión de arquitectura autónoma 2026-10-08.

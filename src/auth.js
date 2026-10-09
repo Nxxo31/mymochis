@@ -1,8 +1,16 @@
 import { scryptSync, randomBytes, timingSafeEqual } from 'node:crypto';
 import { createHmac } from 'node:crypto';
 
-const JWT_SECRET = process.env.NEXOMOCHIS_JWT_SECRET || 'dev-secret-change-in-production-please';
-const JWT_TTL_SECONDS = 7 * 24 * 60 * 60; // 7 days
+const IS_PROD = process.env.NODE_ENV === 'production';
+const JWT_SECRET = process.env.NEXOMOCHIS_JWT_SECRET;
+const JWT_SECRET_EFFECTIVE = JWT_SECRET || (IS_PROD ? null : 'dev-secret-change-in-production-please');
+if (!JWT_SECRET_EFFECTIVE) {
+  throw new Error('NEXOMOCHIS_JWT_SECRET is required in production');
+}
+const JWT_TTL_SECONDS = Number(process.env.NEXOMOCHIS_JWT_TTL_SECONDS || (IS_PROD ? 12 * 60 * 60 : 7 * 24 * 60 * 60));
+if (!Number.isFinite(JWT_TTL_SECONDS) || JWT_TTL_SECONDS < 300 || JWT_TTL_SECONDS > 30 * 24 * 60 * 60) {
+  throw new Error('NEXOMOCHIS_JWT_TTL_SECONDS must be between 300 and 2592000');
+}
 
 export function hashPassword(password) {
   const salt = randomBytes(16).toString('hex');
@@ -30,7 +38,7 @@ export function signJwt(payload) {
   const header = b64url(JSON.stringify({ alg: 'HS256', typ: 'JWT' }));
   const now = Math.floor(Date.now() / 1000);
   const body = b64url(JSON.stringify({ ...payload, iat: now, exp: now + JWT_TTL_SECONDS }));
-  const sig = b64url(createHmac('sha256', JWT_SECRET).update(`${header}.${body}`).digest());
+  const sig = b64url(createHmac('sha256', JWT_SECRET_EFFECTIVE).update(`${header}.${body}`).digest());
   return `${header}.${body}.${sig}`;
 }
 
@@ -39,7 +47,7 @@ export function verifyJwt(token) {
   const parts = token.split('.');
   if (parts.length !== 3) return null;
   const [header, body, sig] = parts;
-  const expected = b64url(createHmac('sha256', JWT_SECRET).update(`${header}.${body}`).digest());
+  const expected = b64url(createHmac('sha256', JWT_SECRET_EFFECTIVE).update(`${header}.${body}`).digest());
   if (sig !== expected) return null;
   try {
     const payload = JSON.parse(b64urlDecode(body).toString('utf8'));

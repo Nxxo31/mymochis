@@ -1,0 +1,12 @@
+.git
+node_modules
+data
+test
+*.log
+.env
+.env.*
+!.env.example
+!.env.production.example
+render.yaml
+PROJECT.md
+README.md
