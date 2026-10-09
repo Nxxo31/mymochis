@@ -334,3 +334,38 @@ CONFIRM_RESTORE=yes bash scripts/restore-mymochis.sh "r2:mymochis-backups/mymoch
 ```
 
 Verificación local ejecutada: `npm test` → 7/7 tests passing.
+
+## 17. Verificación MVP E2E — 2026-10-09
+
+Smoke E2E funcional sobre el server Node (mismo código que el contenedor Docker): **13/13 PASS**.
+
+- `GET /api/health` ✓
+- `GET /api/public` ✓ (config, categories, flavors, combos, promos, payment_methods, delivery_schedule, delivery_config, release_windows)
+- Login admin sembrado por env ✓ (`ADMIN_EMAIL`/`ADMIN_PASSWORD` en `src/db.js`)
+- Flujo operador: crear sabor ✓ + abrir release window ✓
+- Flujo cliente: `POST /api/orders` pedido programado ✓ (valida schedule por día + cutoff UTC + ventana `open` + stock)
+- Stock decrementa `units_sold` tras pedido ✓
+- Gestión admin: `GET /api/orders` ✓, `GET /api/metrics` ✓
+- Estáticos: landing `/` ✓, dashboard `/manage.html` ✓
+- RBAC: `/api/metrics` sin token → 401 ✓
+- Regla de negocio confirmada: pickup_day en domingo → `no_pickup_schedule` (schedule Lun–Sáb, correcto).
+- Payload de pedidos: `items` es **objeto** `{ flavor_id: qty }` (no array).
+
+Los pedidos del cliente final entran por **WhatsApp** (link directo en la landing, diseño intencional); el endpoint público `/api/orders` queda habilitado y validado para uso futuro.
+
+Adicionalmente en este cierre:
+- Aviso de datos personales publicado en el footer de la landing (control §7.10): nombre, WhatsApp, dirección de entrega, finalidad y canal de modificación/eliminación.
+- `render.yaml` eliminado (Render descartado en §4).
+- Docker no disponible en la máquina de desarrollo: el build de imagen se valida en la VM (Fase 3).
+
+## 18. Único pendiente para producción
+
+Fases 2–5 del §11 requieren recursos del operador (cuenta OCI, DNS Cloudflare, bucket R2 con credenciales). Todo el paquete de deploy ya está en repo y el MVP está verificado; la puesta en producción es ejecutar el runbook:
+
+1. Crear VM Oracle A1 Flex (Ubuntu) + abrir 22/80/443.
+2. Clonar repo, `cp .env.production.example .env.production` y rellenar (JWT secret, dominio, admin password, R2 keys, age recipient).
+3. `docker compose --env-file .env.production up -d --build`.
+4. `bash scripts/stack-smoke.sh "https://$DOMAIN"`.
+5. Seed admin, login, cambio de clave (`ADMIN_PASSWORD_RESET=true` y retirar).
+6. Cron backup diario (§16) + restore drill.
+7. Handoff: crear cuenta admin del operador del negocio y rotar la de Sebas.
