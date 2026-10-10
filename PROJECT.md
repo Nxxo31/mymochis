@@ -369,3 +369,56 @@ Fases 2–5 del §11 requieren recursos del operador (cuenta OCI, DNS Cloudflare
 5. Seed admin, login, cambio de clave (`ADMIN_PASSWORD_RESET=true` y retirar).
 6. Cron backup diario (§16) + restore drill.
 7. Handoff: crear cuenta admin del operador del negocio y rotar la de Sebas.
+
+## 19. Cheatsheet del operador para producción (no técnico)
+
+Estado código: 100% listo y verificado (commit `8729c4f` 2026-10-09 + E2E 13/13 PASS, memo #178). Deploy pendiente solo de cuentas tuyas + 7 acciones de ~1 hora total. Refiere a §18 para los pasos técnicos.
+
+### Recursos que necesitas conseguir
+
+| # | Recurso | Costo | Dónde | Tiempo |
+|---|---|---|---|---|
+| 1 | Cuenta Oracle Cloud Free Tier | $0 | https://cloud.oracle.com/free | 10 min (sign-up + verificación tarjeta — NO cobran, es anti-fraude) |
+| 2 | Dominio propio | ~$10/año | Namecheap o Cloudflare Registrar | 5 min |
+| 3 | Cuenta Cloudflare (DNS gratis + R2) | $0 | https://dash.cloudflare.com/sign-up | 2 min |
+| 4 | Bucket R2 + token escritura | $0 (free 10GB) | Cloudflare → R2 → Create + API token | 5 min |
+| 5 | Llave pública `age` (cifra backups) | $0 | La genero yo y te la paso | 1 min |
+
+WSP Business queda fuera del MVP inicial: los pedidos se siguen haciendo por WSP personal manual (tu preferencia confirmada 2026-09-29). Si querés WSP Business auto, son 30+ días adicionales de Meta approval — el deploy igual funciona, solo el canal auto queda pendiente.
+
+### El día del deploy (yo corro los 7 pasos de §18, vos accedés 3 veces)
+
+**Bloque 1 — Vos creás los recursos (~1h una sola sesión)**
+- Oracle Cloud → Create VM → Ubuntu 22.04 → shape `VM.Standard.A1.Flex` 1 OCPU/1GB (free tier) → subís tu SSH key → abris puertos 22/80/443.
+- Comprás dominio y lo apuntás a los nameservers de Cloudflare (te paso los NS exactos).
+- En Cloudflare: DNS → A record a la IP pública de la VM + bucket R2 + API token con scope Object Storage Write.
+
+**Bloque 2 — Pasamos credenciales (5 min)**
+- Me das por chat: `ORACLE_VM_IP`, `DOMAIN`, `R2_ACCESS_KEY`, `R2_SECRET_KEY`, `R2_BUCKET`, `AGE_PUBLIC_KEY`.
+- Yo las guardo cifradas en Windows Credential Manager (dark-memory keyring). No tocan tu repo.
+- Yo corro los 7 pasos del §18 y dejo `https://$DOMAIN` operativo.
+
+**Bloque 3 — Verificación (30 min)**
+- Smoke E2E: home 200, catálogo público 200, login admin, crear pedido, ver métricas admin.
+- Crear cuenta para el operador del negocio y rotar mi acceso.
+
+### Decisiones que necesito antes de empezar
+
+| Pregunta | Default si no contestás |
+|---|---|
+| ¿Qué dominio? (ej: `mymochis.app`, `mimochis.co`, `mochis.lat`) | Te propongo 3 cuando digas GO |
+| ¿Tamaño VM Oracle? (1 OCPU/1GB vs 2/12GB) | 1 OCPU/1GB (sobra para MVP) |
+| ¿Backups automáticos desde día 1? | Después de validar 1 semana |
+| ¿HTTPS con Caddy automático u otro CA? | Caddy (ya en `docker-compose.yml`) |
+| ¿WSP auto o personal manual? | Personal manual (preferencia confirmada) |
+
+### Riesgos (transparente)
+
+1. **Oracle A1 reclamation**: si CPU <10% por días puede reclamar la VM y avisa 48h antes. Mitigación: el MVP tiene tráfico real, no va a estar ocioso.
+2. **R2 free 10GB**: alcanza para catálogo. Si crece a miles de productos, plan paid (~$0.015/GB-mes).
+3. **DNS propagation**: 5-30 min global en primer apuntado. No bloquea, solo el operador del negocio entra después de propagar.
+4. **Costo sorpresa**: ninguno esperado. Si ves algo raro en Oracle a 30 días, bajamos el shape.
+
+### Comando para arrancar
+
+Cuando tengas los 4 recursos del Bloque 1, mandame: **"GO deploy MyMochis"** + la info, y arrancamos el mismo día.
