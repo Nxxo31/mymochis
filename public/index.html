@@ -108,6 +108,42 @@ body::before {
   background-repeat: no-repeat;
   background-size: 100% 100%;
 }
+
+body::after {
+  content: '';
+  position: fixed; inset: 0; z-index: -1;
+  pointer-events: none;
+  background-image:
+    url("data:image/svg+xml;utf8,<svg xmlns='http://www.w3.org/2000/svg' width='600' height='600' viewBox='0 0 600 600'><defs><radialGradient id='m1' cx='50%25' cy='50%25' r='50%25'><stop offset='0%25' stop-color='%23E94560' stop-opacity='0.10'/><stop offset='80%25' stop-color='%23E94560' stop-opacity='0.04'/><stop offset='100%25' stop-color='%23E94560' stop-opacity='0'/></radialGradient><radialGradient id='m2' cx='50%25' cy='50%25' r='50%25'><stop offset='0%25' stop-color='%23A8B545' stop-opacity='0.10'/><stop offset='80%25' stop-color='%23A8B545' stop-opacity='0.04'/><stop offset='100%25' stop-color='%23A8B545' stop-opacity='0'/></radialGradient><radialGradient id='m3' cx='50%25' cy='50%25' r='50%25'><stop offset='0%25' stop-color='%23F9D85E' stop-opacity='0.12'/><stop offset='80%25' stop-color='%23F9D85E' stop-opacity='0.05'/><stop offset='100%25' stop-color='%23F9D85E' stop-opacity='0'/></radialGradient><radialGradient id='m4' cx='50%25' cy='50%25' r='50%25'><stop offset='0%25' stop-color='%23A78BD9' stop-opacity='0.10'/><stop offset='80%25' stop-color='%23A78BD9' stop-opacity='0.04'/><stop offset='100%25' stop-color='%23A78BD9' stop-opacity='0'/></radialGradient><radialGradient id='m5' cx='50%25' cy='50%25' r='50%25'><stop offset='0%25' stop-color='%2362D3EC' stop-opacity='0.10'/><stop offset='80%25' stop-color='%2362D3EC' stop-opacity='0.04'/><stop offset='100%25' stop-color='%2362D3EC' stop-opacity='0'/></radialGradient></defs><circle cx='80' cy='120' r='55' fill='url(%23m1)'/><circle cx='480' cy='180' r='40' fill='url(%23m2)'/><circle cx='540' cy='480' r='60' fill='url(%23m3)'/><circle cx='180' cy='460' r='45' fill='url(%23m4)'/><circle cx='320' cy='340' r='50' fill='url(%23m5)'/></svg>");
+  background-position: center;
+  background-size: 1200px 1200px;
+  background-repeat: no-repeat;
+  animation: drift 60s ease-in-out infinite alternate;
+}
+
+@keyframes drift {
+  0%   { background-position: 0% 0%; }
+  100% { background-position: 100% 100%; }
+}
+
+/* === floating mochi decorations (subtle) === */
+.mochi-float {
+  position: fixed; z-index: -1; pointer-events: none;
+  width: 60px; height: 60px; border-radius: 50%;
+  opacity: 0.18;
+  filter: blur(1px);
+  animation: float 18s ease-in-out infinite;
+}
+.mochi-float-1 { top: 12%; left: 8%; background: radial-gradient(circle at 35% 35%, #fff 0%, var(--pink-soft, #ffe0e8) 40%, var(--pink) 100%); animation-delay: 0s; }
+.mochi-float-2 { top: 28%; right: 12%; background: radial-gradient(circle at 35% 35%, #fff 0%, var(--mint) 40%, var(--mint-deep) 100%); animation-delay: 3s; width: 50px; height: 50px; }
+.mochi-float-3 { bottom: 22%; left: 15%; background: radial-gradient(circle at 35% 35%, #fff 0%, var(--peach) 40%, var(--gold) 100%); animation-delay: 6s; width: 70px; height: 70px; }
+.mochi-float-4 { bottom: 14%; right: 10%; background: radial-gradient(circle at 35% 35%, #fff 0%, var(--lav) 40%, var(--cyan-deep) 100%); animation-delay: 9s; width: 55px; height: 55px; }
+.mochi-float-5 { top: 50%; left: 45%; background: radial-gradient(circle at 35% 35%, #fff 0%, var(--cyan-pale) 40%, var(--cyan-bright) 100%); animation-delay: 12s; width: 45px; height: 45px; opacity: 0.12; }
+
+@keyframes float {
+  0%, 100% { transform: translateY(0px) rotate(0deg); }
+  50%      { transform: translateY(-30px) rotate(8deg); }
+}
 .serif { font-family: 'Fredoka', serif; }
 
 /* === HEADER === */
@@ -381,6 +417,20 @@ section { padding: 72px 24px; position: relative; }
   display: grid; grid-template-columns: repeat(auto-fit, minmax(200px, 1fr));
   gap: 12px;
 }
+
+.gallery-item-insta {
+  background: linear-gradient(135deg, rgba(233,69,96,0.10), rgba(167,139,217,0.10));
+  border: 2px dashed var(--pink-deep);
+  display: flex; align-items: center; justify-content: center;
+  transition: transform 0.25s, box-shadow 0.25s;
+}
+.gallery-item-insta:hover { transform: translateY(-4px); box-shadow: 0 18px 50px rgba(233,69,96,0.20); }
+.gallery-item-insta a {
+  display: flex; flex-direction: column; align-items: center; gap: 8px;
+  color: var(--pink-deep); font-weight: 600; font-size: 14px;
+  text-decoration: none;
+}
+.gallery-item-insta svg { width: 36px; height: 36px; }
 .gallery-item {
   aspect-ratio: 1 / 1; border-radius: 16px; overflow: hidden;
   background: var(--bg-soft);
@@ -1145,12 +1195,23 @@ footer .tagline { font-size: 13px; opacity: 0.65; margin-bottom: 24px; }
       <p class="section-sub">Cada semana un lote nuevo. Etiquétanos y te reposteamos.</p>
     </div>
     <div class="gallery-grid">
-      <div class="gallery-item"><img src="img/hero-1.jpg" alt="MyMochis" loading="lazy"></div>
-      <div class="gallery-item"><img src="img/combo-colorful.jpg" alt="MyMochis" loading="lazy"></div>
-      <div class="gallery-item"><img src="img/hero-2.jpg" alt="MyMochis" loading="lazy"></div>
-      <div class="gallery-item"><img src="img/combo-white.jpg" alt="MyMochis" loading="lazy"></div>
-      <div class="gallery-item"><img src="img/cut-open.jpg" alt="MyMochis" loading="lazy"></div>
-      <div class="gallery-item gallery-placeholder" style="background:var(--bg-soft);display:flex;align-items:center;justify-content:center;color:var(--ink-soft);font-size:13px;text-align:center;padding:12px">+ sube más fotos</div>
+      <div class="gallery-item"><img src="img/hero-1.jpg" alt="Combo mochis" loading="lazy"></div>
+      <div class="gallery-item"><img src="img/instagram/mochi-01.jpg" alt="Mochis frescos" loading="lazy"></div>
+      <div class="gallery-item"><img src="img/combo-colorful.jpg" alt="Combo colorido" loading="lazy"></div>
+      <div class="gallery-item"><img src="img/instagram/mochi-02.jpg" alt="Lote semanal" loading="lazy"></div>
+      <div class="gallery-item"><img src="img/hero-2.jpg" alt="Hero 2" loading="lazy"></div>
+      <div class="gallery-item"><img src="img/instagram/mochi-03.jpg" alt="Proceso artesanal" loading="lazy"></div>
+      <div class="gallery-item"><img src="img/combo-white.jpg" alt="Combo blanco" loading="lazy"></div>
+      <div class="gallery-item"><img src="img/instagram/mochi-04.jpg" alt="Sabor destacado" loading="lazy"></div>
+      <div class="gallery-item"><img src="img/cut-open.jpg" alt="Mochi abierto" loading="lazy"></div>
+      <div class="gallery-item"><img src="img/instagram/mochi-05.jpg" alt="Lote destacado" loading="lazy"></div>
+      <div class="gallery-item"><img src="img/instagram/mochi-06.jpg" alt="Dulce artesanal" loading="lazy"></div>
+      <div class="gallery-item gallery-item-insta">
+        <a href="https://instagram.com/my.mochiss/" target="_blank" rel="noopener">
+          <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><rect x="2" y="2" width="20" height="20" rx="5" ry="5"/><path d="M16 11.37A4 4 0 0 1 12.63 8 4 4 0 0 1 16 11.37z"/><line x1="17.5" y1="6.5" x2="17.51" y2="6.5"/></svg>
+          <span>+ ver @my.mochiss</span>
+        </a>
+      </div>
     </div>
     <div class="gallery-cta">
       <a href="https://instagram.com/my.mochiss/" target="_blank" rel="noopener">Ver más en Instagram →</a>
@@ -1671,5 +1732,12 @@ if ('serviceWorker' in navigator) {
 }
 </script>
 
+
+<!-- Floating mochi decorations (subtle, blurred, animated) -->
+<div class="mochi-float mochi-float-1" aria-hidden="true"></div>
+<div class="mochi-float mochi-float-2" aria-hidden="true"></div>
+<div class="mochi-float mochi-float-3" aria-hidden="true"></div>
+<div class="mochi-float mochi-float-4" aria-hidden="true"></div>
+<div class="mochi-float mochi-float-5" aria-hidden="true"></div>
+
 </body>
-</html>
