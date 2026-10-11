@@ -360,11 +360,88 @@ Adicionalmente en este cierre:
 
 ## 18. Único pendiente para producción
 
-Fases 2–5 del §11 requieren recursos del operador (cuenta OCI, DNS Cloudflare, bucket R2 con credenciales). Todo el paquete de deploy ya está en repo y el MVP está verificado; la puesta en producción es ejecutar el runbook:
+Fases 2–5 del §11 requieren recursos del operador. Todo el paquete de
+deploy ya está en repo y el MVP está verificado; la puesta en producción
+sigue este runbook actualizado 2026-10-11:
 
-1. Crear VM Oracle A1 Flex (Ubuntu) + abrir 22/80/443.
-2. Clonar repo, `cp .env.production.example .env.production` y rellenar (JWT secret, dominio, admin password, R2 keys, age recipient).
-3. `docker compose --env-file .env.production up -d --build`.
+### 18.1 Preflight (idempotente)
+
+Antes de tocar OCI, validar localmente que todos los prerequisitos están
+en su lugar. **No modifica nada del host, solo reporta gaps.**
+
+```bash
+bash scripts/preflight-oci.sh
+```
+
+El script verifica los 4 bloqueos del operador + artefactos locales:
+
+| Bloqueo | Verifica |
+|---------|----------|
+| OCI CLI autenticado | `oci iam user get --self` |
+| Dominio DNS | `dig +short $DOMAIN A` resuelve IP |
+| R2 bucket + API keys | vars `R2_ACCESS_KEY_ID`, `R2_SECRET_ACCESS_KEY`, `R2_BUCKET` presentes |
+| SSH key pair | `~/.ssh/id_ed25519_oci{.pub}` existen |
+
+Si exit code != 0: leer la lista de gaps y resolver antes de continuar.
+
+### 18.2 Secuencia del operador
+
+Una vez preflight en verde:
+
+1. **Crear VM Oracle A1 Flex** (Ubuntu 22.04 LTS) + abrir 22/80/443 en
+   security list. Mantener la VM en `Always Free-eligible` region
+   (ej. us-ashburn-1, eu-frankfurt-1).
+2. **Apuntar DNS**: en Cloudflare (o proveedor del dominio), crear
+   registro A `mymochis.tudominio.com` → IP pública de la VM. Proxy
+   activado (orange cloud) para TLS + DDoS básico.
+3. **Subir SSH pubkey**: en OCI Compute → Instances → Create →
+   Paste SSH keys. Usar el contenido de `~/.ssh/id_ed25519_oci.pub`.
+4. **Clonar repo + configurar**:
+   ```bash
+   ssh ubuntu@$VM_IP
+   git clone https://github.com/Nxxo31/mymochis.git
+   cd mymochis
+   cp .env.production.example .env.production
+   # Rellenar: NEXOMOCHIS_JWT_SECRET, ADMIN_PASSWORD, DOMAIN,
+   # LETSENCRYPT_EMAIL, R2_*, AGE_*
+   ```
+   Generar secrets:
+   - `NEXOMOCHIS_JWT_SECRET`: `openssl rand -hex 32`
+   - `ADMIN_PASSWORD`: `openssl rand -base64 24`
+   - `AGE_RECIPIENT`: `age-keygen -o ~/age_key.txt && cat ~/age_key.txt`
+     (la pública es el recipient; guardar la privada offline)
+5. **Levantar stack**:
+   ```bash
+   docker compose --env-file .env.production up -d
+   bash scripts/stack-smoke.sh        # valida /api/health + /api/public
+   ```
+6. **Habilitar backups**:
+   ```bash
+   # Crear systemd timer para backup-mymochis.sh (3 AM UTC diario)
+   sudo cp deploy/backup-mymochis.service /etc/systemd/system/
+   sudo cp deploy/backup-mymochis.timer /etc/systemd/system/
+   sudo systemctl daemon-reload
+   sudo systemctl enable --now backup-mymochis.timer
+   sudo systemctl list-timers backup-mymochis
+   ```
+7. **DNS verification final**:
+   ```bash
+   curl -sI https://$DOMAIN/api/health | head -1
+   # Esperar: HTTP/2 200
+   ```
+
+### 18.3 Lo que NO requiere acción del operador
+
+- Dockerfile, docker-compose.yml, Caddyfile: ya en repo y validados.
+- backup-mymochis.sh: idempotente, valida env vars al inicio.
+- restore-mymochis.sh: idempotente, requiere `CONFIRM_RESTORE=yes`.
+- stack-smoke.sh: 13+ smoke tests pre-deploy.
+- preflight-oci.sh: añadido 2026-10-11 (commit b91d24c) — ejecutable
+  ANTES de la secuencia para detectar gaps temprano.
+
+Refs: memo #178 (mymochis MVP cerrado), memo #188 P0, commit b91d24c.
+
+## 19. Histórico de preflight (archivado 2026-10-11) up -d --build`.
 4. `bash scripts/stack-smoke.sh "https://$DOMAIN"`.
 5. Seed admin, login, cambio de clave (`ADMIN_PASSWORD_RESET=true` y retirar).
 6. Cron backup diario (§16) + restore drill.

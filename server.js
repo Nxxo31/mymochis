@@ -107,7 +107,7 @@ app.use('/api/uploads', uploadLimiter);
 
 app.use(express.json({ limit: '256kb' }));
 
-app.get('/api/health', (req, res) => res.json({ ok: true, service: 'mymochis', version: '2.0.0', ts: new Date().toISOString() }));
+app.get('/api/health', (req, res) => res.json({ ok: true, service: 'mymochis', version: '2.1.0', ts: new Date().toISOString() }));
 
 app.use('/api/auth', authRoutes);
 app.use('/api/me', meRoutes);
@@ -132,6 +132,8 @@ app.use('/uploads', express.static(UPLOAD_DIR, { maxAge: '30d', immutable: true,
   res.setHeader('X-Content-Type-Options', 'nosniff');
   res.setHeader('Cache-Control', 'public, max-age=2592000, immutable');
 }}));
+
+app.use(['/_headers', '/_redirects'], (req, res) => res.status(404).end());
 
 app.use(express.static(PUBLIC_DIR, {
   extensions: ['html'],

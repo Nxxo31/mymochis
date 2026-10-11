@@ -1,13 +1,20 @@
 {
   "name": "mymochis",
-  "version": "2.0.0",
+  "version": "2.1.0",
   "description": "MyMochis — landing de cliente + dashboard de gestión",
   "type": "module",
   "private": true,
   "scripts": {
     "start": "node server.js",
     "dev": "node --watch server.js",
-    "test": "node --test \"test/*.test.js\""
+    "test": "node --test \"test/*.test.js\"",
+    "worker:dev": "wrangler dev",
+    "worker:deploy": "wrangler deploy",
+    "d1:create": "wrangler d1 create mymochis",
+    "r2:create": "wrangler r2 bucket create mymochis-uploads"
+  },
+  "devDependencies": {
+    "wrangler": "^4.42.0"
   },
   "dependencies": {
     "express": "^4.21.2",
@@ -17,5 +24,9 @@
   },
   "engines": {
     "node": ">=20.0.0"
+  },
+  "allowScripts": {
+    "esbuild@0.28.2": true,
+    "workerd@1.20261006.1": true
   }
 }
