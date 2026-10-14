@@ -1,0 +1,16 @@
+[Unit]
+Description=mymochis nightly backup (SQLite + uploads to R2, age-encrypted)
+After=network-online.target
+Wants=network-online.target
+
+[Service]
+Type=oneshot
+User=ubuntu
+Group=ubuntu
+WorkingDirectory=/opt/mymochis
+EnvironmentFile=/opt/mymochis/.env.production
+ExecStart=/opt/mymochis/scripts/backup-mymochis.sh
+Nice=10
+
+[Install]
+WantedBy=multi-user.target

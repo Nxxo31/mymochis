@@ -37,7 +37,8 @@ fi
 # --- 2. Dominio DNS ---
 echo ""
 echo "[2] Dominio DNS configurado"
-DOMAIN="${DOMAIN:-${PUBLIC_ORIGIN#https://}}"
+DOMAIN="${DOMAIN:-${PUBLIC_ORIGIN:-}}"
+DOMAIN="${DOMAIN#https://}"
 if [ -n "$DOMAIN" ] && [ "$DOMAIN" != "mymochis.example.com" ]; then
   if command -v dig >/dev/null 2>&1; then
     if dig +short "$DOMAIN" A 2>/dev/null | grep -qE '^[0-9]'; then
@@ -136,8 +137,8 @@ if [ $FAIL -gt 0 ]; then
   echo ""
   echo "ACTION: resolver los gaps listados arriba antes de continuar."
   echo "Cuando todos estén en verde, ejecutar:"
-  echo "  bash scripts/stack-smoke.sh        # smoke pre-deploy"
-  echo "  bash scripts/deploy-oci.sh        # ansible/terraform a la VM"
+  echo "  bash scripts/stack-smoke.sh \"https://\$DOMAIN\"  # smoke pre-deploy"
+  echo "  seguir §18.2 pasos 2-7 de mymochis/PROJECT.md   # deploy manual a la VM"
   exit 1
 fi
 

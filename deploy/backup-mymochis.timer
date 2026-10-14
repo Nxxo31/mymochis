@@ -1,0 +1,11 @@
+[Unit]
+Description=mymochis nightly backup timer (3 AM UTC daily, with catch-up)
+
+[Timer]
+OnCalendar=*-*-* 03:00:00 UTC
+Persistent=true
+AccuracySec=5min
+Unit=backup-mymochis.service
+
+[Install]
+WantedBy=timers.target
