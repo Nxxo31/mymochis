@@ -12,7 +12,7 @@ if (!existsSync(dirname(DB_PATH))) {
 }
 
 export const db = new DatabaseSync(DB_PATH);
-db.exec('PRAGMA journal_mode = WAL');
+db.exec('PRAGMA journal_mode = DELETE');
 db.exec('PRAGMA foreign_keys = ON');
 
 const SCHEMA = `
@@ -200,20 +200,6 @@ CREATE TABLE IF NOT EXISTS geocoded_addresses (
 );
 `;
 
-const SEED_FLAVORS = [
-  { id: 'fresas-crema', name: 'Fresas con crema', description: 'Fresa fresca del Huila, crema batida y un toque de vainilla', price: 8000, color: '#e88a9e', category: 'clasicos', sort_order: 0 },
-  { id: 'chokis-cream', name: 'Chokis & cream', description: 'Trozos de galleta Chokis con crema dulce — nuestro hit', price: 8000, color: '#b8954e', category: 'premium', sort_order: 1 },
-  { id: 'blueberry', name: 'Blueberry', description: 'Arándano entero, crema suave y un guiño a limón', price: 8000, color: '#7a6db8', category: 'frutales', sort_order: 2 },
-  { id: 'durazno-caramelizado', name: 'Durazno caramelizado', description: 'Rodaja de durazno con caramelo dorado y notas de canela', price: 8000, color: '#d88450', category: 'temporada', sort_order: 3 },
-  { id: 'crema-pastelera', name: 'Crema pastelera', description: 'La clásica: vainilla, yema y un corazón cremoso', price: 8000, color: '#c4a866', category: 'clasicos', sort_order: 4 }
-];
-
-const SEED_COMBOS = [
-  { name: 'Combo 4', units: 4, price: 28000, description: 'Ideal para probar varios sabores en una tarde.', compare_at_price: 32000, featured: 0, sort_order: 0 },
-  { name: 'Combo 6', units: 6, price: 39000, description: 'El favorito para compartir en familia o con amigos.', compare_at_price: 48000, featured: 1, sort_order: 1 },
-  { name: 'Caja sorpresa 12', units: 12, price: 75000, description: 'Una caja surtida con todos los sabores y nuestras pruebas nuevas.', compare_at_price: 96000, featured: 0, sort_order: 2 }
-];
-
 const SEED_CATEGORIES = [
   { name: 'Clásicos',    slug: 'clasicos',   sort_order: 0 },
   { name: 'Frutales',    slug: 'frutales',   sort_order: 1 },
@@ -305,21 +291,6 @@ export function init() {
   if (catCount === 0) {
     const stmt = db.prepare('INSERT INTO categories (name, slug, sort_order) VALUES (?, ?, ?)');
     for (const c of SEED_CATEGORIES) stmt.run(c.name, c.slug, c.sort_order);
-  }
-
-  const catIds = db.prepare('SELECT id, slug FROM categories').all();
-  const catMap = Object.fromEntries(catIds.map(c => [c.slug, c.id]));
-
-  const flavorCount = db.prepare('SELECT COUNT(*) as n FROM flavors').get().n;
-  if (flavorCount === 0) {
-    const stmt = db.prepare('INSERT INTO flavors (id, name, description, price, color, sort_order, category_id) VALUES (?, ?, ?, ?, ?, ?, ?)');
-    for (const f of SEED_FLAVORS) stmt.run(f.id, f.name, f.description, f.price, f.color, f.sort_order, catMap[f.category] || null);
-  }
-
-  const comboCount = db.prepare('SELECT COUNT(*) as n FROM combos').get().n;
-  if (comboCount === 0) {
-    const stmt = db.prepare('INSERT INTO combos (name, units, price, description, compare_at_price, featured, sort_order) VALUES (?, ?, ?, ?, ?, ?, ?)');
-    for (const c of SEED_COMBOS) stmt.run(c.name, c.units, c.price, c.description, c.compare_at_price, c.featured, c.sort_order);
   }
 
   const pmCount = db.prepare('SELECT COUNT(*) as n FROM payment_methods').get().n;

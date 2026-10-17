@@ -79,6 +79,6 @@ export class Router {
 function prefixRegex(prefix, route) {
   const base = prefix.replace(/\/+$/, '');
   const src = route.regex.source;
-  if (src === '^/$') return new RegExp('^' + base.replace(/[.*+^${}()|[\]\\]/g, '\\$&') + '$');
+  if (src === '^/$') return new RegExp('^' + base.replace(/[.*+^${}()|[\]\\]/g, '\\$&') + '/?$');
   return new RegExp('^' + base + src.slice(1));
 }

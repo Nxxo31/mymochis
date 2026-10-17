@@ -11,12 +11,14 @@ bindings = []
 [[d1_databases]]
 binding = "DB"
 database_name = "mymochis"
-database_id = "REPLACE_WITH_D1_DATABASE_ID"
+database_id = "451d8fd2-aad8-4310-9068-d81cd7487d57"
 migrations_dir = "migrations"
 
-[[r2_buckets]]
-binding = "UPLOADS"
-bucket_name = "mymochis-uploads"
+#[[r2_buckets]]
+#binding = "UPLOADS"
+#bucket_name = "mymochis-uploads"
+# Sesión 2026-10-14: R2 bloqueado, account R2 no activado (error 10042).
+# Cuando el operador habilite R2 en dash.cloudflare.com, descomentar.
 
 [assets]
 directory = "./public"

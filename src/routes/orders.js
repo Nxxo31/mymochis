@@ -2,6 +2,7 @@ import { Router } from 'express';
 import { db } from '../db.js';
 import { authMiddleware } from '../auth.js';
 import { geocode, haversineKm } from '../lib/geocode.js';
+import { buildDispatch } from '../lib/whatsapp.js';
 
 const router = Router();
 
@@ -278,7 +279,16 @@ router.post('/', async (req, res) => {
     }
 
     db.exec('COMMIT');
-    res.status(201).json(rowToOrder(db.prepare('SELECT * FROM orders WHERE id = ?').get(id)));
+    const full = rowToOrder(db.prepare('SELECT * FROM orders WHERE id = ?').get(id));
+    const flavorList = db.prepare(`SELECT id, name FROM flavors`).all();
+    const comboList = db.prepare(`SELECT id, name FROM combos`).all();
+    const wsp = await buildDispatch(full, {
+      adminPhone: (config.whatsapp_number || '').replace(/[^\d]/g, ''),
+      business_name: config.business_name,
+      flavors: flavorList,
+      combos: comboList
+    }).catch((e) => ({ deep_link: null, cloud_status: 'failed', cloud_error: String(e?.message || e).slice(0, 200) }));
+    res.status(201).json({ ...full, whatsapp: wsp });
   } catch (e) {
     db.exec('ROLLBACK');
     if (String(e.message).includes('UNIQUE')) return res.status(409).json({ error: 'duplicate', message: 'Ya existe un pedido con ese id' });

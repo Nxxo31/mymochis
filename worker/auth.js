@@ -1,10 +1,13 @@
 const PBKDF2_ITERATIONS_DEFAULT = 210000;
+// Cloudflare Workers cap PBKDF2 at 100k iterations. Keep that ceiling here so
+// dev doesn't generate hashes the worker can't verify.
+const PBKDF2_MAX_OK = 100000;
 
 export function pbkdf2Iterations(env) {
   const n = Number(env?.NEXOMOCHIS_PBKDF2_ITERATIONS || PBKDF2_ITERATIONS_DEFAULT);
-  if (!Number.isInteger(n) || n < 10000 || n > 2000000) {
-    throw new Error('NEXOMOCHIS_PBKDF2_ITERATIONS must be an integer 10000..2000000');
-  }
+  if (!Number.isInteger(n) || n !== Math.trunc(n)) return PBKDF2_ITERATIONS_DEFAULT;
+  if (n > PBKDF2_MAX_OK) return PBKDF2_MAX_OK;
+  if (n < 10000) return 10000;
   return n;
 }
 

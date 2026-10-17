@@ -83,7 +83,8 @@ CREATE TABLE IF NOT EXISTS combos (
   featured INTEGER NOT NULL DEFAULT 0,
   image_url TEXT,
   sort_order INTEGER NOT NULL DEFAULT 0,
-  created_at TEXT NOT NULL DEFAULT (datetime('now'))
+  created_at TEXT NOT NULL DEFAULT (datetime('now')),
+  UNIQUE(name, units)
 );
 CREATE TABLE IF NOT EXISTS orders (
   id TEXT PRIMARY KEY,
@@ -224,6 +225,7 @@ INSERT OR IGNORE INTO flavors (id, name, description, price, color, sort_order, 
   ('blueberry', 'Blueberry', 'Arandano entero, crema suave y un guiño a limon', 8000, '#7a6db8', 2, (SELECT id FROM categories WHERE slug='frutales')),
   ('durazno-caramelizado', 'Durazno caramelizado', 'Rodaja de durazno con caramelo dorado y notas de canela', 8000, '#d88450', 3, (SELECT id FROM categories WHERE slug='temporada')),
   ('crema-pastelera', 'Crema pastelera', 'La clasica: vainilla, yema y un corazon cremoso', 8000, '#c4a866', 4, (SELECT id FROM categories WHERE slug='clasicos'));
+-- combos: idempotent via INSERT OR IGNORE (UNIQUE(name,units) on the table)
 INSERT OR IGNORE INTO combos (name, units, price, description, compare_at_price, featured, sort_order) VALUES
   ('Combo 4', 4, 28000, 'Ideal para probar varios sabores en una tarde.', 32000, 0, 0),
   ('Combo 6', 6, 39000, 'El favorito para compartir en familia o con amigos.', 48000, 1, 1),
@@ -262,7 +264,9 @@ export function ensureInit(env) {
 }
 
 function splitStatements(sql) {
-  return sql
+  // Strip SQL line comments (-- ...) so they don't leak into the next statement
+  const stripped = sql.replace(/^\s*--[^\n]*$/gm, '').replace(/--[^\n]*\n/g, '\n');
+  return stripped
     .split(/;\s*(?:\r?\n|$)/)
     .map((s) => s.trim())
     .filter((s) => s.length > 0)
@@ -270,8 +274,21 @@ function splitStatements(sql) {
 }
 
 async function execScript(db, sql) {
-  for (const stmt of splitStatements(sql)) {
-    await db.exec(stmt);
+  const stmts = splitStatements(sql);
+  console.log('[execScript] running', stmts.length, 'statements');
+  for (let i = 0; i < stmts.length; i++) {
+    let stmt = stmts[i].replace(/;\s*$/, '').trim();
+    if (stmt.length === 0) continue;
+    // D1's exec() is line-based; collapse internal newlines to spaces
+    stmt = stmt.replace(/\s+/g, ' ').trim();
+    console.log('[execScript]', i, 'len=' + stmt.length, 'preview=' + stmt.slice(0, 60));
+    try {
+      await db.exec(stmt);
+      console.log('[execScript] OK', i);
+    } catch (e) {
+      console.error('[execScript] FAIL', i, e?.message || e);
+      throw e;
+    }
   }
 }
 

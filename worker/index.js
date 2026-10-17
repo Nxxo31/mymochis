@@ -104,6 +104,11 @@ export default {
         return await env.ASSETS.fetch(request);
       }
 
+      // Trailing-slash redirect for /api/* (router uses ^/api/foo/$ which doesn't match /api/foo)
+      if (/^\/api\/[a-z-]+$/.test(path)) {
+        return Response.redirect(new URL(path + '/', request.url).toString(), 301);
+      }
+
       await ensureInit(env);
 
       const corsOrigin = env.NEXOMOCHIS_CORS || (env.ENVIRONMENT === 'production' ? null : '*');

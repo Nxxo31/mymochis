@@ -2,8 +2,12 @@ import { Router } from '../router.js';
 
 const router = new Router();
 
-router.get('/', async (req, res) => {
-  const db = req.db;
+router.get('/', handler);
+router.get('', handler);
+
+async function handler(req, res) {
+  try {
+    const db = req.db;
   const config = await db.prepare('SELECT * FROM config WHERE id = 1').get();
   const flavors = await db.prepare(`
     SELECT f.id, f.name, f.description, f.price, f.available, f.image_url, f.color, f.sort_order,
@@ -99,6 +103,10 @@ router.get('/', async (req, res) => {
     delivery_config: deliveryConfig,
     release_windows: Object.values(releaseWindowsById)
   });
-});
+  } catch (e) {
+    console.error('[public]', e);
+    res.status(500).json({ error: 'public_failed', message: String(e?.message || e), stack: String(e?.stack || '').slice(0, 600) });
+  }
+}
 
 export default router;

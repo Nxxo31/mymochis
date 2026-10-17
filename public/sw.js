@@ -1,4 +1,4 @@
-const CACHE = 'mochis-land-v5';
+const CACHE = 'mochis-land-v7';
 const PRECACHE = [
   './',
   'index.html',
@@ -10,11 +10,10 @@ const PRECACHE = [
   'og-image.png',
   'icon-192.png',
   'icon-512.png',
-  'img/hero-1.jpg',
-  'img/hero-2.jpg',
-  'img/combo-colorful.jpg',
-  'img/combo-white.jpg',
-  'img/cut-open.jpg'
+  'img/instagram/mochi-06.jpg',
+  'img/instagram/mochi-01.jpg',
+  'img/instagram/mochi-02.jpg',
+  'img/instagram/mochi-03.jpg'
 ];
 
 self.addEventListener('install', e => {
@@ -32,14 +31,30 @@ self.addEventListener('fetch', e => {
   if (e.request.method !== 'GET' || url.origin !== self.location.origin) return;
   if (url.pathname.startsWith('/api/')) return;
 
+  const isHtml = e.request.mode === 'navigate' || url.pathname === '/' ||
+                 url.pathname.endsWith('.html') || url.pathname === './';
+
+  if (isHtml) {
+    e.respondWith(
+      fetch(e.request).then(res => {
+        if (res.ok) {
+          const clone = res.clone();
+          caches.open(CACHE).then(c => c.put(e.request, clone));
+        }
+        return res;
+      }).catch(() => caches.match(e.request).then(c => c || Response.error()))
+    );
+    return;
+  }
+
   e.respondWith(
     caches.match(e.request).then(cached => {
       const fetchPromise = fetch(e.request).then(res => {
-        if (res.ok && (url.pathname.endsWith('.html') || url.pathname.endsWith('.svg') ||
+        if (res.ok && (url.pathname.endsWith('.svg') ||
                         url.pathname.endsWith('.css') || url.pathname.endsWith('.js') ||
                         url.pathname.endsWith('.jpg') || url.pathname.endsWith('.png') ||
                         url.pathname.endsWith('.webp') || url.pathname.endsWith('.mp4') ||
-                        url.pathname === '/' || url.pathname === '/manifest.json')) {
+                        url.pathname === '/manifest.json')) {
           const clone = res.clone();
           caches.open(CACHE).then(c => c.put(e.request, clone));
         }
