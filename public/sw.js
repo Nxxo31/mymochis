@@ -1,4 +1,4 @@
-const CACHE = 'mochis-land-v7';
+const CACHE = 'mochis-land-v8'; // v8 2026-10-17: multi-número pedido + fix precios pesos + fix tienda init + api.whatsapp.com
 const PRECACHE = [
   './',
   'index.html',

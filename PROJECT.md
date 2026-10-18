@@ -499,3 +499,70 @@ WSP Business queda fuera del MVP inicial: los pedidos se siguen haciendo por WSP
 ### Comando para arrancar
 
 Cuando tengas los 4 recursos del Bloque 1, mandame: **"GO deploy MyMochis"** + la info, y arrancamos el mismo día.
+
+## 20. Multi-número, multi-admin y dispatch WhatsApp — 2026-10-17
+
+Fecha: 2026-10-17. Estado: **implementado, testeado (11/11) y verificado E2E en vivo**.
+Refs: skill `whatsapp-order-dispatch` (canon del patrón), commit de esta sesión.
+
+### Flujo del pedido (nuevo)
+
+1. El cliente arma el pedido (landing modal o tienda).
+2. `POST /api/orders` valida horario/cutoff/stock, persiste en SQLite **y** arma el
+   dispatch: elige el destinatario con **round-robin** (`recipients[orderCount % n]`
+   sobre los activos, `ORDER BY sort_order, id`) y responde
+   `{ whatsapp: { deep_link, primary_phone, primary_label, recipients_count, cloud_status, cloud_results } }`.
+3. El cliente abre el `deep_link` (`api.whatsapp.com/send/`, NUNCA `wa.me`): su
+   WhatsApp abre con el mensaje pre-llenado dirigido al admin elegido.
+4. Si `WHATSAPP_CLOUD_TOKEN` + `WHATSAPP_CLOUD_PHONE_ID` están configurados, el
+   server ADEMÁS envía el pedido por Meta Cloud API a TODOS los números activos
+   (`sent`/`partial`/`failed`/`skipped`). Sin credenciales → `skipped`, el pedido
+   nunca falla por el canal.
+
+**Unidad de dinero en TODA la app: pesos COP.** Los `*_cents` históricos son
+pesos (flavor.price 8000 = $8.000). NUNCA dividir total entre 100.
+
+### Multi-número (`order_recipients`)
+
+- Tabla `(label, phone UNIQUE, active, sort_order)`; seed inicial importa
+  `config.whatsapp_number` si no hay destinatarios y no es el placeholder.
+- CRUD admin-only en `POST/GET/PATCH/DELETE /api/recipients` (8–15 dígitos,
+  normaliza no-dígitos, rechaza duplicados). UI: sección **Números de pedido**
+  del panel (agregar / pausar / eliminar).
+- Respaldo legacy: pool vacío → usa `config.whatsapp_number` (sin placeholder).
+
+### Multi-admin
+
+- `POST /api/users` (solo admin) crea cuentas `admin|customer`. UI: sección
+  **Usuarios** del panel. El register público sigue forzando `role=customer`.
+- **Se eliminó el demote global de init()** (antes: cualquier admin distinto de
+  admin@mymochis.app volvía a customer en cada boot — mataba multi-admin).
+- Borrar admins por API sigue bloqueado a propósito; un admin de más se limpia
+  directo en SQLite.
+
+### Mensaje WhatsApp (single source of truth en `src/lib/whatsapp.js`)
+
+- Lo arma el SERVER con: # de pedido (cruce con dashboard), ventana de horario
+  real del día (`delivery_schedule`), subtotales por sabor/combo en pesos,
+  notas, y aviso de que quedó registrado en el panel.
+- La landing ya no arma mensaje propio: hace `await POST /api/orders` y abre el
+  `deep_link` de la respuesta. Fallback con mensaje local SOLO si la API falla.
+
+### Bugs corregidos en esta pasada (encontrados por QA)
+
+1. `tienda.html` `#cartSheet` inexistente → `init()` crasheaba y **la tienda
+   nunca cargaba catálogo**. Fix: `#cartSheetBack`.
+2. Precios 100× mal: `tienda.html` y el mensaje WSP dividían entre 100 ($8.500
+   → "$85"); también el chart del panel. Fix: formatear pesos directo.
+3. `wa.me` corrompe emojis 4-byte en su redirect (🍡→U+FFFD); verificado
+   empíricamente. Fix: `api.whatsapp.com/send/` en todos los links del repo.
+4. Pedidos de la landing enviaban `pickup_day: "Martes"` → 400 silencioso →
+   **ningún pedido de la landing llegaba al dashboard**. Fix: conversión al
+   próximo `YYYY-MM-DD` real + await del POST.
+5. sw.js cache `mochis-land-v8` (renovar precache de index/manage).
+
+### Tests
+
+`npm test` → 11/11: los 7 originales + recipients CRUD/RBAC, multi-admin
+sobrevive reinicio, flujo pedido→dashboard→round-robin→mensaje, y pausa de
+número. Paridad completa en `worker/` (D1): tabla, ruta, dispatch y users.

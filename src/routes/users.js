@@ -1,5 +1,5 @@
 import { Router } from 'express';
-import { authMiddleware, requireRole } from '../auth.js';
+import { authMiddleware, requireRole, hashPassword } from '../auth.js';
 import { db } from '../db.js';
 
 const router = Router();
@@ -9,6 +9,35 @@ router.get('/', [authMiddleware, requireRole('admin')], (req, res) => {
     .prepare('SELECT id, email, name, role, created_at FROM users ORDER BY created_at DESC LIMIT 200')
     .all();
   res.json({ users: rows });
+});
+
+// Crear cuentas (multi-admin) — solo un admin puede crear otra.
+// role se blinda: 'admin' explícito o 'customer' para cualquier otro valor.
+router.post('/', [authMiddleware, requireRole('admin')], (req, res) => {
+  const email = String(req.body?.email || '').trim().toLowerCase();
+  const password = String(req.body?.password || '');
+  const name = String(req.body?.name || '').trim().slice(0, 120) || null;
+  const role = req.body?.role === 'admin' ? 'admin' : 'customer';
+
+  if (!/^[^\s@]+@[^\s@]+\.[^\s@]+$/.test(email)) {
+    return res.status(400).json({ error: 'bad_email', message: 'Email inválido' });
+  }
+  if (password.length < 8) {
+    return res.status(400).json({ error: 'weak_password', message: 'La contraseña debe tener al menos 8 caracteres' });
+  }
+  if (password.length > 200) {
+    return res.status(400).json({ error: 'bad_password', message: 'Contraseña demasiado larga' });
+  }
+  const exists = db.prepare('SELECT id FROM users WHERE email = ?').get(email);
+  if (exists) {
+    return res.status(409).json({ error: 'email_taken', message: 'Ya existe una cuenta con ese email' });
+  }
+
+  const { salt, hash } = hashPassword(password);
+  const r = db.prepare(
+    'INSERT INTO users (email, password_hash, password_salt, name, role) VALUES (?, ?, ?, ?, ?)'
+  ).run(email, hash, salt, name, role);
+  res.status(201).json({ id: Number(r.lastInsertRowid), email, name, role });
 });
 
 router.delete('/:id', [authMiddleware, requireRole('admin')], (req, res) => {

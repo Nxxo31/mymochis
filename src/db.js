@@ -88,6 +88,17 @@ CREATE INDEX IF NOT EXISTS idx_orders_created_at ON orders(created_at DESC);
 CREATE INDEX IF NOT EXISTS idx_orders_status ON orders(status);
 CREATE INDEX IF NOT EXISTS idx_orders_pickup_day ON orders(pickup_day);
 
+CREATE TABLE IF NOT EXISTS order_recipients (
+  id INTEGER PRIMARY KEY AUTOINCREMENT,
+  label TEXT NOT NULL,
+  phone TEXT NOT NULL UNIQUE,
+  active INTEGER NOT NULL DEFAULT 1,
+  sort_order INTEGER NOT NULL DEFAULT 0,
+  created_at TEXT NOT NULL DEFAULT (datetime('now'))
+);
+
+CREATE INDEX IF NOT EXISTS idx_order_recipients_active ON order_recipients(active, sort_order);
+
 CREATE TABLE IF NOT EXISTS promos (
   id INTEGER PRIMARY KEY AUTOINCREMENT,
   code TEXT UNIQUE,
@@ -235,7 +246,22 @@ export function init() {
   db.exec(SCHEMA);
   db.prepare('INSERT OR IGNORE INTO config (id) VALUES (1)').run();
 
-  db.exec("UPDATE users SET role = 'customer' WHERE role = 'admin' AND email != lower('admin@mymochis.app')");
+  // Multi-número: al inicializar, si no hay destinatarios y la config ya tiene
+  // un WhatsApp real (no placeholder), se importa como primer destinatario.
+  const recipientCount = db.prepare('SELECT COUNT(*) as n FROM order_recipients').get().n;
+  if (recipientCount === 0) {
+    const cfg = db.prepare('SELECT whatsapp_number FROM config WHERE id = 1').get();
+    const digits = String(cfg?.whatsapp_number || '').replace(/\D/g, '');
+    if (digits && digits !== '573000000000' && /^\d{8,15}$/.test(digits)) {
+      db.prepare('INSERT INTO order_recipients (label, phone, active, sort_order) VALUES (?, ?, 1, 0)')
+        .run('Admin principal', digits);
+    }
+  }
+
+  // 2026-10-17: se elimina el demote global de admins (antes: cualquier admin
+  // distinto de admin@mymochis.app volvía a 'customer' en cada boot). El operador
+  // pidió soporte multi-admin; los admins se gestionan por POST /api/users
+  // (admin-only) y el register público sigue forzando role=customer.
   db.exec("UPDATE config SET instagram_handle = '@my.mochiss', instagram_url = 'https://instagram.com/my.mochiss/', tiktok_handle = '@my.mochiss' WHERE id = 1 AND (instagram_handle = '@mymochis.neiva' OR instagram_handle IS NULL OR tiktok_handle IS NULL)");
 
   const adminEmail = process.env.ADMIN_EMAIL;

@@ -1,6 +1,7 @@
 import { Router } from '../router.js';
 import { authMiddleware } from '../auth.js';
 import { geocode, haversineKm } from '../lib/geocode.js';
+import { buildDispatch } from '../lib/whatsapp.js';
 
 const router = new Router();
 
@@ -304,7 +305,50 @@ router.post('/', async (req, res) => {
   }
 
   const created = await db.prepare('SELECT * FROM orders WHERE id = ?').get(id);
-  res.status(201).json(rowToOrder(created));
+  const full = rowToOrder(created);
+
+  // ---- Dispatch WhatsApp multi-destinatario (2026-10-17) ----
+  try {
+    const flavorList = await db.prepare('SELECT id, name, price FROM flavors').all();
+    const comboList = await db.prepare('SELECT id, name, price FROM combos').all();
+
+    const recipients = (await db.prepare('SELECT label, phone FROM order_recipients WHERE active = 1 ORDER BY sort_order ASC, id ASC').all())
+      .map(r => ({ label: r.label, phone: String(r.phone).replace(/\D/g, '') }))
+      .filter(r => r.phone);
+
+    if (recipients.length === 0) {
+      const fallback = String(config.whatsapp_number || '').replace(/\D/g, '');
+      if (fallback && fallback !== '573000000000') {
+        recipients.push({ label: 'Admin principal', phone: fallback });
+      }
+    }
+
+    let primary = null;
+    if (recipients.length) {
+      const orderCount = (await db.prepare('SELECT COUNT(*) AS n FROM orders').get()).n;
+      primary = recipients[orderCount % recipients.length];
+    }
+
+    const pickupDow = dayOfWeek(pickup_day);
+    const sched = await db.prepare(
+      "SELECT start_time, end_time FROM delivery_schedule WHERE day_of_week = ? AND active = 1 AND mode IN ('pickup','both') ORDER BY id LIMIT 1"
+    ).get(pickupDow);
+
+    const wsp = await buildDispatch(req.env, full, {
+      primaryPhone: primary?.phone || null,
+      primary_label: primary?.label || null,
+      recipients,
+      business_name: config.business_name,
+      flavors: flavorList,
+      combos: comboList,
+      pickup_window_start: sched?.start_time || null,
+      pickup_window_end: sched?.end_time || null
+    });
+    res.status(201).json({ ...full, whatsapp: wsp });
+  } catch (e) {
+    console.warn('[orders] dispatch failed:', e?.message || e);
+    res.status(201).json({ ...full, whatsapp: { deep_link: null, cloud_status: 'failed', cloud_error: String(e?.message || e).slice(0, 200) } });
+  }
 });
 
 router.patch('/:id', authMiddleware, async (req, res) => {

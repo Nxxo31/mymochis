@@ -112,6 +112,17 @@ CREATE TABLE IF NOT EXISTS orders (
 CREATE INDEX IF NOT EXISTS idx_orders_created_at ON orders(created_at DESC);
 CREATE INDEX IF NOT EXISTS idx_orders_status ON orders(status);
 CREATE INDEX IF NOT EXISTS idx_orders_pickup_day ON orders(pickup_day);
+
+CREATE TABLE IF NOT EXISTS order_recipients (
+  id INTEGER PRIMARY KEY AUTOINCREMENT,
+  label TEXT NOT NULL,
+  phone TEXT NOT NULL UNIQUE,
+  active INTEGER NOT NULL DEFAULT 1,
+  sort_order INTEGER NOT NULL DEFAULT 0,
+  created_at TEXT NOT NULL DEFAULT (datetime('now'))
+);
+
+CREATE INDEX IF NOT EXISTS idx_order_recipients_active ON order_recipients(active, sort_order);
 CREATE TABLE IF NOT EXISTS promos (
   id INTEGER PRIMARY KEY AUTOINCREMENT,
   code TEXT UNIQUE,
@@ -296,7 +307,20 @@ async function doInit(env) {
   const db = createDb(env.DB);
   await execScript(db, SCHEMA_SQL);
   await execScript(db, SEED_SQL);
-  await db.prepare("UPDATE users SET role = 'customer' WHERE role = 'admin' AND email != lower('admin@mymochis.app')").run();
+  // 2026-10-17: demote global de admins eliminado (multi-admin soportado).
+  // Multi-número: importar config.whatsapp_number como primer destinatario.
+  try {
+    const n = (await db.prepare('SELECT COUNT(*) AS n FROM order_recipients').get()).n;
+    if (n === 0) {
+      const cfg = await db.prepare('SELECT whatsapp_number FROM config WHERE id = 1').get();
+      const digits = String(cfg?.whatsapp_number || '').replace(/\D/g, '');
+      if (digits && digits !== '573000000000' && /^\d{8,15}$/.test(digits)) {
+        await db.prepare('INSERT INTO order_recipients (label, phone, active, sort_order) VALUES (?, ?, 1, 0)').run('Admin principal', digits);
+      }
+    }
+  } catch (e) {
+    console.warn('[db] order_recipients seed skipped:', e?.message || e);
+  }
 
   const adminEmail = env.ADMIN_EMAIL;
   const adminPassword = env.ADMIN_PASSWORD;

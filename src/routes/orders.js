@@ -280,13 +280,45 @@ router.post('/', async (req, res) => {
 
     db.exec('COMMIT');
     const full = rowToOrder(db.prepare('SELECT * FROM orders WHERE id = ?').get(id));
-    const flavorList = db.prepare(`SELECT id, name FROM flavors`).all();
-    const comboList = db.prepare(`SELECT id, name FROM combos`).all();
+
+    // ---- Dispatch WhatsApp multi-destinatario (2026-10-17) ----
+    const flavorList = db.prepare('SELECT id, name, price FROM flavors').all();
+    const comboList = db.prepare('SELECT id, name, price FROM combos').all();
+
+    const recipients = db.prepare('SELECT label, phone FROM order_recipients WHERE active = 1 ORDER BY sort_order ASC, id ASC').all()
+      .map(r => ({ label: r.label, phone: String(r.phone).replace(/\D/g, '') }))
+      .filter(r => r.phone);
+
+    // Fallback legacy: config.whatsapp_number cuando no hay destinatarios activos
+    if (recipients.length === 0) {
+      const fallback = String(config.whatsapp_number || '').replace(/\D/g, '');
+      if (fallback && fallback !== '573000000000') {
+        recipients.push({ label: 'Admin principal', phone: fallback });
+      }
+    }
+
+    // Round-robin: reparte los pedidos entre los números activos
+    let primary = null;
+    if (recipients.length) {
+      const orderCount = db.prepare('SELECT COUNT(*) AS n FROM orders').get().n;
+      primary = recipients[orderCount % recipients.length];
+    }
+
+    // Ventana de horario real del día de recogida (para el mensaje WSP)
+    const pickupDow = dayOfWeek(pickup_day);
+    const sched = db.prepare(
+      "SELECT start_time, end_time FROM delivery_schedule WHERE day_of_week = ? AND active = 1 AND mode IN ('pickup','both') ORDER BY id LIMIT 1"
+    ).get(pickupDow);
+
     const wsp = await buildDispatch(full, {
-      adminPhone: (config.whatsapp_number || '').replace(/[^\d]/g, ''),
+      primaryPhone: primary?.phone || null,
+      primary_label: primary?.label || null,
+      recipients,
       business_name: config.business_name,
       flavors: flavorList,
-      combos: comboList
+      combos: comboList,
+      pickup_window_start: sched?.start_time || null,
+      pickup_window_end: sched?.end_time || null
     }).catch((e) => ({ deep_link: null, cloud_status: 'failed', cloud_error: String(e?.message || e).slice(0, 200) }));
     res.status(201).json({ ...full, whatsapp: wsp });
   } catch (e) {

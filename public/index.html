@@ -1244,7 +1244,7 @@ footer .brand-mark { background: var(--mochi-crema); }
       <a class="social-icon" data-social="facebook" href="#" target="_blank" rel="noopener" aria-label="Facebook">
         <svg viewBox="0 0 24 24" fill="currentColor"><path d="M18 2h-3a5 5 0 0 0-5 5v3H7v4h3v8h4v-8h3l1-4h-4V7a1 1 0 0 1 1-1h3z"/></svg>
       </a>
-      <a class="social-icon" data-social="whatsapp" href="https://wa.me/573213050426" target="_blank" rel="noopener" aria-label="WhatsApp">
+      <a class="social-icon" data-social="whatsapp" href="https://api.whatsapp.com/send/?phone=573213050426" target="_blank" rel="noopener" aria-label="WhatsApp">
         <svg viewBox="0 0 24 24" fill="currentColor"><path d="M17.5 14.4c-.3-.1-1.7-.8-1.9-.9-.3-.1-.5-.1-.7.1-.2.3-.7.9-.9 1.1-.2.2-.3.2-.6.1-.3-.1-1.2-.4-2.3-1.4-.9-.8-1.5-1.7-1.6-2-.2-.3 0-.5.1-.6.1-.1.3-.3.4-.5.1-.2.2-.3.3-.5.1-.2 0-.4 0-.5-.1-.1-.7-1.6-.9-2.2-.2-.6-.5-.5-.7-.5h-.6c-.2 0-.5.1-.8.4-.3.3-1 1-1 2.4s1.1 2.8 1.2 3c.1.2 2.1 3.3 5.2 4.6.7.3 1.3.5 1.7.6.7.2 1.4.2 1.9.1.6-.1 1.7-.7 2-1.4.2-.7.2-1.2.2-1.4-.1-.1-.3-.2-.6-.3z"/></svg>
       </a>
       <a class="social-icon" data-social="tiktok" href="https://tiktok.com/@my.mochiss" target="_blank" rel="noopener" aria-label="TikTok">
@@ -1457,7 +1457,7 @@ footer .brand-mark { background: var(--mochi-crema); }
         <a data-social="facebook" href="#" target="_blank" rel="noopener noreferrer" aria-label="Facebook">
           <svg viewBox="0 0 24 24" fill="currentColor"><path d="M18 2h-3a5 5 0 0 0-5 5v3H7v4h3v8h4v-8h3l1-4h-4V7a1 1 0 0 1 1-1h3z"/></svg>
         </a>
-        <a data-social="whatsapp" href="https://wa.me/573213050426" target="_blank" rel="noopener noreferrer" aria-label="WhatsApp">
+        <a data-social="whatsapp" href="https://api.whatsapp.com/send/?phone=573213050426" target="_blank" rel="noopener noreferrer" aria-label="WhatsApp">
           <svg viewBox="0 0 24 24" fill="currentColor"><path d="M17.5 14.4c-.3-.1-1.7-.8-1.9-.9-.3-.1-.5-.1-.7.1-.2.3-.7.9-.9 1.1-.2.2-.3.2-.6.1-.3-.1-1.2-.4-2.3-1.4-.9-.8-1.5-1.7-1.6-2-.2-.3 0-.5.1-.6.1-.1.3-.3.4-.5.1-.2.2-.3.3-.5.1-.2 0-.4 0-.5-.1-.1-.7-1.6-.9-2.2-.2-.6-.5-.5-.7-.5h-.6c-.2 0-.5.1-.8.4-.3.3-1 1-1 2.4s1.1 2.8 1.2 3c.1.2 2.1 3.3 5.2 4.6.7.3 1.3.5 1.7.6.7.2 1.4.2 1.9.1.6-.1 1.7-.7 2-1.4.2-.7.2-1.2.2-1.4-.1-.1-.3-.2-.6-.3z"/></svg>
         </a>
         <a data-social="tiktok" href="https://tiktok.com/@my.mochiss" target="_blank" rel="noopener noreferrer" aria-label="TikTok">
@@ -1597,7 +1597,7 @@ async function loadConfig() {
 function applySocialLinksFromConfig() {
   if (!APP_CONFIG) return;
   const map = {
-    whatsapp: effectiveWhatsapp() ? `https://wa.me/${effectiveWhatsapp()}` : null,
+    whatsapp: effectiveWhatsapp() ? `https://api.whatsapp.com/send/?phone=${effectiveWhatsapp()}` : null,
     instagram: APP_CONFIG.instagram_url || null,
     tiktok: APP_CONFIG.tiktok_handle ? `https://tiktok.com/${APP_CONFIG.tiktok_handle}` : null,
     facebook: APP_CONFIG.facebook_url || null
@@ -1777,7 +1777,7 @@ function renderCombos() {
             ${was}
             ${save}
           </div>
-          <button class="combo-add" onclick="openQuickOrder(${c.units}, ${c.price})">Pedir ${c.name}</button>
+          <button class="combo-add" onclick='openQuickOrder(${JSON.stringify({ id: c.id, name: c.name, units: c.units, price: c.price })})'>Pedir ${c.name}</button>
         </div>
       </article>
     `;
@@ -1862,41 +1862,58 @@ function applyServerConfig() {
   setK('bg', APP_CONFIG.soft || APP_CONFIG.bg);
 }
 
+let _combo = null;
 let _comboUnits = 0;
 let _comboPrice = 0;
 let _flavors = {};
 
-async function saveOrderToApi(order) {
-  try {
-    const res = await fetch(API_BASE + '/orders', {
-      method: 'POST',
-      headers: { 'Content-Type': 'application/json' },
-      body: JSON.stringify({
-        id: order.id,
-        customer_name: order.name,
-        customer_phone: order.phone,
-        pickup_day: order.day,
-        items: order.items,
-        combos: order.combos,
-        total: order.total,
-        source: 'web'
-      })
-    });
-    if (!res.ok) console.warn('API order save:', res.status);
-  } catch (e) {
-    console.warn('API order save failed:', e.message);
-  }
+// Convierte "Martes"/"Sábado" (radios del modal) al próximo YYYY-MM-DD real.
+// La API exige fecha concreta para validar horario, cutoff y stock del día.
+function nextDateForWeekday(esDay) {
+  const map = { 'Domingo': 0, 'Lunes': 1, 'Martes': 2, 'Miércoles': 3, 'Jueves': 4, 'Viernes': 5, 'Sábado': 6 };
+  const target = map[esDay];
+  if (target == null) return null;
+  const now = new Date();
+  const d = new Date(Date.UTC(now.getFullYear(), now.getMonth(), now.getDate()));
+  const delta = (target - d.getUTCDay() + 7) % 7;
+  d.setUTCDate(d.getUTCDate() + delta);
+  return d.toISOString().slice(0, 10);
 }
 
-function openQuickOrder(units, price) {
-  _comboUnits = units || 0;
-  _comboPrice = price || 0;
+// Mensaje de respaldo cuando la API no está disponible (mismo tono del server).
+function buildFallbackWspMessage(name, phone, dayLabel, items, combo, total) {
+  const lines = [];
+  lines.push('🍡 ¡Hola! Me antojo de un pedido 🙌');
+  lines.push('');
+  lines.push(`👤 Soy *${name}*`);
+  lines.push(`📞 Mi WhatsApp: ${phone}`);
+  lines.push(`📅 Quiero recogerlo el *${dayLabel}*`);
+  lines.push('');
+  if (items.length) {
+    lines.push('🍦 Sabores:');
+    items.forEach(([id, q]) => {
+      const f = FLAVORS.find(x => x.id === id);
+      lines.push(`  • ${f ? f.name : id} ×${q}`);
+    });
+  }
+  if (combo) lines.push(`🍱 ${combo.name}`);
+  lines.push('');
+  if (total > 0) lines.push(`💵 *Total: $${total.toLocaleString('es-CO')} COP*`);
+  lines.push('');
+  lines.push('¿Me confirmás disponibilidad? ¡Gracias! 🏮');
+  return lines.join('\n');
+}
+
+function openQuickOrder(combo) {
+  _combo = (combo && typeof combo === 'object') ? combo : null;
+  _comboUnits = _combo ? (_combo.units || 0) : 0;
+  _comboPrice = _combo ? (_combo.price || 0) : 0;
   _flavors = {};
   const titleEl = document.getElementById('quick-title');
   const subEl = document.getElementById('quick-sub');
-  if (units) {
-    titleEl.textContent = `Combo ${units} — $${price.toLocaleString('es-CO')}`;
-    subEl.textContent = `Elige ${units} sabores (o déjanos elegir a nosotros). Te respondemos por WhatsApp para confirmar.`;
+  if (_combo) {
+    titleEl.textContent = `${_combo.name} — $${_combo.price.toLocaleString('es-CO')}`;
+    subEl.textContent = `Elige ${_combo.units} sabores (o déjanos elegir a nosotros). Te respondemos por WhatsApp para confirmar.`;
   } else if (!FLAVORS.length) {
     titleEl.textContent = 'Tu pedido';
     subEl.textContent = 'Cuéntanos qué se te antoja: te respondemos por WhatsApp con la disponibilidad de la semana.';
@@ -1944,18 +1961,18 @@ function updateQuickTotal() {
   document.getElementById('quick-total').textContent = '$' + total.toLocaleString('es-CO');
 }
 
-function sendWhatsApp() {
+async function sendWhatsApp() {
   const name = document.getElementById('cli-name').value.trim();
   const phone = document.getElementById('cli-phone').value.trim();
   const dayEl = document.querySelector('input[name="day"]:checked');
-  const day = dayEl ? dayEl.value : '';
+  const dayLabel = dayEl ? dayEl.value : '';
 
   if (!name) { alert('Falta tu nombre'); return; }
   if (!phone) { alert('Falta tu WhatsApp'); return; }
-  if (!day) { alert('Elegí un día de recogida'); return; }
+  if (!dayLabel) { alert('Elegí un día de recogida'); return; }
 
   const items = Object.entries(_flavors).filter(([,q]) => q > 0);
-  if (items.length === 0 && !_comboUnits && (FLAVORS.length || COMBOS.length)) { alert('Elegí al menos un sabor'); return; }
+  if (items.length === 0 && !_combo && (FLAVORS.length || COMBOS.length)) { alert('Elegí al menos un sabor'); return; }
 
   const itemsTotal = items.reduce((s,[id,q]) => {
     const f = FLAVORS.find(x => x.id === id);
@@ -1963,57 +1980,67 @@ function sendWhatsApp() {
   }, 0);
   const total = itemsTotal + _comboPrice;
 
-  let lines = [];
-  lines.push(`*Pedido MyMochis*`);
-  lines.push(``);
-  lines.push(`Hola! Soy *${name}*`);
-  lines.push(`Mi WhatsApp: ${phone}`);
-  lines.push(`Recogida: *${day}* de 3pm a 7pm`);
-  lines.push(``);
-  if (_comboUnits) {
-    lines.push(`*Combo ${_comboUnits}* — ${'$' + _comboPrice.toLocaleString('es-CO')}`);
-  }
-  if (items.length) {
-    lines.push(``);
-    lines.push(`*Sabores:*`);
-    items.forEach(([id,q]) => {
-      const f = FLAVORS.find(x => x.id === id);
-      lines.push(`• ${f.name} × ${q} — $${(q * f.price).toLocaleString('es-CO')}`);
-    });
-  }
-  lines.push(``);
-  if (total > 0) {
-    lines.push(`*Total: $${total.toLocaleString('es-CO')} COP*`);
-  } else {
-    lines.push(`_Aún no publicamos el catálogo con precios: confírmanos sabores y valores de la semana._`);
-  }
-  lines.push(``);
-  lines.push(`_Pago contra entrega._`);
-  lines.push(``);
-  lines.push(`¿Me confirmas disponibilidad? 🏮`);
-
-  const msg = encodeURIComponent(lines.join('\n'));
-  const target = getWppTarget();
-  const url = `https://wa.me/${target}?text=${msg}`;
-
   const order = {
     id: 'MYM-' + Date.now().toString(36).toUpperCase(),
     ts: new Date().toISOString(),
-    name, phone, day,
+    name, phone, day: dayLabel,
     items: Object.fromEntries(items),
-    combos: _comboUnits ? [{ units: _comboUnits, price: _comboPrice }] : [],
+    combos: _combo ? [{ units: _comboUnits, price: _comboPrice }] : [],
     total
   };
   const history = JSON.parse(localStorage.getItem('mymochis_orders') || '[]');
   history.push(order);
   localStorage.setItem('mymochis_orders', JSON.stringify(history));
 
-  saveOrderToApi(order);
+  // 1) Registrar el pedido en el panel (source of truth) y usar el deep-link
+  //    que arma el server: mensaje nuevo + destinatario round-robin entre los
+  //    números configurados. Así el pedido queda en el dashboard ANTES de
+  //    abrir WhatsApp.
+  const pickupDate = nextDateForWeekday(dayLabel);
+  let url = null;
+  if (pickupDate) {
+    try {
+      const res = await fetch(API_BASE + '/orders', {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({
+          id: order.id,
+          customer_name: name,
+          customer_phone: phone.replace(/\D/g, ''),
+          pickup_day: pickupDate,
+          items: order.items,
+          combos: _combo ? [{ id: _combo.id, qty: 1, name: _combo.name }] : [],
+          total,
+          payment_method_id: _selectedPayMethod || undefined,
+          source: 'web'
+        })
+      });
+      if (res.ok) {
+        const data = await res.json().catch(() => ({}));
+        if (data.whatsapp && data.whatsapp.deep_link) {
+          url = data.whatsapp.deep_link;
+        } else {
+          console.warn('Pedido registrado pero sin deep_link:', data.whatsapp);
+        }
+      } else {
+        const err = await res.json().catch(() => ({}));
+        console.warn('API order save:', res.status, err.error, err.message);
+      }
+    } catch (e) {
+      console.warn('API order save failed:', e.message);
+    }
+  }
+
+  // 2) Respaldo: WhatsApp directo con mensaje local (el negocio confirma manual).
+  if (!url) {
+    const msg = encodeURIComponent(buildFallbackWspMessage(name, phone, dayLabel, items, _combo, total));
+    url = `https://api.whatsapp.com/send/?phone=${getWppTarget()}&text=${msg}`;
+  }
 
   window.open(url, '_blank');
   closeModal();
   setTimeout(() => {
-    alert('¡Pedido enviado! El operador te responde por WhatsApp para confirmar. 🏮');
+    alert('¡Pedido enviado! Te respondemos por WhatsApp para confirmar. 🏮');
   }, 600);
 }
 
@@ -2114,7 +2141,7 @@ if ('serviceWorker' in navigator) {
 <div class="mochi-float mochi-float-4" aria-hidden="true"></div>
 <div class="mochi-float mochi-float-5" aria-hidden="true"></div>
 
-<a class="wsp-fab" href="https://wa.me/573213050426?text=Hola%20Mochi's%20Land%20%F0%9F%8D%A1" target="_blank" rel="noopener" aria-label="Chatea por WhatsApp">
+<a class="wsp-fab" href="https://api.whatsapp.com/send/?phone=573213050426&text=Hola%20Mochi's%20Land%20%F0%9F%8D%A1" target="_blank" rel="noopener" aria-label="Chatea por WhatsApp">
   <svg viewBox="0 0 24 24" fill="currentColor" aria-hidden="true"><path d="M17.5 14.4c-.3-.1-1.7-.8-2-.9-.3-.1-.5-.1-.7.1-.2.3-.8.9-.9 1.1-.2.2-.3.2-.6.1-.3-.1-1.2-.4-2.3-1.4-.9-.8-1.4-1.7-1.6-2-.2-.3 0-.5.1-.6l.4-.5c.2-.2.2-.4.3-.6.1-.2 0-.4 0-.5-.1-.1-.7-1.6-.9-2.2-.2-.6-.5-.5-.7-.5h-.6c-.2 0-.5.1-.8.4-.3.3-1 1-1 2.5s1 2.9 1.2 3.1c.1.2 2 3.1 4.9 4.3.7.3 1.2.5 1.6.6.7.2 1.3.2 1.8.1.5-.1 1.7-.7 1.9-1.4.2-.7.2-1.2.2-1.4-.1-.1-.3-.2-.6-.3z"/><path d="M20.5 3.5C18.3 1.2 15.3 0 12.2 0 5.9 0 .7 5.1 .7 11.4c0 2 .6 4 1.6 5.7L.6 24l7-1.8c1.7.9 3.5 1.4 5.4 1.4 6.3 0 11.5-5.1 11.5-11.4 0-3-1.2-5.9-3.4-8.1l-.6-.6zm-7.5 18.4c-1.7 0-3.4-.5-4.9-1.3l-.4-.2-4.1 1.1 1.1-4-.2-.4c-.9-1.5-1.4-3.3-1.4-5.1 0-5.3 4.4-9.7 9.8-9.7 2.6 0 5.1 1 6.9 2.9 1.9 1.9 2.9 4.3 2.9 6.9 0 5.4-4.4 9.8-9.7 9.8z"/></svg>
   <span class="badge" id="wspFabBadge" hidden></span>
 </a>
