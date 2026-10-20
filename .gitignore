@@ -8,3 +8,14 @@ data/*.db-shm
 .DS_Store
 *.log
 public/img/popsy-ref/
+# Build output de Vite (se regenera con npm run build:web)
+public/build/
+
+# Debugs de sesion (no son codigo)
+/r[0-9A-B].json
+/routes*.json
+/devpub.json
+/fullpage*.png
+/cocina-*.html
+/tail*.log
+/*-server*.log
