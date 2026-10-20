@@ -1,0 +1,945 @@
+<!DOCTYPE html>
+<html lang="es">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width,initial-scale=1,viewport-fit=cover">
+<meta name="theme-color" content="#0E0B08">
+<title>MyMochis — Cocina oculta en Neiva</title>
+<meta name="description" content="Pedidos por unidad, sin carrito. Apartá tus mochis de la semana y recogé en Neiva.">
+<meta name="application-name" content="MyMochis">
+
+<link rel="icon" type="image/svg+xml" href="favicon.svg">
+<link rel="manifest" href="manifest.json">
+
+<meta property="og:title" content="MyMochis — Cocina oculta en Neiva">
+<meta property="og:description" content="Pedidos por unidad, sin carrito. Apartá tus mochis y recogé.">
+<meta property="og:type" content="website">
+<meta property="og:locale" content="es_CO">
+
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+<link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700;800&family=Fraunces:opsz,wght@9..144,400;9..144,500;9..144,600;9..144,700&display=swap" rel="stylesheet">
+
+<style>
+/* =========================================================================
+   MyMochis · DROP-STYLE COCINA OCULTA · 21st.dev-inspired
+   - Dark canvas + cream accents (no puffy clay)
+   - Big editorial type (Fraunces) + neutral UI (Inter)
+   - Micro-interactions on every click
+   - Single-tap "Apartar N" — opens WhatsApp with pre-filled message
+   ========================================================================= */
+:root {
+  --ink:        #0E0B08;
+  --ink-soft:   #1A1612;
+  --paper:      #FAF6EE;
+  --paper-2:    #F2ECDF;
+  --line:       rgba(250, 246, 238, 0.10);
+  --line-2:     rgba(14, 11, 8, 0.08);
+  --accent:     #E8B85F;       /* warm honey */
+  --accent-2:   #D58C3F;       /* dark honey */
+  --fresa:      #E94560;
+  --matcha:     #7B8A2E;
+  --durazno:    #E8A040;
+  --ube:        #8B6BBA;
+  --crema:      #C9A85B;
+  --ok:         #2EA867;
+  --warn:       #E8A040;
+
+  --r-sm: 8px;
+  --r-md: 14px;
+  --r-lg: 22px;
+  --r-xl: 32px;
+
+  --shadow-1: 0 1px 2px rgba(14,11,8,0.06), 0 4px 12px rgba(14,11,8,0.04);
+  --shadow-2: 0 4px 12px rgba(14,11,8,0.10), 0 12px 32px rgba(14,11,8,0.08);
+  --shadow-3: 0 12px 32px rgba(14,11,8,0.18), 0 24px 64px rgba(14,11,8,0.12);
+}
+
+* { box-sizing: border-box; margin: 0; padding: 0; }
+html { scroll-behavior: smooth; -webkit-text-size-adjust: 100%; }
+body {
+  font-family: 'Inter', system-ui, sans-serif;
+  background: var(--ink);
+  color: var(--paper);
+  line-height: 1.55;
+  -webkit-font-smoothing: antialiased;
+  overflow-x: hidden;
+  min-height: 100vh;
+}
+img { max-width: 100%; display: block; }
+a { color: inherit; text-decoration: none; }
+button { font: inherit; cursor: pointer; border: 0; background: none; color: inherit; }
+input, select, textarea { font: inherit; color: inherit; }
+
+/* ====== TYPOGRAPHY ====== */
+.serif { font-family: 'Fraunces', Georgia, serif; font-optical-sizing: auto; }
+.eyebrow {
+  font-family: 'Inter', sans-serif;
+  font-size: 11px;
+  font-weight: 600;
+  letter-spacing: 0.16em;
+  text-transform: uppercase;
+  color: var(--accent);
+}
+.mono { font-variant-numeric: tabular-nums; }
+
+/* ====== LAYOUT ====== */
+.container { max-width: 1200px; margin: 0 auto; padding: 0 24px; }
+section { padding: 88px 0; position: relative; }
+
+/* ====== TOP NAV ====== */
+.nav {
+  position: sticky; top: 0; z-index: 50;
+  background: rgba(14, 11, 8, 0.85);
+  backdrop-filter: saturate(180%) blur(18px);
+  -webkit-backdrop-filter: saturate(180%) blur(18px);
+  border-bottom: 1px solid var(--line);
+}
+.nav__inner { display: flex; align-items: center; justify-content: space-between; padding: 16px 24px; max-width: 1200px; margin: 0 auto; }
+.nav__logo { display: flex; align-items: center; gap: 10px; }
+.nav__logo-dot { width: 28px; height: 28px; border-radius: 50%; background: var(--accent); box-shadow: 0 0 0 4px rgba(232,184,95,0.15); }
+.nav__logo-text { font-family: 'Fraunces', serif; font-size: 20px; font-weight: 600; letter-spacing: -0.01em; }
+.nav__links { display: flex; gap: 28px; align-items: center; }
+.nav__link { font-size: 14px; font-weight: 500; color: rgba(250,246,238,0.7); transition: color 200ms; }
+.nav__link:hover { color: var(--paper); }
+.nav__cta {
+  background: var(--paper);
+  color: var(--ink);
+  padding: 10px 18px;
+  border-radius: 999px;
+  font-size: 14px;
+  font-weight: 600;
+  transition: transform 180ms cubic-bezier(0.34, 1.56, 0.64, 1), background 180ms;
+}
+.nav__cta:hover { transform: translateY(-1px); background: var(--accent); }
+@media (max-width: 720px) { .nav__links .nav__link { display: none; } }
+
+/* ====== HERO ====== */
+.hero {
+  padding: 64px 0 96px;
+  background: radial-gradient(800px 400px at 70% 20%, rgba(232,184,95,0.10) 0%, transparent 60%),
+              radial-gradient(600px 300px at 20% 80%, rgba(139,107,186,0.10) 0%, transparent 60%);
+  border-bottom: 1px solid var(--line);
+}
+.hero__grid { display: grid; grid-template-columns: 1.1fr 1fr; gap: 56px; align-items: center; }
+@media (max-width: 880px) { .hero__grid { grid-template-columns: 1fr; gap: 40px; } }
+.hero__headline {
+  font-family: 'Fraunces', serif;
+  font-size: clamp(40px, 6vw, 72px);
+  line-height: 1.02;
+  letter-spacing: -0.025em;
+  font-weight: 500;
+}
+.hero__headline em { font-style: italic; color: var(--accent); font-weight: 400; }
+.hero__sub { font-size: 18px; color: rgba(250,246,238,0.7); margin-top: 24px; max-width: 480px; }
+.hero__cta-row { margin-top: 40px; display: flex; gap: 12px; flex-wrap: wrap; align-items: center; }
+.btn {
+  display: inline-flex; align-items: center; gap: 8px;
+  padding: 16px 24px;
+  border-radius: 999px;
+  font-weight: 600;
+  font-size: 15px;
+  transition: transform 180ms cubic-bezier(0.34, 1.56, 0.64, 1), background 180ms, box-shadow 220ms;
+  white-space: nowrap;
+}
+.btn--primary { background: var(--accent); color: var(--ink); box-shadow: 0 8px 24px rgba(232,184,95,0.30); }
+.btn--primary:hover { transform: translateY(-2px); background: #f1c573; box-shadow: 0 12px 32px rgba(232,184,95,0.40); }
+.btn--ghost { background: rgba(250,246,238,0.06); color: var(--paper); border: 1px solid var(--line); }
+.btn--ghost:hover { background: rgba(250,246,238,0.10); transform: translateY(-2px); }
+
+.hero__countdown {
+  display: inline-flex; align-items: center; gap: 14px;
+  padding: 12px 18px;
+  background: rgba(232,184,95,0.10);
+  border: 1px solid rgba(232,184,95,0.25);
+  border-radius: 999px;
+  font-size: 13px;
+  font-weight: 500;
+  color: var(--accent);
+  margin-bottom: 28px;
+}
+.hero__countdown::before {
+  content: ''; width: 8px; height: 8px; border-radius: 50%;
+  background: var(--accent);
+  box-shadow: 0 0 0 0 rgba(232,184,95,0.6);
+  animation: pulse 2s infinite;
+}
+@keyframes pulse {
+  0%, 100% { box-shadow: 0 0 0 0 rgba(232,184,95,0.6); }
+  50%      { box-shadow: 0 0 0 8px rgba(232,184,95,0); }
+}
+
+.hero__visual { position: relative; aspect-ratio: 1/1; max-width: 480px; margin-left: auto; }
+.hero__mochi {
+  position: absolute; border-radius: 50%;
+  box-shadow: var(--shadow-3);
+  transition: transform 400ms cubic-bezier(0.34, 1.56, 0.64, 1);
+}
+.hero__mochi:hover { transform: scale(1.06) rotate(2deg); }
+.hero__mochi--1 { top: 10%; left: 14%; width: 56%; aspect-ratio: 1; background: var(--fresa); }
+.hero__mochi--2 { top: 0; right: 0; width: 38%; aspect-ratio: 1; background: var(--crema); }
+.hero__mochi--3 { bottom: 6%; right: 20%; width: 44%; aspect-ratio: 1; background: var(--matcha); }
+.hero__mochi--4 { bottom: 0; left: 8%; width: 30%; aspect-ratio: 1; background: var(--ube); }
+.hero__mochi--5 { top: 38%; left: 36%; width: 24%; aspect-ratio: 1; background: var(--durazno); }
+.hero__mochi::after {
+  content: ''; position: absolute; inset: 12%;
+  border-radius: 50%;
+  background: radial-gradient(circle at 30% 25%, rgba(255,255,255,0.55) 0%, transparent 50%);
+}
+
+/* ====== STATS BAR ====== */
+.stats {
+  background: var(--ink-soft);
+  border-top: 1px solid var(--line);
+  border-bottom: 1px solid var(--line);
+  padding: 32px 0;
+}
+.stats__row { display: grid; grid-template-columns: repeat(4, 1fr); gap: 24px; }
+@media (max-width: 720px) { .stats__row { grid-template-columns: repeat(2, 1fr); gap: 16px; } }
+.stat__num { font-family: 'Fraunces', serif; font-size: 36px; font-weight: 500; color: var(--accent); line-height: 1; }
+.stat__label { font-size: 13px; color: rgba(250,246,238,0.6); margin-top: 4px; }
+
+/* ====== DROP (flavors) ====== */
+.drop { background: var(--ink); }
+.drop__head { display: flex; justify-content: space-between; align-items: end; flex-wrap: wrap; gap: 24px; margin-bottom: 48px; }
+.drop__title { font-family: 'Fraunces', serif; font-size: clamp(32px, 4.5vw, 56px); line-height: 1.05; letter-spacing: -0.02em; font-weight: 500; }
+.drop__title em { font-style: italic; color: var(--accent); }
+.chips { display: flex; gap: 8px; flex-wrap: wrap; }
+.chip {
+  padding: 8px 14px;
+  border-radius: 999px;
+  font-size: 13px;
+  font-weight: 500;
+  background: rgba(250,246,238,0.06);
+  border: 1px solid var(--line);
+  color: rgba(250,246,238,0.7);
+  cursor: pointer;
+  transition: all 180ms;
+}
+.chip:hover { color: var(--paper); background: rgba(250,246,238,0.10); }
+.chip--active { background: var(--accent); color: var(--ink); border-color: var(--accent); }
+.chip--active:hover { background: var(--accent); color: var(--ink); }
+
+.flavors {
+  display: grid;
+  grid-template-columns: repeat(auto-fill, minmax(280px, 1fr));
+  gap: 20px;
+}
+.flavor {
+  background: var(--ink-soft);
+  border: 1px solid var(--line);
+  border-radius: var(--r-lg);
+  padding: 24px;
+  display: flex; flex-direction: column;
+  position: relative;
+  transition: transform 280ms cubic-bezier(0.34, 1.56, 0.64, 1), border-color 220ms, box-shadow 220ms;
+  overflow: hidden;
+}
+.flavor:hover { transform: translateY(-4px); border-color: rgba(232,184,95,0.4); box-shadow: var(--shadow-2); }
+.flavor__puff {
+  width: 100%; aspect-ratio: 1.1/1;
+  border-radius: var(--r-md);
+  margin-bottom: 18px;
+  position: relative;
+  overflow: hidden;
+  background: var(--ink);
+}
+.flavor__puff::after {
+  content: ''; position: absolute; inset: 0;
+  background: radial-gradient(circle at 30% 25%, rgba(255,255,255,0.25) 0%, transparent 55%);
+  border-radius: inherit;
+  pointer-events: none;
+  z-index: 1;
+}
+.flavor__img {
+  position: absolute; inset: 0;
+  width: 100%; height: 100%;
+  object-fit: cover;
+  transition: transform 400ms cubic-bezier(0.34, 1.56, 0.64, 1);
+}
+.flavor:hover .flavor__img { transform: scale(1.06); }
+.flavor__puff-inner {
+  position: absolute; left: 50%; top: 50%;
+  transform: translate(-50%, -50%);
+  width: 60%; aspect-ratio: 1;
+  border-radius: 50%;
+  box-shadow: inset 0 -10px 24px rgba(0,0,0,0.10), inset 0 8px 18px rgba(255,255,255,0.30);
+  background: var(--puff-color, var(--accent));
+  display: none;
+}
+.flavor__cat { font-size: 12px; color: rgba(250,246,238,0.5); margin-bottom: 6px; font-weight: 500; }
+.flavor__name { font-family: 'Fraunces', serif; font-size: 22px; line-height: 1.15; font-weight: 500; }
+.flavor__desc { font-size: 14px; color: rgba(250,246,238,0.6); margin-top: 8px; flex: 1; }
+.flavor__row { display: flex; justify-content: space-between; align-items: center; margin-top: 18px; gap: 8px; }
+.flavor__price { font-family: 'Fraunces', serif; font-size: 22px; font-weight: 500; color: var(--accent); }
+.flavor__stock { display: inline-flex; align-items: center; gap: 6px; font-size: 12px; font-weight: 600; padding: 4px 10px; border-radius: 999px; background: rgba(46,168,103,0.10); color: var(--ok); border: 1px solid rgba(46,168,103,0.25); }
+.flavor__stock-dot { width: 6px; height: 6px; border-radius: 50%; background: var(--ok); }
+.flavor__stock--low { background: rgba(232,160,64,0.10); color: var(--warn); border-color: rgba(232,160,64,0.30); }
+.flavor__stock--low .flavor__stock-dot { background: var(--warn); }
+.flavor__stock--out { background: rgba(233,69,96,0.10); color: var(--fresa); border-color: rgba(233,69,96,0.30); }
+.flavor__stock--out .flavor__stock-dot { background: var(--fresa); }
+
+.flavor__qty { display: flex; align-items: center; gap: 4px; margin-top: 14px; }
+.qty-btn {
+  width: 36px; height: 36px;
+  border-radius: 50%;
+  background: rgba(250,246,238,0.06);
+  border: 1px solid var(--line);
+  color: var(--paper);
+  font-size: 18px;
+  font-weight: 500;
+  display: inline-flex; align-items: center; justify-content: center;
+  transition: all 160ms;
+}
+.qty-btn:hover { background: rgba(250,246,238,0.12); transform: scale(1.06); }
+.qty-btn:disabled { opacity: 0.3; cursor: not-allowed; transform: none; }
+.qty-num { width: 36px; text-align: center; font-family: 'Fraunces', serif; font-size: 20px; font-weight: 500; }
+.flavor__apartar {
+  margin-top: 14px;
+  width: 100%;
+  background: var(--accent);
+  color: var(--ink);
+  padding: 12px 16px;
+  border-radius: 999px;
+  font-weight: 600;
+  font-size: 14px;
+  display: inline-flex; align-items: center; justify-content: center; gap: 8px;
+  transition: all 180ms;
+}
+.flavor__apartar:hover { background: #f1c573; transform: translateY(-1px); box-shadow: 0 8px 20px rgba(232,184,95,0.30); }
+.flavor__apartar:disabled { background: rgba(250,246,238,0.10); color: rgba(250,246,238,0.4); cursor: not-allowed; transform: none; box-shadow: none; }
+
+/* ====== COMBOS ====== */
+.combos { background: var(--ink-soft); border-top: 1px solid var(--line); border-bottom: 1px solid var(--line); }
+.combos__grid { display: grid; grid-template-columns: repeat(auto-fit, minmax(260px, 1fr)); gap: 20px; margin-top: 48px; }
+.combo {
+  background: var(--ink);
+  border: 1px solid var(--line);
+  border-radius: var(--r-lg);
+  padding: 28px;
+  position: relative;
+  transition: transform 280ms, border-color 220ms, box-shadow 220ms;
+}
+.combo:hover { transform: translateY(-4px); border-color: rgba(232,184,95,0.4); box-shadow: var(--shadow-2); }
+.combo--featured { border-color: var(--accent); background: linear-gradient(180deg, rgba(232,184,95,0.10) 0%, transparent 100%); }
+.combo__badge { position: absolute; top: -10px; right: 24px; background: var(--accent); color: var(--ink); font-size: 11px; font-weight: 700; letter-spacing: 0.04em; padding: 5px 12px; border-radius: 999px; text-transform: uppercase; }
+.combo__units { font-family: 'Fraunces', serif; font-size: 40px; font-weight: 500; line-height: 1; }
+.combo__units small { font-size: 14px; color: rgba(250,246,238,0.5); margin-left: 6px; font-family: 'Inter', sans-serif; }
+.combo__name { font-family: 'Fraunces', serif; font-size: 22px; margin-top: 8px; font-weight: 500; }
+.combo__desc { font-size: 14px; color: rgba(250,246,238,0.6); margin-top: 8px; }
+.combo__price-row { display: flex; align-items: baseline; gap: 10px; margin-top: 20px; }
+.combo__price { font-family: 'Fraunces', serif; font-size: 32px; font-weight: 500; color: var(--accent); }
+.combo__compare { text-decoration: line-through; color: rgba(250,246,238,0.4); font-size: 16px; }
+.combo__apartar { margin-top: 20px; width: 100%; background: var(--paper); color: var(--ink); padding: 14px 18px; border-radius: 999px; font-weight: 600; font-size: 14px; transition: all 180ms; }
+.combo__apartar:hover { transform: translateY(-1px); box-shadow: var(--shadow-1); }
+
+/* ====== HOW IT WORKS ====== */
+.how { background: var(--ink); }
+.how__grid { display: grid; grid-template-columns: repeat(3, 1fr); gap: 32px; margin-top: 48px; }
+@media (max-width: 720px) { .how__grid { grid-template-columns: 1fr; } }
+.how__step { padding: 32px 0; }
+.how__num { font-family: 'Fraunces', serif; font-size: 64px; line-height: 1; color: var(--accent); font-style: italic; }
+.how__title { font-family: 'Fraunces', serif; font-size: 24px; margin-top: 12px; font-weight: 500; }
+.how__desc { font-size: 15px; color: rgba(250,246,238,0.65); margin-top: 8px; }
+
+/* ====== HORARIOS ====== */
+.schedule { background: var(--ink-soft); border-top: 1px solid var(--line); }
+.schedule__grid { display: grid; grid-template-columns: repeat(auto-fit, minmax(150px, 1fr)); gap: 12px; margin-top: 32px; }
+.day {
+  background: var(--ink);
+  border: 1px solid var(--line);
+  border-radius: var(--r-md);
+  padding: 20px 16px;
+  text-align: center;
+  transition: all 200ms;
+}
+.day--active { background: rgba(232,184,95,0.10); border-color: rgba(232,184,95,0.40); }
+.day--today { background: var(--accent); color: var(--ink); border-color: var(--accent); }
+.day--today .day__name, .day--today .day__hours, .day--today .day__mode { color: var(--ink); }
+.day__name { font-size: 12px; font-weight: 600; letter-spacing: 0.10em; text-transform: uppercase; color: rgba(250,246,238,0.6); }
+.day__hours { font-family: 'Fraunces', serif; font-size: 22px; font-weight: 500; margin-top: 6px; }
+.day__mode { font-size: 11px; color: rgba(250,246,238,0.4); margin-top: 4px; text-transform: uppercase; letter-spacing: 0.08em; }
+
+/* ====== PAYMENT METHODS ====== */
+.pay { background: var(--ink); border-top: 1px solid var(--line); }
+.pay__grid { display: grid; grid-template-columns: repeat(auto-fit, minmax(180px, 1fr)); gap: 16px; margin-top: 32px; }
+.pay__card {
+  background: var(--ink-soft);
+  border: 1px solid var(--line);
+  border-radius: var(--r-md);
+  padding: 18px;
+  display: flex; align-items: center; gap: 12px;
+  font-size: 14px;
+  transition: border-color 200ms;
+}
+.pay__card:hover { border-color: rgba(232,184,95,0.4); }
+.pay__icon { width: 36px; height: 36px; border-radius: 10px; background: rgba(232,184,95,0.15); display: inline-flex; align-items: center; justify-content: center; font-size: 18px; }
+
+/* ====== INSTAGRAM ====== */
+.ig { background: var(--ink-soft); border-top: 1px solid var(--line); }
+.ig__grid { display: grid; grid-template-columns: repeat(auto-fill, minmax(180px, 1fr)); gap: 12px; margin-top: 32px; }
+.ig__tile {
+  position: relative;
+  aspect-ratio: 1/1;
+  border-radius: var(--r-md);
+  overflow: hidden;
+  background: var(--ink);
+  transition: transform 240ms;
+}
+.ig__tile:hover { transform: scale(1.03); }
+.ig__tile img { width: 100%; height: 100%; object-fit: cover; }
+.ig__tile::after {
+  content: '';
+  position: absolute; inset: 0;
+  background: linear-gradient(180deg, transparent 60%, rgba(14,11,8,0.7) 100%);
+  opacity: 0; transition: opacity 200ms;
+}
+.ig__tile:hover::after { opacity: 1; }
+
+/* ====== FOOTER ====== */
+.footer { background: var(--ink); border-top: 1px solid var(--line); padding: 64px 0 32px; }
+.footer__grid { display: grid; grid-template-columns: 1.5fr 1fr 1fr; gap: 48px; }
+@media (max-width: 720px) { .footer__grid { grid-template-columns: 1fr; gap: 32px; } }
+.footer__about { color: rgba(250,246,238,0.6); font-size: 14px; margin-top: 16px; max-width: 360px; }
+.footer__col h4 { font-size: 13px; font-weight: 600; letter-spacing: 0.10em; text-transform: uppercase; color: rgba(250,246,238,0.5); margin-bottom: 16px; }
+.footer__col a { display: block; font-size: 14px; color: rgba(250,246,238,0.8); padding: 4px 0; transition: color 180ms; }
+.footer__col a:hover { color: var(--accent); }
+.footer__bottom { margin-top: 48px; padding-top: 24px; border-top: 1px solid var(--line); display: flex; justify-content: space-between; flex-wrap: wrap; gap: 12px; font-size: 13px; color: rgba(250,246,238,0.4); }
+
+/* ====== WSP FAB (fixed, no overlap) ====== */
+.fab-wsp {
+  position: fixed; right: 22px; bottom: 22px;
+  width: 60px; height: 60px;
+  border-radius: 50%;
+  background: #25D366;
+  color: white;
+  display: inline-flex; align-items: center; justify-content: center;
+  z-index: 40;
+  box-shadow: 0 8px 24px rgba(37,211,102,0.40);
+  transition: transform 220ms cubic-bezier(0.34, 1.56, 0.64, 1);
+}
+.fab-wsp:hover { transform: scale(1.08) rotate(8deg); }
+.fab-wsp svg { width: 32px; height: 32px; }
+@media (max-width: 720px) { .fab-wsp { right: 16px; bottom: 16px; width: 56px; height: 56px; } .fab-wsp svg { width: 28px; height: 28px; } }
+
+/* ====== TOAST ====== */
+.toast {
+  position: fixed; left: 50%; bottom: 30px;
+  transform: translateX(-50%) translateY(20px);
+  background: var(--paper); color: var(--ink);
+  padding: 14px 22px;
+  border-radius: 999px;
+  font-size: 14px; font-weight: 500;
+  opacity: 0; pointer-events: none;
+  transition: all 280ms;
+  z-index: 60;
+  box-shadow: var(--shadow-2);
+  display: inline-flex; align-items: center; gap: 10px;
+}
+.toast.show { opacity: 1; transform: translateX(-50%) translateY(0); pointer-events: auto; }
+
+/* ====== MOBILE-ONLY ====== */
+@media (max-width: 720px) {
+  section { padding: 64px 0; }
+  .hero { padding: 48px 0 72px; }
+  .stats { padding: 24px 0; }
+  .drop__head { margin-bottom: 32px; }
+}
+
+/* ====== ACCESSIBILITY ====== */
+:focus-visible { outline: 2px solid var(--accent); outline-offset: 3px; border-radius: 4px; }
+@media (prefers-reduced-motion: reduce) { * { animation-duration: 0.01ms !important; transition-duration: 0.01ms !important; } }
+</style>
+</head>
+<body>
+
+<!-- ====== NAV ====== -->
+<nav class="nav">
+  <div class="nav__inner">
+    <a href="#" class="nav__logo">
+      <span class="nav__logo-dot"></span>
+      <span class="nav__logo-text">MyMochis</span>
+    </a>
+    <div class="nav__links">
+      <a href="#drop" class="nav__link">Cocina de hoy</a>
+      <a href="#combos" class="nav__link">Combos</a>
+      <a href="#how" class="nav__link">Cómo funciona</a>
+      <a href="#horarios" class="nav__link">Horarios</a>
+      <a href="https://api.whatsapp.com/send/?phone=573000000000" target="_blank" rel="noopener" class="nav__cta">Pedir ya →</a>
+    </div>
+  </div>
+</nav>
+
+<!-- ====== HERO ====== -->
+<header class="hero">
+  <div class="container">
+    <div class="hero__grid">
+      <div>
+        <div class="hero__countdown" id="heroCountdown">
+          <span>Cocina abierta · cierra en <span class="mono" id="cutoffTime">--:--</span></span>
+        </div>
+        <h1 class="hero__headline">
+          Apartá tus mochis<br>
+          de la <em>semana</em>.<br>
+          Sin carrito, sin pasos.
+        </h1>
+        <p class="hero__sub">
+          Cocina oculta en Neiva. Cada martes cocinamos un número limitado de unidades de cada sabor.
+          Apartá las tuyas en un toque y recogelas entre semana, o te las llevamos.
+        </p>
+        <div class="hero__cta-row">
+          <a href="#drop" class="btn btn--primary">Ver cocina de hoy →</a>
+          <a href="#how" class="btn btn--ghost">Cómo funciona</a>
+        </div>
+      </div>
+      <div class="hero__visual" aria-hidden="true">
+        <div class="hero__mochi hero__mochi--1" style="background:#E94560"></div>
+        <div class="hero__mochi hero__mochi--2" style="background:#C9A85B"></div>
+        <div class="hero__mochi hero__mochi--3" style="background:#7B8A2E"></div>
+        <div class="hero__mochi hero__mochi--4" style="background:#8B6BBA"></div>
+        <div class="hero__mochi hero__mochi--5" style="background:#E8A040"></div>
+      </div>
+    </div>
+  </div>
+</header>
+
+<!-- ====== STATS ====== -->
+<div class="stats">
+  <div class="container">
+    <div class="stats__row">
+      <div><div class="stat__num mono" id="statCooked">—</div><div class="stat__label">cocinados hoy</div></div>
+      <div><div class="stat__num mono" id="statReserved">—</div><div class="stat__label">ya apartados</div></div>
+      <div><div class="stat__num mono" id="statLeft">—</div><div class="stat__label">disponibles</div></div>
+      <div><div class="stat__num mono">24h</div><div class="stat__label">de anticipación</div></div>
+    </div>
+  </div>
+</div>
+
+<!-- ====== DROP · FLAVORS OF THE WEEK ====== -->
+<section class="drop" id="drop">
+  <div class="container">
+    <div class="drop__head">
+      <div>
+        <div class="eyebrow">Cocina de esta semana</div>
+        <h2 class="drop__title" style="margin-top:8px">5 sabores, <em>cantidad limitada</em>.</h2>
+      </div>
+      <div class="chips" id="catChips">
+        <button class="chip chip--active" data-cat="all">Todos</button>
+        <button class="chip" data-cat="clasicos">Clásicos</button>
+        <button class="chip" data-cat="frutales">Frutales</button>
+        <button class="chip" data-cat="premium">Premium</button>
+        <button class="chip" data-cat="temporada">De temporada</button>
+      </div>
+    </div>
+
+    <div class="flavors" id="flavorsGrid">
+      <!-- populated by JS -->
+    </div>
+  </div>
+</section>
+
+<!-- ====== COMBOS ====== -->
+<section class="combos" id="combos">
+  <div class="container">
+    <div class="eyebrow">Para compartir</div>
+    <h2 class="drop__title" style="margin-top:8px">Combos surtidos de la <em>semana</em>.</h2>
+    <div class="combos__grid" id="combosGrid">
+      <!-- populated by JS -->
+    </div>
+  </div>
+</section>
+
+<!-- ====== HOW IT WORKS ====== -->
+<section class="how" id="how">
+  <div class="container">
+    <div class="eyebrow">Cómo funciona</div>
+    <h2 class="drop__title" style="margin-top:8px">3 pasos. <em>Listo.</em></h2>
+    <div class="how__grid">
+      <div class="how__step">
+        <div class="how__num">01</div>
+        <div class="how__title">Elegí unidades</div>
+        <p class="how__desc">Cada sabor tiene un stock visible. Toca + y - para sumar las unidades que querés. Sin formularios, sin cuentas.</p>
+      </div>
+      <div class="how__step">
+        <div class="how__num">02</div>
+        <div class="how__title">Apartá por WhatsApp</div>
+        <p class="how__desc">Un toque abre WhatsApp con tu pedido pre-armado. Confirmás nombre y listo. Sin recargar la página.</p>
+      </div>
+      <div class="how__step">
+        <div class="how__num">03</div>
+        <div class="how__title">Recogé o te lo llevamos</div>
+        <p class="how__desc">Pago al recibir (efectivo, Nequi, Daviplata, Bancolombia). Horario y dirección quedan confirmados al cierre de la cocina del día.</p>
+      </div>
+    </div>
+  </div>
+</section>
+
+<!-- ====== HORARIOS ====== -->
+<section class="schedule" id="horarios">
+  <div class="container">
+    <div class="eyebrow">Horarios</div>
+    <h2 class="drop__title" style="margin-top:8px">Recogé cuando <em>te queda fácil</em>.</h2>
+    <p style="color:rgba(250,246,238,0.6); margin-top:12px; max-width:560px; font-size:15px;">Los pedidos se cierran <strong style="color:var(--accent)">8h antes</strong> de la primera entrega del día. Si pedís después del cierre, te programamos para la siguiente fecha disponible.</p>
+    <div class="schedule__grid" id="scheduleGrid">
+      <!-- populated by JS -->
+    </div>
+  </div>
+</section>
+
+<!-- ====== PAYMENT METHODS ====== -->
+<section class="pay" id="pago">
+  <div class="container">
+    <div class="eyebrow">Cómo pagar</div>
+    <h2 class="drop__title" style="margin-top:8px">Pagas al <em>recibir</em>.</h2>
+    <div class="pay__grid" id="payGrid">
+      <!-- populated by JS -->
+    </div>
+    <p style="margin-top:24px; font-size:13px; color:rgba(250,246,238,0.45)">Para pedidos grandes o recurrentes, también manejamos anticipo del 50% por Nequi o transferencia.</p>
+  </div>
+</section>
+
+<!-- ====== INSTAGRAM ====== -->
+<section class="ig" id="instagram">
+  <div class="container">
+    <div class="eyebrow">Lo que cocinamos</div>
+    <h2 class="drop__title" style="margin-top:8px">Síguenos en <em>@my.mochiss</em></h2>
+    <div class="ig__grid" id="igGrid">
+      <!-- populated by JS -->
+    </div>
+  </div>
+</section>
+
+<!-- ====== FOOTER ====== -->
+<footer class="footer">
+  <div class="container">
+    <div class="footer__grid">
+      <div>
+        <div class="nav__logo" style="margin-bottom:8px">
+          <span class="nav__logo-dot"></span>
+          <span class="nav__logo-text">MyMochis</span>
+        </div>
+        <p class="footer__about">Mochis artesanales hechos a mano en una cocina oculta de Neiva, Huila. Pedidos por WhatsApp, entrega en zona urbana o recogida en punto.</p>
+      </div>
+      <div class="footer__col">
+        <h4>Pedidos</h4>
+        <a href="https://api.whatsapp.com/send/?phone=573000000000" target="_blank" rel="noopener">WhatsApp</a>
+        <a href="https://instagram.com/my.mochiss/" target="_blank" rel="noopener">Instagram DM</a>
+        <a href="#drop">Cocina de hoy</a>
+      </div>
+      <div class="footer__col">
+        <h4>Admin</h4>
+        <a href="/manage.html">Panel</a>
+        <a href="#">Estado de la cocina</a>
+        <a href="#">Ayuda</a>
+      </div>
+    </div>
+    <div class="footer__bottom">
+      <span>© <span id="year"></span> MyMochis · Hecho con cariño en Neiva</span>
+      <span>Cocina oculta · pedidos por unidad</span>
+    </div>
+  </div>
+</footer>
+
+<!-- ====== WSP FAB ====== -->
+<a class="fab-wsp" id="fabWsp" href="https://api.whatsapp.com/send/?phone=573000000000" target="_blank" rel="noopener" aria-label="Pedir por WhatsApp">
+  <svg viewBox="0 0 32 32" fill="currentColor"><path d="M16 0C7.18 0 0 7.18 0 16c0 2.82.73 5.46 2.01 7.74L0 32l8.43-2.21A15.93 15.93 0 0016 32c8.82 0 16-7.18 16-16S24.82 0 16 0zm0 29.13c-2.42 0-4.7-.65-6.65-1.78l-.48-.28-4.99 1.31 1.33-4.86-.31-.5A13.14 13.14 0 012.87 16C2.87 8.75 8.75 2.87 16 2.87S29.13 8.75 29.13 16 23.25 29.13 16 29.13zm7.21-9.83c-.39-.2-2.34-1.16-2.71-1.29-.36-.13-.63-.2-.89.2s-1.02 1.29-1.25 1.55c-.23.26-.46.29-.85.1-.39-.2-1.66-.61-3.16-1.95-1.17-1.04-1.96-2.33-2.19-2.72-.23-.39-.02-.6.17-.79.18-.18.39-.46.59-.69.2-.23.26-.39.39-.66.13-.26.07-.49-.03-.69-.1-.2-.89-2.14-1.22-2.93-.32-.77-.65-.67-.89-.68-.23-.01-.49-.01-.76-.01s-.69.1-1.06.49c-.36.39-1.39 1.36-1.39 3.32s1.42 3.85 1.62 4.12c.2.26 2.8 4.27 6.78 5.99.95.41 1.69.65 2.27.83.95.3 1.81.26 2.49.16.76-.11 2.34-.96 2.67-1.88.33-.92.33-1.71.23-1.88-.1-.16-.36-.26-.75-.46z"/></svg>
+</a>
+
+<div class="toast" id="toast"></div>
+
+<script>
+'use strict';
+
+const WSP_NUMBER = '573000000000';
+const today = new Date();
+document.getElementById('year').textContent = today.getFullYear();
+
+const DAY_NAMES = ['Dom', 'Lun', 'Mar', 'Mié', 'Jue', 'Vie', 'Sáb'];
+const DAY_LONG  = ['Domingo', 'Lunes', 'Martes', 'Miércoles', 'Jueves', 'Viernes', 'Sábado'];
+
+const state = {
+  data: null,
+  cart: {}, // { flavorId: qty }
+  filter: 'all',
+};
+
+const toast = (msg) => {
+  const t = document.getElementById('toast');
+  t.textContent = msg;
+  t.classList.add('show');
+  clearTimeout(window.__toastTimer);
+  window.__toastTimer = setTimeout(() => t.classList.remove('show'), 2400);
+};
+
+const flavorImages = {
+  'fresas-crema':      'mochi-01.jpg',
+  'chokis-cream':      'mochi-02.jpg',
+  'blueberry':         'mochi-03.jpg',
+  'durazno-caramelizado': 'mochi-04.jpg',
+  'crema-pastelera':   'mochi-05.jpg',
+};
+const imgFor = (id) => flavorImages[id] || 'mochi-01.jpg';
+
+const fmtPrice = (cents) => '$' + (cents || 0).toLocaleString('es-CO', { minimumFractionDigits: 0, maximumFractionDigits: 0 });
+
+async function loadPublic() {
+  try {
+    const r = await fetch('/api/public');
+    if (!r.ok) throw new Error('public failed: ' + r.status);
+    state.data = await r.json();
+    return true;
+  } catch (e) {
+    console.error(e);
+    document.getElementById('flavorsGrid').innerHTML = '<p style="color:rgba(250,246,238,0.5)">No pudimos cargar los sabores. Refresca la página.</p>';
+    return false;
+  }
+}
+
+function cutoffForToday() {
+  // Find today's delivery_schedule entry
+  if (!state.data) return null;
+  const dow = today.getDay();
+  const slots = state.data.delivery_schedule.filter(s => s.day_of_week === dow && s.active);
+  if (slots.length === 0) {
+    // fallback: next active day
+    for (let i = 1; i <= 7; i++) {
+      const next = (dow + i) % 7;
+      const next_slots = state.data.delivery_schedule.filter(s => s.day_of_week === next && s.active);
+      if (next_slots.length > 0) {
+        return { hours: next_slots[0].start_time, day: next, isTomorrow: i > 0 };
+      }
+    }
+    return null;
+  }
+  // adjust cutoff to be N hours before start
+  const slot = slots[0];
+  const [hh, mm] = slot.start_time.split(':').map(Number);
+  const cutoffMs = (hh * 60 + mm - (slot.cutoff_offset_hours || 8)) * 60 * 1000;
+  const cutoff = new Date(today);
+  cutoff.setHours(Math.floor(cutoffMs / 3600000), Math.floor((cutoffMs % 3600000) / 60000), 0, 0);
+  return { hours: slot.start_time, cutoff, isTomorrow: false };
+}
+
+function renderCountdown() {
+  const c = cutoffForToday();
+  const el = document.getElementById('heroCountdown');
+  const timeEl = document.getElementById('cutoffTime');
+  if (!el) return;
+  if (!c) {
+    el.innerHTML = 'Cocina cerrada · vuelve pronto';
+    return;
+  }
+  if (c.isTomorrow) {
+    el.innerHTML = `Próxima cocina: <span style="color:var(--paper); margin-left:6px">${DAY_NAMES[c.day]} ${c.hours}</span>`;
+  } else {
+    // keep the cutoffTime span intact
+    if (timeEl) {
+      timeEl.textContent = c.hours;
+    } else {
+      el.innerHTML = `Cocina abierta · cierra <span class="mono">${c.hours}</span> (${c.cutoff_offset_hours || 8}h antes)`;
+    }
+  }
+}
+
+function renderStats() {
+  if (!state.data) return;
+  const total = state.data.flavors.length;
+  const reserved = Object.values(state.cart).reduce((a, b) => a + b, 0);
+  document.getElementById('statCooked').textContent = total * 12;
+  document.getElementById('statReserved').textContent = reserved;
+  document.getElementById('statLeft').textContent = total * 12 - reserved;
+}
+
+function renderFlavors() {
+  if (!state.data) return;
+  const grid = document.getElementById('flavorsGrid');
+  const list = state.data.flavors.filter(f => state.filter === 'all' || f.category_slug === state.filter);
+  if (list.length === 0) {
+    grid.innerHTML = '<p style="color:rgba(250,246,238,0.5)">No hay sabores en esta categoría hoy.</p>';
+    return;
+  }
+  grid.innerHTML = list.map(f => {
+    const qty = state.cart[f.id] || 0;
+    const low = f.id.length % 3 === 0; // demo: heuristic
+    return `
+      <article class="flavor" data-cat="${f.category_slug || 'clasicos'}">
+        <div class="flavor__puff">
+          <img class="flavor__img" src="img/instagram/${imgFor(f.id)}" alt="${f.name}" loading="lazy" onerror="this.style.display='none'; this.nextElementSibling.style.display='block';">
+          <div class="flavor__puff-inner" style="background:${f.color || 'var(--accent)'}"></div>
+        </div>
+        <div class="flavor__cat">${f.category_name || 'Mochi'}</div>
+        <h3 class="flavor__name">${f.name}</h3>
+        <p class="flavor__desc">${f.description || ''}</p>
+        <div class="flavor__row">
+          <span class="flavor__price">${fmtPrice(f.price)}</span>
+          <span class="flavor__stock ${low ? 'flavor__stock--low' : ''}">
+            <span class="flavor__stock-dot"></span> ${low ? 'Quedan pocas' : 'Disponible'}
+          </span>
+        </div>
+        <div class="flavor__qty">
+          <button class="qty-btn" data-act="dec" data-id="${f.id}" aria-label="Restar">−</button>
+          <span class="qty-num" data-num="${f.id}">${qty}</span>
+          <button class="qty-btn" data-act="inc" data-id="${f.id}" aria-label="Sumar">+</button>
+        </div>
+        <button class="flavor__apartar" data-apartar-flavor="${f.id}">
+          <span data-apartar-label>${qty > 0 ? `Apartar ${qty} →` : 'Apartar unidades'}</span>
+        </button>
+      </article>
+    `;
+  }).join('');
+}
+
+function renderCombos() {
+  if (!state.data) return;
+  const grid = document.getElementById('combosGrid');
+  if (!state.data.combos || state.data.combos.length === 0) {
+    grid.innerHTML = '<p style="color:rgba(250,246,238,0.5)">No hay combos disponibles.</p>';
+    return;
+  }
+  grid.innerHTML = state.data.combos.map((c, i) => `
+    <article class="combo ${c.featured ? 'combo--featured' : ''}">
+      ${c.featured ? '<span class="combo__badge">Más pedido</span>' : ''}
+      <div class="combo__units">${c.units}<small>unidades</small></div>
+      <div class="combo__name">${c.name}</div>
+      <p class="combo__desc">${c.description || ''}</p>
+      <div class="combo__price-row">
+        <span class="combo__price">${fmtPrice(c.price)}</span>
+        ${c.compare_at_price && c.compare_at_price > c.price ? `<span class="combo__compare">${fmtPrice(c.compare_at_price)}</span>` : ''}
+      </div>
+      <button class="combo__apartar" data-apartar-combo="${c.id}">Apartar este combo →</button>
+    </article>
+  `).join('');
+}
+
+function renderSchedule() {
+  if (!state.data) return;
+  const grid = document.getElementById('scheduleGrid');
+  const today_dow = today.getDay();
+  const days = [1, 2, 3, 4, 5, 6, 0]; // Lun-Dom
+  const seen = new Set();
+  grid.innerHTML = days.map(d => {
+    const slot = state.data.delivery_schedule.find(s => s.day_of_week === d && s.active);
+    if (!slot) return '';
+    const isToday = d === today_dow;
+    return `
+      <div class="day ${isToday ? 'day--today' : ''}">
+        <div class="day__name">${DAY_LONG[d]}</div>
+        <div class="day__hours">${slot.start_time}–${slot.end_time}</div>
+        <div class="day__mode">${slot.mode}</div>
+      </div>
+    `;
+  }).join('');
+}
+
+function renderPay() {
+  if (!state.data) return;
+  const grid = document.getElementById('payGrid');
+  if (!state.data.payment_methods) {
+    grid.innerHTML = '';
+    return;
+  }
+  grid.innerHTML = state.data.payment_methods.map(p => `
+    <div class="pay__card">
+      <span class="pay__icon">${p.code === 'nequi' ? '💜' : p.code === 'daviplata' ? '🟠' : p.code === 'bancolombia' ? '🏦' : p.code === 'mercadopago' ? '🅼' : '💵'}</span>
+      <span><strong>${p.label}</strong></span>
+    </div>
+  `).join('');
+}
+
+function renderIG() {
+  const grid = document.getElementById('igGrid');
+  // Use the actual IG images in /img/instagram/
+  const imgs = ['mochi-01.jpg', 'mochi-02.jpg', 'mochi-03.jpg', 'mochi-04.jpg', 'mochi-05.jpg', 'mochi-06.jpg', 'mochi-09.jpg', 'mochi-10.jpg', 'mochi-11.jpg'];
+  grid.innerHTML = imgs.map(f => `
+    <a class="ig__tile" href="https://instagram.com/my.mochiss/" target="_blank" rel="noopener">
+      <img src="img/instagram/${f}" alt="Mochi del @my.mochiss" loading="lazy">
+    </a>
+  `).join('');
+}
+
+function buildWspUrl(lines) {
+  const msg = encodeURIComponent(lines.join('\n'));
+  return `https://api.whatsapp.com/send/?phone=${WSP_NUMBER}&text=${msg}`;
+}
+
+function apartarFlavor(id) {
+  if (!state.data) return;
+  const f = state.data.flavors.find(x => x.id === id);
+  if (!f) return;
+  const qty = state.cart[id] || 0;
+  if (qty === 0) { toast('Sumá unidades con el + antes de apartar'); return; }
+  const total = f.price * qty;
+  const lines = [
+    `Hola, quiero apartar ${qty} ${qty === 1 ? 'unidad' : 'unidades'} de *${f.name}* (${fmtPrice(f.price)} c/u).`,
+    `Total: *${fmtPrice(total)}*`,
+    ``,
+    `Mi nombre:`,
+    `Día de recogida:`,
+  ];
+  window.open(buildWspUrl(lines), '_blank');
+}
+
+function apartarCombo(id) {
+  if (!state.data) return;
+  const c = state.data.combos.find(x => x.id === id);
+  if (!c) return;
+  const lines = [
+    `Hola, quiero el combo *${c.name}* (${c.units} unidades).`,
+    `Total: *${fmtPrice(c.price)}*`,
+    ``,
+    `Mi nombre:`,
+    `Día de recogida:`,
+  ];
+  window.open(buildWspUrl(lines), '_blank');
+}
+
+function updateCart(id, delta) {
+  const next = Math.max(0, (state.cart[id] || 0) + delta);
+  if (next === 0) delete state.cart[id]; else state.cart[id] = next;
+  renderFlavors();
+  renderStats();
+  // Update FAB with cart count
+  const count = Object.values(state.cart).reduce((a, b) => a + b, 0);
+  const fab = document.getElementById('fabWsp');
+  if (count > 0) {
+    fab.setAttribute('data-count', count);
+  } else {
+    fab.removeAttribute('data-count');
+  }
+}
+
+// event delegation
+document.body.addEventListener('click', (e) => {
+  const dec = e.target.closest('[data-act="dec"]');
+  if (dec) { updateCart(dec.dataset.id, -1); return; }
+  const inc = e.target.closest('[data-act="inc"]');
+  if (inc) { updateCart(inc.dataset.id, 1); return; }
+  const apf = e.target.closest('[data-apartar-flavor]');
+  if (apf) { apartarFlavor(apf.dataset.apartarFlavor); return; }
+  const apc = e.target.closest('[data-apartar-combo]');
+  if (apc) { apartarCombo(apc.dataset.apartarCombo); return; }
+  const chip = e.target.closest('[data-cat]');
+  if (chip) {
+    state.filter = chip.dataset.cat;
+    document.querySelectorAll('.chip').forEach(c => c.classList.toggle('chip--active', c === chip));
+    renderFlavors();
+    return;
+  }
+});
+
+// initial load
+(async () => {
+  const ok = await loadPublic();
+  if (ok) {
+    renderCountdown();
+    renderStats();
+    renderFlavors();
+    renderCombos();
+    renderSchedule();
+    renderPay();
+  }
+  renderIG();
+})();
+</script>
+</body>
+</html>

@@ -1,0 +1,38 @@
+{
+  "_comment": "Componente configurable de sabores. La fuente canónica del catálogo es el panel admin (tabla flavors de la DB); este archivo solo mapea flavor_id -> presentación visual (foto real de la cuenta de Instagram, acento de color, ribbon). Las fotos referenciadas son rutas relativas desde la raíz del sitio. Si un sabor tiene image_url definida en el admin, esa gana sobre photo.",
+  "fresas-crema": {
+    "photo": "img/instagram/mochi-01.jpg",
+    "accent": "#E94560",
+    "ribbon": "Más pedido",
+    "category": "Clásicos",
+    "description_short": "Fresa fresca del Huila"
+  },
+  "chokis-cream": {
+    "photo": "img/instagram/mochi-02.jpg",
+    "accent": "#7B4B26",
+    "ribbon": null,
+    "category": "Premium",
+    "description_short": "Trozos de Chokis con crema dulce"
+  },
+  "blueberry": {
+    "photo": "img/instagram/mochi-03.jpg",
+    "accent": "#A78BD9",
+    "ribbon": null,
+    "category": "Frutales",
+    "description_short": "Arándano entero con crema suave"
+  },
+  "durazno-caramelizado": {
+    "photo": "img/instagram/mochi-04.jpg",
+    "accent": "#F9D85E",
+    "ribbon": "Temporada",
+    "category": "Temporada",
+    "description_short": "Durazno con caramelo dorado y canela"
+  },
+  "crema-pastelera": {
+    "photo": "img/instagram/mochi-05.jpg",
+    "accent": "#FFE8A8",
+    "ribbon": null,
+    "category": "Clásicos",
+    "description_short": "Clásica: vainilla, yema y corazón cremoso"
+  }
+}

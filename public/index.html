@@ -47,17 +47,26 @@
 
 :root {
   /* === Canvas (página completa) === */
-  --clay-canvas:      #F4E8D5;   /* warm sand (más oscuro que cream → sombras claras visibles) */
-  --clay-canvas-2:    #ECDFC9;   /* canvas profundo (secciones alternas) */
-  --clay-canvas-3:    #FFE9D6;   /* peach canvas (areas destacadas) */
-  --clay-surface:     #FFFFFF;   /* papel · cards (blancas sobre sand) */
-  --clay-ink:         #3A2E26;   /* texto principal (warm dark) */
-  --clay-ink-soft:    #8A7A6C;   /* texto muted */
-  --clay-line:        rgba(58,46,38,0.10);  /* divider tenue */
+  --clay-canvas:      #F2F8FC;   /* azul muy claro · fondo general */
+  --clay-canvas-2:    #E4F1F9;   /* azul canvas profundo (secciones alternas) */
+  --clay-canvas-3:    #FDEDF3;   /* sakura muy claro (areas destacadas) */
+  --clay-surface:     #FFFFFF;   /* blanco · cards y superficies */
+  --clay-ink:         #20304A;   /* azul-gris oscuro · texto principal */
+  --clay-ink-soft:    #6B7D95;   /* gris azulado · texto muted */
+  --clay-line:        rgba(32,48,74,0.10);  /* divider tenue */
+
+  /* === Marca: azul del logo + rosado sakura === */
+  --brand-sky:        #62D3EC;   /* azul claro del logo (gradiente medio) */
+  --brand-sky-d:      #44B8D8;   /* azul profundo del logo · CTA */
+  --brand-sky-l:      #C9EEF8;   /* azul pastel · fondos suaves */
+  --brand-sakura:     #EF7FB3;   /* sakura · acento */
+  --brand-sakura-d:   #C94882;   /* sakura profundo · hover/estado activo */
+  --brand-sakura-l:   #FDE4EE;   /* sakura pastel · fondos suaves */
+  --brand-gray:       #8A97A8;   /* gris neutro · metadatos */
 
   /* === Sabores mochi (5 puffs) === */
-  --mochi-fresa:      #FFB8C8;   /* fresa clay */
-  --mochi-fresa-d:    #E94560;   /* accent fresa */
+  --mochi-fresa:      #F9B8CE;   /* fresa → rosado sakura */
+  --mochi-fresa-d:    var(--brand-sakura-d);  /* accent fresa = sakura */
   --mochi-matcha:     #C9DC8A;   /* matcha clay */
   --mochi-matcha-d:   #7B8A2E;   /* accent matcha */
   --mochi-durazno:    #FBD773;   /* durazno clay */
@@ -69,9 +78,9 @@
   --mochi-cyan-d:     #44B8D8;   /* accent cyan */
 
   /* === Mocha neutrals === */
-  --mocha-1: #F4E4D4;
-  --mocha-2: #C9A88A;
-  --mocha-3: #6F4E37;
+  --mocha-1: #F2F8FC;
+  --mocha-2: #A8B6C8;
+  --mocha-3: #20304A;
 
   /* === CLAYMORPHISM SHADOWS · firma del estilo ===
      Combinación: drop shadow (outer, bottom-right)
@@ -537,30 +546,9 @@ section { padding: 80px 24px; position: relative; }
 }
 .gallery-cta a:hover { color: var(--mocha-3); }
 
-/* ============ STICKY CTA ============ */
-.sticky-cta {
-  position: fixed; bottom: 20px; left: 20px; right: 20px;
-  background: var(--clay-surface);
-  padding: 16px 24px;
-  display: none; align-items: center; gap: 16px;
-  z-index: 95;
-  border-radius: 28px;
-  box-shadow: var(--clay-shadow-hover), inset 3px -3px 6px rgba(255,255,255,0.85);
-}
-.sticky-cta.visible { display: flex; }
-.sticky-cta .label { color: var(--clay-ink-soft); font-size: 12px; line-height: 1.3; flex: 1; }
-.sticky-cta .label strong { display: block; color: var(--clay-ink); font-size: 16px; font-weight: 700; }
-.sticky-cta .cta {
-  background: var(--mochi-fresa-d);
-  color: #fff;
-  border: 0; padding: 14px 24px; border-radius: 999px;
-  font-weight: 700; font-size: 14px;
-  cursor: pointer; transition: all 0.2s;
-  white-space: nowrap; font-family: 'Quicksand', sans-serif;
-  box-shadow: var(--clay-shadow-sm), inset 2px -2px 4px rgba(255,255,255,0.3);
-}
-.sticky-cta .cta:hover { transform: translateY(-1px); box-shadow: var(--clay-shadow-md); }
-.sticky-cta .cta:active { transform: scale(0.97); box-shadow: var(--clay-inset-sm); }
+/* La barra flotante inferior se eliminó (2026-10-20, pedido del operador):
+   tapaba el footer y competía con el CTA del hero. El CTA vive ahora en el
+   header (.nav-cta) y en cada sección. Ver §23 de PROJECT.md. */
 
 /* ============ FLOATING WHATSAPP FAB ============ */
 .wsp-fab {
@@ -635,24 +623,7 @@ section { padding: 80px 24px; position: relative; }
   box-shadow: var(--clay-shadow-xs), inset 1px -1px 2px rgba(255,255,255,0.7);
 }
 
-/* ============ FOOTER ============ */
-footer {
-  background: var(--mocha-3);
-  color: var(--clay-canvas);
-  padding: 64px 0 32px; text-align: center;
-  margin-top: 64px;
-  border-radius: 64px 64px 0 0;
-  box-shadow: inset 6px -6px 14px rgba(0,0,0,0.2);
-}
-footer .brand { color: var(--clay-canvas); justify-content: center; font-size: 32px; margin-bottom: 12px; gap: 14px; }
-footer .brand-name { color: var(--clay-canvas); }
-footer .brand-name .dot { color: var(--mochi-fresa); }
-footer .brand-mark { background: var(--mochi-crema); }
-.footer-info { display: flex; justify-content: center; gap: 24px; flex-wrap: wrap; font-size: 13px; margin-bottom: 24px; }
-.footer-info span { opacity: 0.85; display: flex; align-items: center; gap: 6px; }
-.footer-bottom { border-top: 1px solid rgba(255,255,255,0.10); padding-top: 22px; font-size: 12px; opacity: 0.55; }
-.footer-bottom a { color: var(--clay-canvas); opacity: 0.85; text-decoration: none; border-bottom: 1px dotted rgba(255,255,255,0.3); margin: 0 8px; }
-.footer-bottom a:hover { color: var(--mochi-fresa); opacity: 1; }
+/* ============ FOOTER (unico bloque — ver "FOOTER v2" mas abajo) ============ */
 
 /* ============ MODAL: PEDIDO RÁPIDO · clay window ============ */
 .modal-back {
@@ -786,8 +757,6 @@ footer .brand-mark { background: var(--mochi-crema); }
   .hero-visual-wrap { height: 320px; order: -1; }
   section { padding: 56px 20px; }
   .nav-cta { padding: 10px 18px; font-size: 13px; }
-  .sticky-cta { display: none !important; }   /* Sesión 2026-10-14: en mobile el hero CTA ya está en el primer fold (tras el visual), no necesitamos sticky bar. Además el IntersectionObserver del script original y mi fix de scrollY tenían problemas de timing con offsetTop. Solución: hide sticky-cta entero en mobile. */
-  .sticky-cta .cta { padding: 12px 18px; font-size: 13px; }
   .hero h1 { font-size: 42px; }
   .section-title { font-size: 32px; }
   /* Mobile fixes (sesión 2026-10-14): */
@@ -1040,84 +1009,109 @@ footer .brand-mark { background: var(--mochi-crema); }
 }
 .social-strip-links svg { width: 20px; height: 20px; }
 
-/* ============ ENHANCED FOOTER ============ */
+/* ============ FOOTER v2 — blanco + azul claro + sakura ============
+   Antes habia DOS bloques de footer CSS (uno "FOOTER" con fondo chocolate y
+   otro "ENHANCED FOOTER" con los mismos selectores). El segundo ganaba por
+   orden y el primero dejaba texto claro sobre fondo claro en algunos estados.
+   Ahora hay un solo bloque, alineado con la paleta de marca. */
+footer {
+  background: var(--clay-surface);
+  color: var(--clay-ink);
+  margin-top: 72px;
+  /* El header es sticky con margin-top:16px y se superpone al inicio del
+     footer al navegar por ancla. Este padding evita que tape la marca. */
+  padding-top: 40px;
+  border-top: 1px solid var(--clay-line);
+  box-shadow: 0 -18px 44px rgba(32, 48, 74, 0.07);
+  scroll-margin-top: 96px;
+}
+footer .brand, footer h4 { scroll-margin-top: 96px; }
 .footer-grid {
   display: grid;
-  grid-template-columns: 1.4fr 1fr 1fr 1fr;
-  gap: 36px;
-  padding: 56px 24px 32px;
+  grid-template-columns: 1.6fr 1fr 1fr 1.1fr;
+  gap: 40px;
+  padding: 20px 24px 40px;
   text-align: left;
 }
 .footer-grid > div:first-child .brand { justify-content: flex-start; font-size: 26px; margin-bottom: 0; }
+footer .brand-mark { background: var(--brand-sky-l); }
+footer .brand-name { color: var(--clay-ink); }
+footer .brand-name .dot { color: var(--brand-sakura-d); }
 .footer-grid h4 {
   font-family: 'Baloo 2', sans-serif;
-  font-size: 13px; font-weight: 700;
+  font-size: 12px; font-weight: 700;
   text-transform: uppercase;
-  letter-spacing: 1.2px;
-  color: var(--clay-canvas);
-  opacity: 0.6;
+  letter-spacing: 1.4px;
+  color: var(--brand-gray);
   margin-bottom: 16px;
 }
 .footer-grid ul { list-style: none; }
 .footer-grid li, .footer-grid a {
   padding: 6px 0;
-  color: var(--clay-canvas); font-size: 14px; text-decoration: none;
+  color: var(--clay-ink); font-size: 14px; text-decoration: none;
   transition: color 0.15s;
   display: flex; align-items: center; gap: 8px;
 }
-.footer-grid a:hover { color: var(--mochi-fresa); }
-.footer-brand-text { font-size: 14px; color: var(--clay-canvas); opacity: 0.75; line-height: 1.6; margin-top: 14px; }
-.footer-brand-text strong { color: var(--clay-canvas); opacity: 1; font-weight: 700; }
+.footer-grid a:hover { color: var(--brand-sakura-d); }
+.footer-brand-text {
+  font-size: 14px; color: var(--clay-ink-soft); line-height: 1.65; margin-top: 14px; max-width: 42ch;
+}
+.footer-brand-text strong { color: var(--clay-ink); font-weight: 700; }
 
 .footer-operator {
-  background: rgba(255,255,255,0.10);
-  border: 0;
+  background: var(--brand-sky-l);
+  border: 1px solid rgba(68, 184, 216, 0.22);
   border-radius: 18px;
   padding: 18px;
   display: flex; flex-direction: column; gap: 10px;
-  box-shadow: var(--clay-shadow-xs), inset 1px -1px 2px rgba(255,255,255,0.1);
 }
 .footer-operator .op-label {
   font-family: 'Baloo 2', sans-serif;
-  font-size: 12px; font-weight: 700;
+  font-size: 11px; font-weight: 700;
   letter-spacing: 1px; text-transform: uppercase;
-  color: var(--clay-canvas); opacity: 0.55;
+  color: var(--brand-sky-d);
 }
 .footer-operator .op-link {
   display: inline-flex; align-items: center; gap: 8px;
-  color: var(--clay-canvas);
+  color: var(--clay-surface);
   font-size: 14px; font-weight: 600;
   text-decoration: none;
   padding: 12px 16px;
-  background: rgba(255,255,255,0.08);
+  background: var(--brand-sky-d);
   border: 0;
   border-radius: 14px;
   transition: all 0.2s;
-  box-shadow: var(--clay-shadow-xs), inset 1px -1px 2px rgba(255,255,255,0.15);
 }
 .footer-operator .op-link:hover {
-  background: var(--mochi-fresa-d);
+  background: var(--brand-sakura-d);
   color: #fff;
   transform: translateY(-1px);
+  box-shadow: 0 8px 20px rgba(201, 72, 130, 0.25);
 }
 .footer-operator .op-link svg { width: 16px; height: 16px; }
-.footer-operator .op-hint { font-size: 11px; color: var(--clay-canvas); opacity: 0.55; line-height: 1.45; }
+.footer-operator .op-hint { font-size: 11px; color: var(--clay-ink-soft); line-height: 1.45; }
 
+/* Onda decorativa en azul claro — el %23 es el # de #F2F8FC */
 .footer-wave {
-  height: 36px;
-  background-image: url("data:image/svg+xml;utf8,<svg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 1200 36' preserveAspectRatio='none'><path d='M0 18 Q 150 0 300 18 T 600 18 T 900 18 T 1200 18 V 36 H 0 Z' fill='%236F4E37'/></svg>");
+  height: 28px;
+  background-image: url("data:image/svg+xml;utf8,<svg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 1200 28' preserveAspectRatio='none'><path d='M0 14 Q 150 0 300 14 T 600 14 T 900 14 T 1200 14 V 28 H 0 Z' fill='%23E4F1F9'/></svg>");
   background-size: 100% 100%;
   background-repeat: no-repeat;
 }
 
 .footer-bottom {
-  border-top: 1px solid rgba(255,255,255,0.1);
-  padding: 20px 24px;
+  border-top: 1px solid var(--clay-line);
+  padding: 20px 24px 28px;
   display: flex; justify-content: space-between; gap: 12px; flex-wrap: wrap;
-  font-size: 12px; color: var(--clay-canvas); opacity: 0.65;
+  font-size: 12px; color: var(--clay-ink-soft);
 }
-.footer-bottom a { color: var(--clay-canvas); opacity: 0.85; text-decoration: none; margin-left: 8px; border-bottom: 1px dotted rgba(255,255,255,0.3); }
-.footer-bottom a:hover { color: var(--mochi-fresa); opacity: 1; }
+.footer-bottom a { color: var(--clay-ink-soft); text-decoration: none; margin-left: 8px; border-bottom: 1px dotted var(--brand-sky); }
+.footer-bottom a:hover { color: var(--brand-sakura-d); }
+footer .op-hint { color: var(--clay-ink-soft); }
+footer .privacy-note {
+  font-size: 11.5px; line-height: 1.6; color: var(--clay-ink-soft);
+  padding: 0 24px 28px; margin: 0; max-width: 90ch;
+}
 
 @media (max-width: 768px) {
   .steps-grid { grid-template-columns: 1fr; gap: 32px; }
@@ -1144,7 +1138,7 @@ footer .brand-mark { background: var(--mochi-crema); }
 .hero h1, .section-title, .brand-name {
   text-shadow: 2px -2px 0 rgba(255,255,255,0.5);
 }
-.hero-cta, .nav-cta, .combo-add, .flavor-card .add-btn, .sticky-cta .cta {
+.hero-cta, .nav-cta, .combo-add, .flavor-card .add-btn {
   transition: transform 0.25s cubic-bezier(.34,1.56,.64,1), box-shadow 0.25s;
 }
 
@@ -1438,14 +1432,6 @@ footer .brand-mark { background: var(--mochi-crema); }
 
 </main>
 
-<div class="sticky-cta" id="sticky-cta">
-  <div class="label">
-    Mochis artesanales · hechos hoy
-    <strong>Pide por WhatsApp</strong>
-  </div>
-  <a class="cta" href="/tienda.html">Armar mi pedido →</a>
-</div>
-
 <section class="social-strip">
   <div class="container">
     <div class="social-strip-inner">
@@ -1511,8 +1497,9 @@ footer .brand-mark { background: var(--mochi-crema); }
     </div>
     <div class="footer-bottom">
       <span>Cada semana, un lote nuevo · hecho con cariño en el Huila</span>
+      <a href="/tienda.html">Armar mi pedido →</a>
     </div>
-    <p class="op-hint" style="margin-top:12px">Aviso de datos personales: al hacer tu pedido compartes tu nombre, tu número de WhatsApp y, en entregas a domicilio, tu dirección. Solo los usamos para gestionar y entregar tu pedido. Para modificar o eliminar tus datos, escríbenos por el mismo WhatsApp.</p>
+    <p class="privacy-note">Aviso de datos personales: al hacer tu pedido compartes tu nombre, tu número de WhatsApp y, en entregas a domicilio, tu dirección. Solo los usamos para gestionar y entregar tu pedido. Para modificar o eliminar tus datos, escríbenos por el mismo WhatsApp.</p>
   </div>
 </footer>
 
@@ -2044,29 +2031,10 @@ async function sendWhatsApp() {
   }, 600);
 }
 
-// Sticky CTA visibility — fix 2026-10-14: usa scrollY absoluto vs offsetTop del hero CTA,
-// robusto y predecible (el IntersectionObserver con threshold 0.3 fallaba en mobile porque el
-// hero CTA queda fuera del fold inicial y reportaba "no intersectando" al cargar, mostrando
-// el sticky desde el inicio).
-const stickyCta = document.getElementById('sticky-cta');
-const heroCta = document.querySelector('.hero-cta');
-if (stickyCta && heroCta) {
-  const update = () => {
-    const heroBottomAbs = heroCta.offsetTop + heroCta.offsetHeight;
-    if (window.scrollY > heroBottomAbs - window.innerHeight * 0.5) {
-      stickyCta.classList.add('visible');
-    } else {
-      stickyCta.classList.remove('visible');
-    }
-  };
-  // Defer update() hasta que el layout esté estable; sin esto offsetTop puede ser 0
-  // (layout no consolidado) y el sticky aparece desde el inicio.
-  const ready = () => requestAnimationFrame(() => requestAnimationFrame(update));
-  window.addEventListener('scroll', update, { passive: true });
-  window.addEventListener('resize', update, { passive: true });
-  window.addEventListener('load', ready);
-  ready(); // primera pasada con el layout actual
-}
+// La barra flotante inferior se eliminó (2026-10-20). El CTA principal vive en
+// el header (.nav-cta) y al final de cada sección; el FAB de WhatsApp sigue
+// flotando a la derecha. No hay aquí ningún listener de scroll que mantener.
+
 
 // Cargar config del API al inicio
 Promise.all([loadConfig(), loadMochisConfig()]).then(() => {
@@ -2145,5 +2113,15 @@ if ('serviceWorker' in navigator) {
   <svg viewBox="0 0 24 24" fill="currentColor" aria-hidden="true"><path d="M17.5 14.4c-.3-.1-1.7-.8-2-.9-.3-.1-.5-.1-.7.1-.2.3-.8.9-.9 1.1-.2.2-.3.2-.6.1-.3-.1-1.2-.4-2.3-1.4-.9-.8-1.4-1.7-1.6-2-.2-.3 0-.5.1-.6l.4-.5c.2-.2.2-.4.3-.6.1-.2 0-.4 0-.5-.1-.1-.7-1.6-.9-2.2-.2-.6-.5-.5-.7-.5h-.6c-.2 0-.5.1-.8.4-.3.3-1 1-1 2.5s1 2.9 1.2 3.1c.1.2 2 3.1 4.9 4.3.7.3 1.2.5 1.6.6.7.2 1.3.2 1.8.1.5-.1 1.7-.7 1.9-1.4.2-.7.2-1.2.2-1.4-.1-.1-.3-.2-.6-.3z"/><path d="M20.5 3.5C18.3 1.2 15.3 0 12.2 0 5.9 0 .7 5.1 .7 11.4c0 2 .6 4 1.6 5.7L.6 24l7-1.8c1.7.9 3.5 1.4 5.4 1.4 6.3 0 11.5-5.1 11.5-11.4 0-3-1.2-5.9-3.4-8.1l-.6-.6zm-7.5 18.4c-1.7 0-3.4-.5-4.9-1.3l-.4-.2-4.1 1.1 1.1-4-.2-.4c-.9-1.5-1.4-3.3-1.4-5.1 0-5.3 4.4-9.7 9.8-9.7 2.6 0 5.1 1 6.9 2.9 1.9 1.9 2.9 4.3 2.9 6.9 0 5.4-4.4 9.8-9.7 9.8z"/></svg>
   <span class="badge" id="wspFabBadge" hidden></span>
 </a>
+
+<!-- === React island v3: hero con Motion + R3F shader (degradacion graciosa si falla) === -->
+<div
+  id="hero-island"
+  class="hero-island"
+  data-island="hero"
+  data-props='{"status":"Hechos hoy en Neiva","titleHtml":"Mochi&#39;s <em>Land</em> &mdash; arte en cada mordisco","subtitle":"Mochis artesanales, hechos a mano cada manana en Neiva. Pide por la web y paga como prefieras.","ctaLabel":"Armar mi pedido","ctaHref":"/tienda.html"}'
+  aria-label="Hero animado"></div>
+
+<script type="module" src="/build/landing.js" defer></script>
 
 </body>

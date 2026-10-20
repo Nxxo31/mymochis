@@ -1,0 +1,2751 @@
+<!DOCTYPE html>
+<html lang="es">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width,initial-scale=1">
+<meta name="theme-color" content="#FAF3EA">
+<title>Mochi's Land · Panel de gestión</title>
+<link rel="icon" type="image/svg+xml" href="favicon.svg">
+<link rel="apple-touch-icon" href="logo-mochis-land.svg">
+<link rel="manifest" href="manifest.json">
+<meta name="robots" content="noindex, nofollow">
+<link href="https://fonts.googleapis.com/css2?family=Fredoka:wght@400;500;600;700&family=Inter:wght@400;500;600;700&display=swap" rel="stylesheet">
+<script src="/vendor/chartjs.min.js"></script>
+<style>
+/* ==========================================================================
+   Mochi's Land · ADMIN CLAYMORPHISM v3.0.0
+   Mismo lenguaje visual que landing · sidebar en clay dark · content cards en warm cream
+   ========================================================================== */
+
+:root {
+  /* === Canvas === */
+  --clay-canvas:      #F4E8D5;
+  --clay-canvas-2:    #ECDFC9;
+  --clay-surface:     #FFFFFF;
+  --clay-ink:         #3A2E26;
+  --clay-ink-soft:    #8A7A6C;
+  --clay-line:        rgba(58,46,38,0.10);
+
+  /* === Mochi palette === */
+  --mochi-fresa:      #FFB8C8;
+  --mochi-fresa-d:    #E94560;
+  --mochi-matcha:     #C9DC8A;
+  --mochi-matcha-d:   #7B8A2E;
+  --mochi-durazno:    #FBD773;
+  --mochi-durazno-d:  #C08E12;
+  --mochi-ube:        #C5B0E8;
+  --mochi-ube-d:      #6B48B0;
+  --mochi-crema:      #FFE8A8;
+  --mochi-cyan:       #9DDDEC;
+  --mochi-cyan-d:     #44B8D8;
+
+  /* === Sidebar palette (clay dark) === */
+  --mocha-1: #F4E4D4;
+  --mocha-2: #C9A88A;
+  --mocha-3: #6F4E37;
+  --navy:    #3D2D24;
+  --navy-deep: #2A1E18;
+
+  /* === Claymorphism shadow system (inset + drop) === */
+  --clay-shadow:    -10px 10px 26px rgba(120,80,40,0.22), inset  4px -4px 10px rgba(255,255,255,0.95);
+  --clay-shadow-md: -6px 6px 16px rgba(120,80,40,0.20), inset  3px -3px 8px rgba(255,255,255,0.85);
+  --clay-shadow-sm: -3px 3px 8px rgba(120,80,40,0.18), inset  2px -2px 5px rgba(255,255,255,0.75);
+  --clay-shadow-xs: -2px 2px 5px rgba(120,80,40,0.14), inset  1px -1px 2px rgba(255,255,255,0.65);
+  --clay-shadow-hover: -14px 14px 32px rgba(120,80,40,0.26), inset  5px -5px 12px rgba(255,255,255,1);
+  --clay-inset:    inset -4px 4px 10px rgba(120,80,40,0.22), inset  4px -4px 10px rgba(255,255,255,0.95);
+  --clay-inset-sm: inset -2px 2px 6px rgba(120,80,40,0.18), inset  2px -2px 6px rgba(255,255,255,0.85);
+  /* Shadow en dark sidebar (light only) */
+  --clay-shadow-dark: -8px 8px 22px rgba(0,0,0,0.40), 8px -8px 22px rgba(255,255,255,0.08);
+  --clay-shadow-sm-dark: -3px 3px 8px rgba(0,0,0,0.30), 3px -3px 8px rgba(255,255,255,0.06);
+}
+
+* { box-sizing: border-box; margin: 0; padding: 0; }
+
+body {
+  font-family: 'Inter', 'Quicksand', system-ui, sans-serif;
+  background:
+    radial-gradient(circle at 12% 8%, rgba(255,184,200,0.30) 0%, transparent 28%),
+    radial-gradient(circle at 88% 14%, rgba(157,221,236,0.28) 0%, transparent 30%),
+    radial-gradient(circle at 14% 82%, rgba(201,220,138,0.28) 0%, transparent 26%),
+    radial-gradient(circle at 88% 78%, rgba(245,215,115,0.30) 0%, transparent 28%),
+    var(--clay-canvas);
+  background-attachment: fixed;
+  color: var(--clay-ink);
+  font-size: 14px; line-height: 1.55;
+  -webkit-font-smoothing: antialiased;
+  min-height: 100vh;
+}
+.serif { font-family: 'Fredoka', 'Baloo 2', serif; }
+a { color: var(--mochi-fresa-d); text-decoration: none; }
+a:hover { text-decoration: underline; }
+
+/* ============ LOGIN · claymorphism card ============ */
+.login-screen {
+  min-height: 100vh;
+  display: flex; align-items: center; justify-content: center;
+  background:
+    radial-gradient(circle at 30% 20%, rgba(157,221,236,0.40), transparent 55%),
+    radial-gradient(circle at 80% 80%, rgba(255,184,200,0.40), transparent 55%),
+    radial-gradient(circle at 50% 100%, rgba(245,215,115,0.30), transparent 60%),
+    var(--clay-canvas);
+  padding: 24px;
+  position: relative; z-index: 1;
+}
+.login-card {
+  background: var(--clay-surface);
+  border-radius: 32px;
+  padding: 44px 36px;
+  max-width: 400px; width: 100%;
+  box-shadow: var(--clay-shadow), inset 4px -4px 8px rgba(255,255,255,0.85);
+  animation: cardIn 0.5s cubic-bezier(.34,1.56,.64,1);
+}
+@keyframes cardIn {
+  from { opacity: 0; transform: translateY(14px) scale(0.98); }
+  to   { opacity: 1; transform: none; }
+}
+.login-card .brand {
+  display: flex; align-items: center; gap: 10px;
+  font-family: 'Fredoka', serif;
+  font-size: 28px; font-weight: 700;
+  margin-bottom: 8px;
+}
+.login-card .brand-mark {
+  width: 48px; height: 48px; border-radius: 50%;
+  object-fit: cover;
+  background: var(--mochi-crema);
+  box-shadow: var(--clay-shadow-sm), inset 2px -2px 4px rgba(255,255,255,0.7);
+}
+.login-card h2 {
+  font-family: 'Fredoka', serif;
+  font-size: 26px; font-weight: 700; margin-bottom: 6px;
+}
+.login-card p { color: var(--clay-ink-soft); font-size: 14px; margin-bottom: 22px; }
+
+.form-group { margin-bottom: 16px; }
+.form-group label {
+  display: block; font-size: 11px; font-weight: 700;
+  color: var(--clay-ink-soft); margin-bottom: 8px;
+  letter-spacing: 1px; text-transform: uppercase;
+}
+.form-group input, .form-group select, .form-group textarea {
+  width: 100%; padding: 14px 16px;
+  border: 0; border-radius: 14px;
+  font-family: 'Inter', sans-serif; font-size: 14px;
+  background: var(--clay-canvas);
+  color: var(--clay-ink);
+  box-shadow: var(--clay-shadow-xs), inset 1px -1px 2px rgba(255,255,255,0.7);
+  transition: box-shadow 0.2s;
+}
+.form-group input:focus, .form-group select:focus, .form-group textarea:focus {
+  outline: none;
+  box-shadow: var(--clay-inset-sm);
+}
+.form-group textarea { resize: vertical; min-height: 80px; font-family: inherit; }
+
+.btn {
+  border: 0; padding: 12px 22px; border-radius: 999px;
+  font-family: 'Inter', sans-serif; font-weight: 700; font-size: 14px;
+  cursor: pointer;
+  display: inline-flex; align-items: center; gap: 8px;
+  text-decoration: none;
+  letter-spacing: 0.2px;
+  box-shadow: var(--clay-shadow-sm), inset 2px -2px 4px rgba(255,255,255,0.7);
+  transition: all 0.2s cubic-bezier(.34,1.56,.64,1);
+}
+.btn:hover { transform: translateY(-1px); box-shadow: var(--clay-shadow-md); }
+.btn:active { transform: scale(0.97); box-shadow: var(--clay-inset-sm); }
+.btn:focus-visible { outline: 3px solid rgba(157,221,236,0.7); outline-offset: 2px; }
+.btn-primary {
+  background: var(--mochi-fresa); color: var(--mochi-fresa-d);
+  box-shadow: var(--clay-shadow-sm), inset 2px -2px 4px rgba(255,255,255,0.8);
+}
+.btn-primary:hover {
+  transform: translateY(-2px);
+  box-shadow: var(--clay-shadow-md), inset 2px -2px 4px rgba(255,255,255,0.8);
+}
+.btn-primary:disabled { opacity: 0.5; cursor: not-allowed; }
+.btn-ghost { background: var(--clay-surface); color: var(--clay-ink); border: 0; }
+.btn-ghost:hover { background: var(--clay-canvas-2); }
+.btn-danger {
+  background: var(--clay-surface); color: var(--mochi-fresa-d); border: 0;
+}
+.btn-danger:hover { background: var(--mochi-fresa); }
+.btn-sm { padding: 8px 14px; font-size: 12px; }
+.btn-block { width: 100%; justify-content: center; }
+
+.login-error {
+  color: var(--mochi-fresa-d); font-size: 13px;
+  background: var(--mochi-fresa);
+  padding: 12px 14px; border-radius: 14px;
+  margin-bottom: 14px; display: none;
+  box-shadow: var(--clay-shadow-xs), inset 1px -1px 2px rgba(255,255,255,0.7);
+}
+.login-error.visible { display: block; }
+.login-card .hint { margin-top: 18px; font-size: 11px; color: var(--clay-ink-soft); text-align: center; }
+
+/* ============ APP LAYOUT ============ */
+.app { display: none; min-height: 100vh; grid-template-columns: 260px 1fr; position: relative; z-index: 1; }
+.app.visible { display: grid; }
+
+/* ============ SIDEBAR · clay dark con puffy nav items ============ */
+.sidebar {
+  background: linear-gradient(180deg, var(--navy) 0%, var(--navy-deep) 100%);
+  color: var(--clay-canvas);
+  padding: 24px 14px 0;
+  position: sticky; top: 0; height: 100vh;
+  display: flex; flex-direction: column; gap: 4px;
+  overflow-y: auto;
+  box-shadow: var(--clay-shadow-dark);
+}
+.sidebar > * { flex-shrink: 0; }
+.sidebar .brand {
+  display: flex; align-items: center; gap: 12px;
+  font-family: 'Fredoka', serif;
+  font-size: 22px; font-weight: 700; color: var(--clay-canvas);
+  padding: 0 8px 18px;
+  border-bottom: 1px solid rgba(255,255,255,0.08);
+  margin-bottom: 14px;
+}
+.sidebar .brand-mark {
+  width: 40px; height: 40px; border-radius: 50%;
+  object-fit: cover;
+  background: var(--mochi-crema);
+  box-shadow: var(--clay-shadow-sm-dark), inset 2px -2px 4px rgba(255,255,255,0.18);
+}
+.nav-section {
+  font-size: 10px; font-weight: 700; letter-spacing: 1.4px;
+  text-transform: uppercase; opacity: 0.4;
+  padding: 18px 8px 6px;
+}
+.nav-item {
+  display: flex; align-items: center; gap: 12px;
+  padding: 11px 16px; border-radius: 999px;
+  cursor: pointer; color: var(--clay-canvas);
+  font-weight: 600; font-size: 14px;
+  transition: all 0.2s;
+  border: 0;
+}
+.nav-item:hover {
+  background: rgba(255,255,255,0.06);
+  transform: translateX(2px);
+}
+.nav-item.active {
+  background: var(--mochi-cyan);
+  color: var(--navy-deep);
+  font-weight: 700;
+  box-shadow: var(--clay-shadow-sm-dark), inset 1px -1px 2px rgba(255,255,255,0.35);
+}
+.nav-item.active svg { opacity: 1; color: var(--navy-deep); }
+.nav-item svg { width: 18px; height: 18px; opacity: 0.85; }
+
+.sidebar-footer {
+  margin-top: auto; padding: 14px 0 22px;
+  border-top: 1px solid rgba(255,255,255,0.08);
+  position: sticky; bottom: 0; background: var(--navy);
+}
+.user-pill {
+  padding: 10px 14px; font-size: 12px;
+  color: var(--clay-canvas); opacity: 0.7;
+  word-break: break-all;
+}
+
+.sidebar .btn-ghost {
+  border-color: rgba(255,255,255,0.18);
+  color: var(--clay-canvas);
+  background: rgba(255,255,255,0.05);
+}
+.sidebar .btn-ghost:hover { background: rgba(255,255,255,0.10); }
+
+/* ============ MAIN · área de contenido ============ */
+.main { padding: 36px 40px; max-width: 1400px; }
+.page-head {
+  display: flex; justify-content: space-between; align-items: flex-start;
+  flex-wrap: wrap; gap: 16px; margin-bottom: 28px;
+}
+.page-head h1 {
+  font-family: 'Fredoka', serif;
+  font-size: 36px; font-weight: 700; margin-bottom: 4px;
+  letter-spacing: -0.5px;
+}
+.page-head .sub { color: var(--clay-ink-soft); font-size: 14px; }
+.page-head .actions { display: flex; gap: 8px; flex-wrap: wrap; }
+
+/* ============ CARDS / GRID ============ */
+.card {
+  background: var(--clay-surface);
+  border: 0;
+  border-radius: 22px;
+  padding: 22px;
+  box-shadow: var(--clay-shadow-md), inset 3px -3px 6px rgba(255,255,255,0.85);
+}
+.card h3 {
+  font-family: 'Fredoka', serif;
+  font-size: 22px; font-weight: 700; margin-bottom: 12px;
+}
+.grid { display: grid; gap: 20px; }
+.grid-2 { grid-template-columns: repeat(auto-fit, minmax(280px, 1fr)); }
+.grid-3 { grid-template-columns: repeat(auto-fit, minmax(220px, 1fr)); }
+.grid-4 { grid-template-columns: repeat(auto-fit, minmax(180px, 1fr)); }
+
+/* ============ KPI · clay numbers ============ */
+.kpi {
+  background: var(--clay-surface);
+  border: 0;
+  border-radius: 22px;
+  padding: 22px;
+  position: relative; overflow: hidden;
+  box-shadow: var(--clay-shadow-md), inset 3px -3px 6px rgba(255,255,255,0.85);
+  transition: transform 0.2s, box-shadow 0.3s;
+}
+.kpi:hover {
+  transform: translateY(-3px);
+  box-shadow: var(--clay-shadow-hover), inset 3px -3px 6px rgba(255,255,255,0.85);
+}
+.kpi::before {
+  content: '';
+  position: absolute; top: 12px; right: 16px;
+  width: 14px; height: 14px;
+  border-radius: 50%;
+  background: var(--mochi-fresa);
+  box-shadow: inset 1px -1px 2px rgba(255,255,255,0.6);
+}
+.kpi.mint::before { background: var(--mochi-matcha); }
+.kpi.gold::before { background: var(--mochi-durazno); }
+.kpi.mochi::before { background: var(--mochi-crema); }
+.kpi .label {
+  font-size: 11px; font-weight: 700; letter-spacing: 1px;
+  text-transform: uppercase; color: var(--clay-ink-soft);
+}
+.kpi .value {
+  font-family: 'Fredoka', serif;
+  font-size: 32px; font-weight: 700;
+  color: var(--mochi-fresa-d); margin-top: 6px;
+  letter-spacing: -0.5px;
+}
+.kpi.mint .value { color: var(--mochi-matcha-d); }
+.kpi.gold .value { color: var(--mochi-durazno-d); }
+.kpi.mochi .value { color: var(--mocha-3); }
+.kpi .hint { font-size: 12px; color: var(--clay-ink-soft); margin-top: 2px; }
+
+/* ============ TABLE ============ */
+.table-wrap {
+  background: var(--clay-surface);
+  border: 0;
+  border-radius: 22px;
+  overflow: hidden;
+  box-shadow: var(--clay-shadow-md), inset 3px -3px 6px rgba(255,255,255,0.85);
+}
+table { width: 100%; border-collapse: collapse; font-size: 13px; }
+thead th {
+  background: var(--clay-canvas-2);
+  text-align: left; padding: 12px 16px;
+  font-size: 11px; font-weight: 700;
+  letter-spacing: 0.8px; text-transform: uppercase;
+  color: var(--clay-ink-soft);
+  border-bottom: 0;
+  position: sticky; top: 0; z-index: 1;
+}
+tbody td {
+  padding: 13px 16px;
+  border-bottom: 1px dashed var(--clay-line);
+  vertical-align: middle;
+}
+tbody tr:last-child td { border-bottom: 0; }
+tbody tr { transition: background 0.15s; }
+tbody tr:hover { background: var(--clay-canvas); }
+
+.tag {
+  display: inline-block; padding: 4px 12px; border-radius: 999px;
+  font-size: 11px; font-weight: 700;
+  background: var(--mochi-crema);
+  color: var(--mocha-3);
+  box-shadow: var(--clay-shadow-xs), inset 1px -1px 2px rgba(255,255,255,0.7);
+  letter-spacing: 0.3px;
+}
+.tag.pending    { background: var(--mochi-fresa); color: var(--mochi-fresa-d); }
+.tag.confirmed  { background: var(--mochi-durazno); color: var(--mochi-durazno-d); }
+.tag.ready      { background: var(--mochi-matcha); color: var(--mochi-matcha-d); }
+.tag.delivered  { background: var(--mochi-matcha); color: var(--mochi-matcha-d); }
+.tag.paid       { background: var(--mochi-matcha); color: var(--mochi-matcha-d); }
+.tag.posted     { background: var(--mochi-cyan); color: var(--navy-deep); }
+.tag.failed     { background: var(--mochi-fresa); color: var(--mochi-fresa-d); }
+.tag.on         { background: var(--mochi-matcha); color: var(--mochi-matcha-d); }
+.tag.off        { background: rgba(120,80,40,0.12); color: rgba(120,80,40,0.55); }
+.tag.cancelled  { background: var(--clay-canvas-2); color: var(--clay-ink-soft); }
+.tag.available  { background: var(--mochi-matcha); color: var(--mochi-matcha-d); }
+.tag.status-draft     { background: var(--clay-canvas-2); color: var(--clay-ink-soft); }
+.tag.status-open      { background: var(--mochi-matcha); color: var(--mochi-matcha-d); }
+.tag.status-closed    { background: var(--mochi-fresa); color: var(--mochi-fresa-d); }
+.tag.status-completed { background: var(--mochi-cyan); color: var(--navy-deep); }
+
+/* ============ TOOLBAR ============ */
+.toolbar {
+  display: flex; gap: 10px; flex-wrap: wrap; align-items: center;
+  background: var(--clay-surface);
+  border: 0;
+  border-radius: 999px;
+  padding: 10px 14px 10px 22px;
+  margin-bottom: 20px;
+  box-shadow: var(--clay-shadow-sm), inset 2px -2px 4px rgba(255,255,255,0.7);
+}
+.toolbar select, .toolbar input {
+  padding: 9px 14px;
+  border: 0; border-radius: 999px;
+  font-size: 13px;
+  background: var(--clay-canvas); color: var(--clay-ink);
+  font-family: 'Inter', sans-serif;
+  box-shadow: inset 1px -1px 2px rgba(58,46,38,0.10);
+}
+.toolbar select:focus, .toolbar input:focus {
+  outline: none;
+  box-shadow: var(--clay-inset-sm);
+}
+.toolbar label {
+  font-size: 11px; font-weight: 700;
+  color: var(--clay-ink-soft); text-transform: uppercase;
+  letter-spacing: 0.8px;
+}
+
+/* ============ SUB-TABS ============ */
+.subtabs {
+  display: flex; gap: 6px; flex-wrap: wrap;
+  background: var(--clay-surface);
+  border: 0;
+  border-radius: 999px;
+  padding: 6px;
+  margin-bottom: 20px;
+  box-shadow: var(--clay-shadow-sm), inset 2px -2px 4px rgba(255,255,255,0.7);
+}
+.subtabs .pill {
+  padding: 9px 18px; border-radius: 999px;
+  font-size: 13px; font-weight: 700; cursor: pointer;
+  color: var(--clay-ink-soft); background: transparent;
+  border: 0; transition: all 0.18s;
+  font-family: 'Inter', sans-serif;
+}
+.subtabs .pill:hover { background: var(--clay-canvas-2); color: var(--clay-ink); }
+.subtabs .pill.active {
+  background: var(--mochi-fresa); color: var(--mochi-fresa-d);
+  box-shadow: var(--clay-shadow-xs), inset 1px -1px 2px rgba(255,255,255,0.7);
+}
+.subtab-panel { display: none; }
+.subtab-panel.active { display: block; }
+
+/* ============ ENTREGAS extras ============ */
+.cfg-group {
+  background: var(--clay-surface);
+  border: 0;
+  border-radius: 22px;
+  padding: 22px 24px;
+  margin-bottom: 16px;
+  box-shadow: var(--clay-shadow-md), inset 3px -3px 6px rgba(255,255,255,0.85);
+}
+.cfg-group h3 {
+  font-family: 'Fredoka', serif; font-size: 18px; font-weight: 700;
+  color: var(--mochi-cyan-d); margin-bottom: 12px;
+}
+.cfg-group .hint { font-size: 12px; color: var(--clay-ink-soft); margin-top: 4px; }
+
+.payout-row {
+  display: flex; gap: 8px; align-items: center;
+  padding: 10px 0;
+  border-bottom: 1px dashed var(--clay-line);
+}
+.payout-row:last-child { border-bottom: 0; }
+.payout-row .star { color: var(--mochi-durazno); font-size: 16px; }
+
+.expand-btn {
+  background: var(--clay-surface); border: 0;
+  color: var(--mochi-cyan-d); cursor: pointer;
+  font-weight: 700; font-size: 13px;
+  padding: 6px 12px; border-radius: 999px;
+  box-shadow: var(--clay-shadow-xs), inset 1px -1px 2px rgba(255,255,255,0.7);
+  transition: all 0.15s;
+}
+.expand-btn:hover { box-shadow: var(--clay-shadow-sm); }
+
+.items-repeater {
+  background: var(--clay-canvas);
+  border: 0;
+  border-radius: 14px;
+  padding: 12px;
+  margin: 10px 0;
+  box-shadow: var(--clay-inset-sm);
+}
+.item-row {
+  display: flex; gap: 8px; align-items: center;
+  margin-bottom: 8px;
+}
+.item-row:last-child { margin-bottom: 0; }
+.item-row select, .item-row input {
+  flex: 1;
+  padding: 8px 12px;
+  border: 0; border-radius: 10px;
+  font-size: 13px;
+  font-family: 'Inter', sans-serif;
+  background: var(--clay-surface);
+  color: var(--clay-ink);
+  box-shadow: var(--clay-shadow-xs), inset 1px -1px 2px rgba(255,255,255,0.7);
+}
+.item-row button {
+  background: var(--mochi-fresa);
+  color: var(--mochi-fresa-d);
+  border: 0;
+  border-radius: 10px;
+  padding: 8px 12px; cursor: pointer;
+  font-weight: 700;
+  box-shadow: var(--clay-shadow-xs), inset 1px -1px 2px rgba(255,255,255,0.7);
+  transition: all 0.15s;
+}
+.item-row button:hover { box-shadow: var(--clay-shadow-sm); }
+
+/* ============ MODAL ============ */
+.modal-back {
+  position: fixed; inset: 0; background: rgba(58,46,38,0.45);
+  z-index: 200; display: none; align-items: flex-start; justify-content: center;
+  padding: 40px 20px; overflow-y: auto;
+  backdrop-filter: blur(6px);
+}
+.modal-back.visible { display: flex; }
+.modal {
+  background: var(--clay-surface); border-radius: 28px;
+  padding: 32px; max-width: 540px; width: 100%;
+  box-shadow: var(--clay-shadow-hover), inset 4px -4px 8px rgba(255,255,255,0.85);
+  animation: modalIn 0.4s cubic-bezier(.34,1.56,.64,1);
+}
+@keyframes modalIn {
+  from { opacity: 0; transform: translateY(16px) scale(0.97); }
+  to   { opacity: 1; transform: none; }
+}
+.modal h2 { font-family: 'Fredoka', serif; font-size: 28px; font-weight: 700; margin-bottom: 14px; }
+.modal-actions { display: flex; gap: 8px; justify-content: flex-end; margin-top: 18px; }
+.modal-row { display: flex; gap: 10px; }
+.modal-row > * { flex: 1; }
+
+/* ============ TOAST · claymorphism ============ */
+.toast {
+  position: fixed; bottom: 24px; right: 24px;
+  background: var(--clay-ink);
+  color: var(--clay-canvas);
+  padding: 14px 20px; border-radius: 999px;
+  font-size: 14px;
+  box-shadow: var(--clay-shadow-md), inset 2px -2px 4px rgba(0,0,0,0.2);
+  z-index: 300; opacity: 0;
+  transform: translateY(10px);
+  transition: all 0.25s;
+  max-width: 360px;
+  font-weight: 600;
+}
+.toast.visible { opacity: 1; transform: translateY(0); }
+.toast.error   { background: var(--mochi-fresa-d); color: #fff; }
+.toast.success { background: var(--mochi-matcha-d); color: #fff; }
+
+/* ============ EMPTY STATE ============ */
+.empty {
+  text-align: center;
+  padding: 64px 24px;
+  color: var(--clay-ink-soft);
+  background: var(--clay-surface);
+  border: 2px dashed var(--clay-line);
+  border-radius: 22px;
+  box-shadow: var(--clay-shadow-sm), inset 2px -2px 4px rgba(255,255,255,0.7);
+}
+.empty .icon { font-size: 36px; margin-bottom: 8px; }
+
+/* ============ ORDER DETAIL ============ */
+.order-items { font-size: 12px; color: var(--clay-ink-soft); max-width: 320px; }
+.order-items div { padding: 1px 0; }
+.items-breakdown { display: flex; flex-direction: column; gap: 4px; font-size: 12px; }
+.items-breakdown .row { display: flex; justify-content: space-between; gap: 8px; }
+
+/* ============ RESPONSIVE ============ */
+@media (max-width: 880px) {
+  .app.visible { grid-template-columns: 1fr; }
+  .sidebar {
+    position: fixed; z-index: 50; width: 260px;
+    transform: translateX(-100%); transition: transform 0.25s;
+    box-shadow: var(--clay-shadow-dark);
+  }
+  .sidebar.open { transform: translateX(0); }
+  .main { padding: 24px 20px; }
+  .page-head h1 { font-size: 28px; }
+  .menu-btn { display: block !important; }
+}
+.menu-btn {
+  display: none;
+  background: var(--mochi-fresa-d);
+  color: #fff;
+  border: 0;
+  padding: 10px 16px; border-radius: 999px;
+  font-size: 14px; margin-bottom: 14px;
+  cursor: pointer;
+  font-weight: 700;
+  box-shadow: var(--clay-shadow-sm), inset 2px -2px 4px rgba(255,255,255,0.3);
+}
+
+/* ============ SECTIONS (only one visible at a time) ============ */
+.section { display: none; }
+.section.active { display: block; }
+
+/* ============ CHART (simple bar) ============ */
+.bar-chart {
+  display: flex; align-items: flex-end; gap: 8px;
+  height: 100px; margin-top: 12px;
+  padding: 12px;
+  background: var(--clay-canvas);
+  border-radius: 16px;
+  box-shadow: var(--clay-inset-sm);
+}
+.bar-chart .bar {
+  flex: 1;
+  background: linear-gradient(180deg, var(--mochi-fresa) 0%, var(--mochi-fresa-d) 100%);
+  border-radius: 8px 8px 4px 4px;
+  min-height: 6px; position: relative;
+  transition: transform 0.2s;
+  box-shadow: var(--clay-shadow-xs);
+}
+.bar-chart .bar:hover { transform: scaleY(1.05); box-shadow: var(--clay-shadow-sm); }
+.bar-chart .bar .lbl {
+  position: absolute; bottom: -18px; left: 0; right: 0;
+  text-align: center; font-size: 10px;
+  color: var(--clay-ink-soft);
+  white-space: nowrap;
+}
+
+/* ============ ITEM CARDS ============ */
+.item-card {
+  background: var(--clay-surface);
+  border: 0;
+  border-radius: 20px;
+  padding: 18px;
+  display: flex; flex-direction: column; gap: 6px;
+  box-shadow: var(--clay-shadow-md), inset 3px -3px 6px rgba(255,255,255,0.85);
+  transition: transform 0.2s, box-shadow 0.3s;
+}
+.item-card:hover {
+  transform: translateY(-3px);
+  box-shadow: var(--clay-shadow-hover), inset 3px -3px 6px rgba(255,255,255,0.85);
+}
+.item-card .item-name { font-weight: 700; font-size: 15px; }
+.item-card .item-desc { font-size: 12px; color: var(--clay-ink-soft); flex: 1; }
+.item-card .item-meta { display: flex; gap: 8px; flex-wrap: wrap; font-size: 12px; color: var(--clay-ink-soft); }
+.item-card .item-actions { display: flex; gap: 6px; margin-top: 8px; }
+
+/* ============ MOCHIS INTERACTIVOS (login screen only) ============ */
+.bg-mochis {
+  position: fixed; inset: 0; z-index: 0;
+  overflow: hidden; pointer-events: none;
+}
+.orbit {
+  position: absolute; pointer-events: none;
+  transition: transform 0.6s cubic-bezier(0.22, 1, 0.36, 1);
+  will-change: transform;
+}
+.mochi {
+  width: var(--s, 48px); height: var(--s, 48px);
+  border-radius: 48% 52% 50% 50% / 52% 50% 54% 48%;
+  pointer-events: auto; cursor: pointer;
+  background:
+    radial-gradient(circle at 32% 28%, rgba(255,255,255,0.85) 0%, rgba(255,255,255,0) 45%),
+    var(--c, #fff);
+  box-shadow:
+    -4px 5px 12px rgba(120,80,40,0.18),
+    4px -5px 12px rgba(255,255,255,0.85),
+    inset -3px -5px 8px rgba(58,46,38,0.12),
+    inset 3px 5px 8px rgba(255,255,255,0.55);
+  animation: mochiDrift var(--d, 9s) ease-in-out infinite alternate;
+  transition: scale 0.25s cubic-bezier(0.34, 1.56, 0.64, 1);
+}
+.mochi::before {
+  content: '';
+  position: absolute;
+  width: 58%; height: 58%; left: 21%; top: 21%;
+  border-radius: 50%;
+  background: radial-gradient(circle at 40% 35%, #FFFDF5, var(--fill, #FFF8E7));
+  opacity: 0; transform: scale(0.4);
+  transition: opacity 0.35s, transform 0.45s cubic-bezier(0.34, 1.56, 0.64, 1);
+}
+.mochi.open::before { opacity: 1; transform: scale(1); }
+.mochi:hover { scale: 1.12; }
+.mochi.squash {
+  animation: mochiSquash 0.5s cubic-bezier(0.34, 1.56, 0.64, 1),
+             mochiDrift var(--d, 9s) ease-in-out 0.5s infinite alternate;
+}
+@keyframes mochiDrift {
+  from { transform: translateY(0) rotate(-3deg); }
+  to   { transform: translateY(-16px) rotate(4deg); }
+}
+@keyframes mochiSquash {
+  0%   { transform: scale(1, 1); }
+  35%  { transform: scale(1.35, 0.6); }
+  70%  { transform: scale(0.85, 1.2); }
+  100% { transform: scale(1, 1); }
+}
+@media (prefers-reduced-motion: reduce) {
+  .mochi, .mochi.squash { animation: none; }
+  .orbit { transition: none; }
+}
+
+/* ============ UPLOAD · drop-zone ============ */
+.drop-zone {
+  border: 0;
+  border-radius: 22px;
+  padding: 32px 24px;
+  text-align: center;
+  background: var(--mochi-cyan);
+  cursor: pointer;
+  transition: all 0.2s;
+  margin-bottom: 20px;
+  box-shadow: var(--clay-shadow-md), inset 3px -3px 6px rgba(255,255,255,0.85);
+}
+.drop-zone:hover {
+  background: var(--mochi-crema);
+  transform: translateY(-1px);
+  box-shadow: var(--clay-shadow-hover);
+}
+.drop-zone.dragover {
+  background: var(--mochi-matcha);
+  transform: scale(1.01);
+}
+.drop-zone .icon { font-size: 38px; line-height: 1; margin-bottom: 8px; }
+.drop-zone .label { font-weight: 700; color: var(--navy); }
+.drop-zone .hint { font-size: 12px; color: var(--clay-ink-soft); margin-top: 4px; }
+.drop-zone .progress {
+  margin-top: 12px;
+  height: 8px;
+  background: var(--clay-canvas);
+  border-radius: 999px;
+  overflow: hidden;
+  display: none;
+  box-shadow: var(--clay-inset-sm);
+}
+.drop-zone .progress.visible { display: block; }
+.drop-zone .progress > .bar {
+  height: 100%;
+  background: linear-gradient(90deg, var(--mochi-cyan-d), var(--mochi-matcha));
+  width: 0%;
+  transition: width 0.2s;
+  border-radius: 999px;
+}
+
+.upload-gallery {
+  display: grid;
+  grid-template-columns: repeat(auto-fill, minmax(180px, 1fr));
+  gap: 14px;
+  margin-bottom: 24px;
+}
+.upload-thumb {
+  background: var(--clay-surface);
+  border: 0;
+  border-radius: 18px;
+  overflow: hidden;
+  display: flex;
+  flex-direction: column;
+  transition: transform 0.2s, box-shadow 0.3s;
+  box-shadow: var(--clay-shadow-md), inset 3px -3px 6px rgba(255,255,255,0.85);
+}
+.upload-thumb:hover {
+  transform: translateY(-3px);
+  box-shadow: var(--clay-shadow-hover);
+}
+.upload-thumb .preview {
+  height: 130px;
+  background: var(--clay-canvas);
+  display: flex; align-items: center; justify-content: center;
+  overflow: hidden;
+}
+.upload-thumb .preview img { width: 100%; height: 100%; object-fit: cover; }
+.upload-thumb .preview.video {
+  background: var(--navy);
+  color: #fff;
+  font-size: 11px;
+  flex-direction: column; gap: 4px;
+}
+.upload-thumb .meta { padding: 10px 12px 6px; font-size: 12px; color: var(--clay-ink-soft); overflow: hidden; }
+.upload-thumb .meta .name {
+  color: var(--clay-ink);
+  font-weight: 700;
+  white-space: nowrap;
+  overflow: hidden;
+  text-overflow: ellipsis;
+}
+.upload-thumb .meta .size { font-size: 11px; opacity: 0.7; }
+.upload-thumb .actions {
+  display: flex; gap: 6px;
+  padding: 6px 10px 12px;
+}
+.upload-thumb .actions .btn { flex: 1; padding: 6px 8px; font-size: 11px; }
+
+.upload-section-head {
+  display: flex; align-items: center; justify-content: space-between;
+  margin-bottom: 12px;
+}
+.upload-section-head h3 {
+  font-family: 'Fredoka', serif;
+  font-size: 18px; font-weight: 700;
+}
+.upload-section-head .category-pick {
+  display: flex; gap: 6px; flex-wrap: wrap;
+}
+.upload-section-head .category-pick .chip {
+  padding: 5px 12px;
+  border-radius: 999px;
+  background: var(--clay-surface);
+  color: var(--clay-ink-soft);
+  font-size: 11px;
+  font-weight: 700;
+  cursor: pointer;
+  border: 0;
+  box-shadow: var(--clay-shadow-xs), inset 1px -1px 2px rgba(255,255,255,0.7);
+  transition: all 0.18s;
+}
+.upload-section-head .category-pick .chip:hover { box-shadow: var(--clay-shadow-sm); }
+.upload-section-head .category-pick .chip.active {
+  background: var(--mochi-cyan-d); color: #fff;
+  box-shadow: var(--clay-shadow-sm), inset 1px -1px 2px rgba(255,255,255,0.3);
+}
+
+</style>
+</head>
+<body>
+
+<!-- Fondo interactivo: mochis flotantes (colores oficiales de sabores) -->
+<div class="bg-mochis" id="bg-mochis" aria-hidden="true">
+  <div class="orbit" style="top:8%;  left:4%"><div class="mochi" style="--s:58px; --d:9s;  --c:#E94560; --fill:#FFE3EC"></div></div>
+  <div class="orbit" style="top:16%; left:88%"><div class="mochi" style="--s:46px; --d:11s; --c:#F9D85E; --fill:#FFF3C4"></div></div>
+  <div class="orbit" style="top:62%; left:2%"><div class="mochi" style="--s:38px; --d:13s; --c:#A78BD9; --fill:#EFE7FA"></div></div>
+  <div class="orbit" style="top:78%; left:90%"><div class="mochi" style="--s:64px; --d:10s; --c:#A8B545; --fill:#EFF3D6"></div></div>
+  <div class="orbit" style="top:42%; left:95%"><div class="mochi" style="--s:34px; --d:12s; --c:#7B4B26; --fill:#EFDFD3"></div></div>
+  <div class="orbit" style="top:88%; left:14%"><div class="mochi" style="--s:44px; --d:8s;  --c:#62D3EC; --fill:#E8F7FB"></div></div>
+  <div class="orbit" style="top:30%; left:96%"><div class="mochi" style="--s:30px; --d:14s; --c:#E94560; --fill:#FFE3EC"></div></div>
+  <div class="orbit" style="top:52%; left:6%"><div class="mochi" style="--s:28px; --d:10s; --c:#F9D85E; --fill:#FFF3C4"></div></div>
+</div>
+
+<!-- ============== LOGIN ============== -->
+<div id="login-screen" class="login-screen">
+  <div class="login-card">
+    <div class="brand">
+      <img src="logo-mochis-land.svg" alt="" class="brand-mark" width="40" height="40">
+      <span>Mochi's Land</span>
+    </div>
+    <h2 style="margin-top:18px">Panel de gestión</h2>
+    <p>Inicia sesión con tu email y clave</p>
+    <div id="login-error" class="login-error"></div>
+    <form id="login-form">
+      <div class="form-group">
+        <label>Email</label>
+        <input type="email" id="email" required placeholder="tu@email.com" autocomplete="email">
+      </div>
+      <div class="form-group">
+        <label>Clave</label>
+        <input type="password" id="password" required placeholder="••••••••" autocomplete="current-password">
+      </div>
+      <button type="submit" class="btn btn-primary btn-block">Entrar</button>
+    </form>
+    <div class="hint">¿Sin cuenta? El operador debe crearla vía <code style="background:var(--bg-soft);padding:1px 5px;border-radius:4px">POST /api/auth/register</code> la primera vez.</div>
+  </div>
+</div>
+
+<!-- ============== APP ============== -->
+<div id="app" class="app">
+
+  <aside id="sidebar" class="sidebar">
+    <div class="brand">
+      <img src="logo-mochis-land.svg" alt="" class="brand-mark" width="36" height="36">
+      <span>Mochi's Land</span>
+    </div>
+
+    <div class="nav-section">General</div>
+    <div class="nav-item active" data-section="dashboard">
+      <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><rect x="3" y="3" width="7" height="7"/><rect x="14" y="3" width="7" height="7"/><rect x="14" y="14" width="7" height="7"/><rect x="3" y="14" width="7" height="7"/></svg>
+      Dashboard
+    </div>
+    <div class="nav-item" data-section="orders">
+      <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M6 2L3 6v14a2 2 0 002 2h14a2 2 0 002-2V6l-3-4z"/><line x1="3" y1="6" x2="21" y2="6"/><path d="M16 10a4 4 0 01-8 0"/></svg>
+      Pedidos
+    </div>
+    <div class="nav-item" data-section="recipients">
+      <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M22 16.92v3a2 2 0 01-2.18 2 19.79 19.79 0 01-8.63-3.07 19.5 19.5 0 01-6-6 19.79 19.79 0 01-3.07-8.67A2 2 0 014.11 2h3a2 2 0 012 1.72c.127.96.361 1.903.7 2.81a2 2 0 01-.45 2.11L8.09 9.91a16 16 0 006 6l1.27-1.27a2 2 0 012.11-.45c.907.339 1.85.573 2.81.7A2 2 0 0122 16.92z"/></svg>
+      Números de pedido
+    </div>
+
+    <div class="nav-section">Logística</div>
+    <div class="nav-item" data-section="entregas">
+      <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><rect x="1" y="3" width="15" height="13"/><polygon points="16 8 20 8 23 11 23 16 16 16 16 8"/><circle cx="5.5" cy="18.5" r="2.5"/><circle cx="18.5" cy="18.5" r="2.5"/></svg>
+      Entregas
+    </div>
+
+    <div class="nav-section">Catálogo</div>
+    <div class="nav-item" data-section="flavors">
+      <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><circle cx="12" cy="12" r="10"/><path d="M12 2a10 10 0 010 20"/></svg>
+      Sabores
+    </div>
+    <div class="nav-item" data-section="combos">
+      <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><rect x="3" y="3" width="7" height="7"/><rect x="14" y="3" width="7" height="7"/><rect x="3" y="14" width="7" height="7"/></svg>
+      Combos
+    </div>
+    <div class="nav-item" data-section="promos">
+      <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M20.59 13.41l-7.17 7.17a2 2 0 01-2.83 0L2 12V2h10l8.59 8.59a2 2 0 010 2.82z"/><line x1="7" y1="7" x2="7.01" y2="7"/></svg>
+      Promos
+    </div>
+
+    <div class="nav-section">Marketing</div>
+    <div class="nav-item" data-section="social">
+      <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><rect x="2" y="2" width="20" height="20" rx="5"/><path d="M16 11.37A4 4 0 1112.63 8 4 4 0 0116 11.37z"/><line x1="17.5" y1="6.5" x2="17.51" y2="6.5"/></svg>
+      Redes sociales
+    </div>
+
+    <div class="nav-section">Sistema</div>
+    <div class="nav-item" data-section="users">
+      <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M17 21v-2a4 4 0 00-4-4H5a4 4 0 00-4 4v2"/><circle cx="9" cy="7" r="4"/><path d="M23 21v-2a4 4 0 00-3-3.87"/><path d="M16 3.13a4 4 0 010 7.75"/></svg>
+      Usuarios
+    </div>
+    <div class="nav-item" data-section="config">
+      <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><circle cx="12" cy="12" r="3"/><path d="M19.4 15a1.65 1.65 0 00.33 1.82l.06.06a2 2 0 01-2.83 2.83l-.06-.06a1.65 1.65 0 00-1.82-.33 1.65 1.65 0 00-1 1.51V21a2 2 0 01-4 0v-.09A1.65 1.65 0 009 19.4a1.65 1.65 0 00-1.82.33l-.06.06a2 2 0 01-2.83-2.83l.06-.06a1.65 1.65 0 00.33-1.82 1.65 1.65 0 00-1.51-1H3a2 2 0 010-4h.09A1.65 1.65 0 004.6 9a1.65 1.65 0 00-.33-1.82l-.06-.06a2 2 0 012.83-2.83l.06.06a1.65 1.65 0 001.82.33H9a1.65 1.65 0 001-1.51V3a2 2 0 014 0v.09a1.65 1.65 0 001 1.51 1.65 1.65 0 001.82-.33l.06-.06a2 2 0 012.83 2.83l-.06.06a1.65 1.65 0 00-.33 1.82V9a1.65 1.65 0 001.51 1H21a2 2 0 010 4h-.09a1.65 1.65 0 00-1.51 1z"/></svg>
+      Configuración
+    </div>
+
+    <div class="sidebar-footer">
+      <div class="user-pill" id="user-email"></div>
+      <button class="btn btn-ghost btn-block" id="logout-btn" style="margin-top:8px">Cerrar sesión</button>
+      <a href="index.html" class="btn btn-ghost btn-block" style="margin-top:6px;text-align:center">Ver landing →</a>
+    </div>
+  </aside>
+
+  <main class="main">
+    <button class="menu-btn" onclick="document.getElementById('sidebar').classList.toggle('open')">☰ Menú</button>
+
+    <!-- ============== DASHBOARD ============== -->
+    <section id="section-dashboard" class="section active">
+      <div class="page-head">
+        <div>
+          <h1>Dashboard</h1>
+          <div class="sub">Vista general de tu tienda</div>
+        </div>
+        <div class="actions" id="dash-status-actions"></div>
+      </div>
+
+      <!-- Estado rápido: pedidos pending + releases abiertos -->
+      <div class="grid grid-2" id="dash-status-row">
+        <div class="kpi mochi"><div class="label">Pedidos pendientes</div><div class="value" id="kpi-pending">—</div><div class="hint" id="kpi-pending-hint">requieren acción</div></div>
+        <div class="kpi mint"><div class="label">Ventanas abiertas</div><div class="value" id="kpi-open-windows">—</div><div class="hint" id="kpi-open-windows-hint">días de recogida</div></div>
+      </div>
+
+      <!-- KPIs principales -->
+      <div class="grid grid-4" id="kpi-grid" style="margin-top:20px">
+        <div class="kpi"><div class="label">Pedidos hoy</div><div class="value" id="kpi-today-count">—</div><div class="hint" id="kpi-today-gross">$0</div></div>
+        <div class="kpi mint"><div class="label">Últimos 7 días</div><div class="value" id="kpi-7-count">—</div><div class="hint" id="kpi-7-gross">$0</div></div>
+        <div class="kpi"><div class="label">Total acumulado</div><div class="value" id="kpi-total">—</div><div class="hint" id="kpi-total-hint">0 pedidos</div></div>
+        <div class="kpi gold"><div class="label">Ticket promedio</div><div class="value" id="kpi-ticket">—</div><div class="hint">por pedido</div></div>
+      </div>
+
+      <!-- Chart principal por día -->
+      <div class="grid grid-2" style="margin-top:20px">
+        <div class="card">
+          <h3>Ventas últimos 14 días</h3>
+          <div style="position:relative;height:180px">
+            <canvas id="chart-canvas"></canvas>
+          </div>
+          <div style="margin-top:10px;font-size:11px;color:var(--clay-ink-soft);display:flex;gap:8px;flex-wrap:wrap" id="chart-legend"></div>
+        </div>
+        <div class="card">
+          <h3>Por estado (distribución)</h3>
+          <div style="position:relative;height:180px;display:flex;align-items:center;justify-content:center">
+            <canvas id="chart-status-pie"></canvas>
+          </div>
+        </div>
+      </div>
+
+      <!-- Breakdowns detallados -->
+      <div class="grid grid-2" style="margin-top:20px">
+        <div class="card">
+          <h3>Top sabores</h3>
+          <div id="top-flavors" style="font-size:14px"></div>
+        </div>
+        <div class="card">
+          <h3>Por día de recogida</h3>
+          <div id="by-day"></div>
+        </div>
+      </div>
+    </section>
+
+    <!-- ============== ORDERS ============== -->
+    <section id="section-orders" class="section">
+      <div class="page-head">
+        <div>
+          <h1>Pedidos</h1>
+          <div class="sub" id="orders-count">—</div>
+        </div>
+      </div>
+
+      <div class="toolbar">
+        <label>Estado</label>
+        <select id="filter-status">
+          <option value="">Todos</option>
+          <option value="pending">Pendientes</option>
+          <option value="confirmed">Confirmados</option>
+          <option value="ready">Listos</option>
+          <option value="delivered">Entregados</option>
+          <option value="cancelled">Cancelados</option>
+        </select>
+        <label>Día</label>
+        <select id="filter-day">
+          <option value="">Todos</option>
+          <option>Martes</option><option>Miércoles</option><option>Jueves</option><option>Viernes</option><option>Sábado</option>
+        </select>
+        <label style="margin-left:auto">Buscar</label>
+        <input type="text" id="filter-q" placeholder="nombre o teléfono...">
+      </div>
+
+      <div class="table-wrap">
+        <table>
+          <thead>
+            <tr>
+              <th>Fecha</th><th>Cliente</th><th>Día</th><th>Pedido</th>
+              <th>Total</th><th>Estado</th><th>Pago</th><th></th>
+            </tr>
+          </thead>
+          <tbody id="orders-body"></tbody>
+        </table>
+      </div>
+    </section>
+
+    <!-- ============== FLAVORS ============== -->
+    <section id="section-flavors" class="section">
+      <div class="page-head">
+        <div>
+          <h1>Sabores</h1>
+          <div class="sub">Catálogo de mochis individuales</div>
+        </div>
+        <div class="actions"><button class="btn btn-primary" onclick="openFlavorModal()">+ Nuevo sabor</button></div>
+      </div>
+
+      <div class="upload-section-head">
+        <h3>📤 Imágenes</h3>
+        <div class="category-pick" id="flavor-upload-cats">
+          <button class="chip active" data-cat="flavor">flavor</button>
+          <button class="chip" data-cat="combo">combo</button>
+          <button class="chip" data-cat="social">social</button>
+          <button class="chip" data-cat="hero">hero</button>
+          <button class="chip" data-cat="general">general</button>
+        </div>
+      </div>
+      <div class="drop-zone" id="flavor-drop">
+        <div class="icon">📁</div>
+        <div class="label">Arrastra imágenes aquí</div>
+        <div class="hint">o haz clic · JPG, PNG, WebP, GIF, AVIF · MP4, WebM, MOV · PDF · máx 25MB c/u · 8 archivos</div>
+        <div class="progress"><div class="bar"></div></div>
+        <input type="file" id="flavor-file" accept="image/jpeg,image/png,image/webp,image/gif,image/avif,video/mp4,video/webm,video/quicktime,application/pdf" multiple hidden>
+      </div>
+      <div class="upload-gallery" id="flavor-gallery"></div>
+
+      <div class="grid grid-3" id="flavors-grid"></div>
+    </section>
+
+    <!-- ============== COMBOS ============== -->
+    <section id="section-combos" class="section">
+      <div class="page-head">
+        <div>
+          <h1>Combos</h1>
+          <div class="sub">Packs y promociones</div>
+        </div>
+        <div class="actions"><button class="btn btn-primary" onclick="openComboModal()">+ Nuevo combo</button></div>
+      </div>
+      <div class="grid grid-3" id="combos-grid"></div>
+    </section>
+
+    <!-- ============== PROMOS ============== -->
+    <section id="section-promos" class="section">
+      <div class="page-head">
+        <div>
+          <h1>Promociones</h1>
+          <div class="sub">Códigos y descuentos</div>
+        </div>
+        <div class="actions"><button class="btn btn-primary" onclick="openPromoModal()">+ Nueva promo</button></div>
+      </div>
+      <div class="grid grid-3" id="promos-grid"></div>
+    </section>
+
+    <!-- ============== SOCIAL ============== -->
+    <section id="section-social" class="section">
+      <div class="page-head">
+        <div>
+          <h1>Redes sociales</h1>
+          <div class="sub">Cola de posts para Instagram, Facebook, TikTok</div>
+        </div>
+        <div class="actions"><button class="btn btn-primary" onclick="openSocialModal()">+ Nuevo post</button></div>
+      </div>
+      <div class="table-wrap">
+        <table>
+          <thead>
+            <tr><th>Fecha</th><th>Plataforma</th><th>Contenido</th><th>Estado</th><th></th></tr>
+          </thead>
+          <tbody id="social-body"></tbody>
+        </table>
+      </div>
+    </section>
+
+    <!-- ============== ENTREGAS ============== -->
+    <section id="section-entregas" class="section">
+      <div class="page-head">
+        <div>
+          <h1>Entregas</h1>
+          <div class="sub">Inmediato, horarios, ventanas de salida y métodos de pago</div>
+        </div>
+      </div>
+
+      <div class="subtabs" id="entregas-tabs">
+        <button class="pill active" data-sub="inmediato">Inmediato</button>
+        <button class="pill" data-sub="horarios">Horarios</button>
+        <button class="pill" data-sub="ventanas">Ventanas</button>
+        <button class="pill" data-sub="pagos">Métodos de pago</button>
+      </div>
+
+      <div id="entregas-inmediato" class="subtab-panel active"></div>
+      <div id="entregas-horarios" class="subtab-panel"></div>
+      <div id="entregas-ventanas" class="subtab-panel"></div>
+      <div id="entregas-pagos" class="subtab-panel"></div>
+    </section>
+
+    <!-- ============== CONFIG ============== -->
+    <section id="section-config" class="section">
+      <div class="page-head">
+        <div>
+          <h1>Configuración</h1>
+          <div class="sub">Datos del negocio y contacto</div>
+        </div>
+      </div>
+      <div class="card" style="max-width:720px">
+        <form id="config-form">
+          <div class="modal-row">
+            <div class="form-group"><label>Nombre del negocio</label><input type="text" id="cfg-business_name" required></div>
+            <div class="form-group"><label>WhatsApp</label><input type="text" id="cfg-whatsapp_number" placeholder="573214876527"></div>
+          </div>
+          <div class="form-group"><label>Tagline</label><input type="text" id="cfg-tagline"></div>
+          <div class="form-group"><label>Descripción</label><textarea id="cfg-description" rows="3"></textarea></div>
+          <div class="modal-row">
+            <div class="form-group"><label>Instagram handle</label><input type="text" id="cfg-instagram_handle" placeholder="@my.mochiss"></div>
+            <div class="form-group"><label>Instagram URL</label><input type="text" id="cfg-instagram_url" placeholder="https://instagram.com/..."></div>
+          </div>
+          <div class="modal-row">
+            <div class="form-group"><label>Facebook URL</label><input type="text" id="cfg-facebook_url"></div>
+            <div class="form-group"><label>TikTok handle</label><input type="text" id="cfg-tiktok_handle" placeholder="@my.mochiss"></div>
+          </div>
+          <div class="form-group"><label>Dirección de recogida</label><input type="text" id="cfg-pickup_address"></div>
+          <div class="form-group"><label>Horario de recogida</label><input type="text" id="cfg-pickup_schedule"></div>
+          <div class="form-group"><label>Hero image URL</label><input type="text" id="cfg-hero_image_url" placeholder="img/instagram/mochi-06.jpg"></div>
+          <div class="modal-actions">
+            <button type="submit" class="btn btn-primary">Guardar cambios</button>
+          </div>
+        </form>
+      </div>
+    </section>
+
+    <!-- ============== NÚMEROS DE PEDIDO (multi-admin) ============== -->
+    <section id="section-recipients" class="section">
+      <div class="page-head">
+        <div>
+          <h1>Números de pedido</h1>
+          <div class="sub">Los pedidos de la web se reparten entre estos WhatsApp (turno rotativo). Con WhatsApp Cloud API activo, además llega una notificación a todos.</div>
+        </div>
+      </div>
+
+      <div class="card" style="max-width:720px">
+        <form id="recipient-form">
+          <div class="modal-row">
+            <div class="form-group"><label>Nombre del admin</label><input type="text" id="rec-label" placeholder="Ej: Sebas" required maxlength="60"></div>
+            <div class="form-group"><label>WhatsApp (internacional, sin espacios)</label><input type="text" id="rec-phone" placeholder="573001234567" required></div>
+          </div>
+          <div class="modal-actions">
+            <button type="submit" class="btn btn-primary">+ Agregar número</button>
+          </div>
+        </form>
+      </div>
+
+      <div class="card" style="max-width:720px">
+        <div class="table-wrap">
+          <table>
+            <thead>
+              <tr><th>Admin</th><th>Número</th><th>Recibe pedidos</th><th></th></tr>
+            </thead>
+            <tbody id="recipients-body"></tbody>
+          </table>
+        </div>
+        <div class="sub" id="recipients-hint" style="margin-top:8px"></div>
+      </div>
+    </section>
+
+    <!-- ============== USUARIOS (multi-admin) ============== -->
+    <section id="section-users" class="section">
+      <div class="page-head">
+        <div>
+          <h1>Usuarios</h1>
+          <div class="sub">Cuentas con acceso al panel. Los admins pueden gestionar todo el negocio.</div>
+        </div>
+      </div>
+
+      <div class="card" style="max-width:720px">
+        <form id="user-form">
+          <div class="modal-row">
+            <div class="form-group"><label>Nombre</label><input type="text" id="usr-name" placeholder="Ej: Laura" maxlength="120"></div>
+            <div class="form-group"><label>Email</label><input type="email" id="usr-email" placeholder="laura@mymochis.app" required></div>
+          </div>
+          <div class="modal-row">
+            <div class="form-group"><label>Contraseña (mín. 8 caracteres)</label><input type="text" id="usr-password" placeholder="mínimo 8 caracteres" required minlength="8"></div>
+            <div class="form-group">
+              <label>Rol</label>
+              <select id="usr-role">
+                <option value="admin">Admin (acceso total)</option>
+                <option value="customer">Cliente (sin panel)</option>
+              </select>
+            </div>
+          </div>
+          <div class="modal-actions">
+            <button type="submit" class="btn btn-primary">+ Crear cuenta</button>
+          </div>
+        </form>
+      </div>
+
+      <div class="card" style="max-width:720px">
+        <div class="table-wrap">
+          <table>
+            <thead>
+              <tr><th>Nombre</th><th>Email</th><th>Rol</th><th>Creado</th><th></th></tr>
+            </thead>
+            <tbody id="users-body"></tbody>
+          </table>
+        </div>
+      </div>
+    </section>
+
+  </main>
+</div>
+
+<!-- ============== MODAL ============== -->
+<div id="modal-back" class="modal-back" onclick="if(event.target.id==='modal-back')closeModal()">
+  <div class="modal" onclick="event.stopPropagation()">
+    <div id="modal-content"></div>
+  </div>
+</div>
+
+<div id="toast" class="toast"></div>
+
+<script>
+const API = '/api';
+const TOKEN_KEY = 'mymochis_token';
+
+const FLAVOR_PALETTE = {
+  'fresas-crema': '#e88a9e',
+  'chokis-cream': '#b8954e',
+  'blueberry': '#7a6db8',
+  'durazno-caramelizado': '#d88450',
+  'crema-pastelera': '#c4a866'
+};
+
+let _token = localStorage.getItem(TOKEN_KEY);
+let _user = null;
+let _orders = [], _flavors = [], _combos = [], _promos = [], _social = [], _config = null, _metrics = null;
+let _recipients = [], _users = [];
+let _openWindows = [];
+let _editingItem = null;
+
+function fmt(n) { return '$' + Number(n || 0).toLocaleString('es-CO'); }
+
+async function api(path, opts = {}) {
+  const headers = { 'Content-Type': 'application/json', ...(opts.headers || {}) };
+  if (_token) headers.Authorization = `Bearer ${_token}`;
+  const res = await fetch(API + path, { ...opts, headers });
+  const ct = res.headers.get('content-type') || '';
+  const body = ct.includes('json') ? await res.json() : await res.text();
+  if (!res.ok) {
+    const err = new Error(body?.message || body?.error || res.statusText);
+    err.status = res.status;
+    err.body = body;
+    throw err;
+  }
+  return body;
+}
+
+function toast(msg, kind = '') {
+  const t = document.getElementById('toast');
+  t.textContent = msg;
+  t.className = 'toast visible' + (kind ? ' ' + kind : '');
+  setTimeout(() => t.classList.remove('visible'), 2500);
+}
+
+// ============ AUTH ============
+const LOCKOUT_KEY = 'mymochis_lockout';
+const LOCKOUT_MAX_FAILS = 5;
+const LOCKOUT_WINDOW_MS = 15 * 60 * 1000;
+
+function getLockoutState() {
+  try {
+    const raw = localStorage.getItem(LOCKOUT_KEY);
+    if (!raw) return { fails: 0, firstAt: 0, blockedUntil: 0 };
+    const s = JSON.parse(raw);
+    const now = Date.now();
+    if (s.blockedUntil && now < s.blockedUntil) return s;
+    if (now - s.firstAt > LOCKOUT_WINDOW_MS) return { fails: 0, firstAt: 0, blockedUntil: 0 };
+    return s;
+  } catch { return { fails: 0, firstAt: 0, blockedUntil: 0 }; }
+}
+function setLockoutState(s) { localStorage.setItem(LOCKOUT_KEY, JSON.stringify(s)); }
+function clearLockoutState() { localStorage.removeItem(LOCKOUT_KEY); }
+
+function refreshLockoutUI() {
+  const s = getLockoutState();
+  const submitBtn = document.querySelector('#login-form button[type="submit"]');
+  const errEl = document.getElementById('login-error');
+  if (s.blockedUntil && Date.now() < s.blockedUntil) {
+    const wait = Math.ceil((s.blockedUntil - Date.now()) / 1000);
+    const m = Math.floor(wait / 60); const sec = wait % 60;
+    errEl.textContent = `Bloqueado por seguridad. Reintenta en ${m}m ${sec}s.`;
+    errEl.classList.add('visible');
+    if (submitBtn) { submitBtn.disabled = true; submitBtn.textContent = `Bloqueado · ${m}m ${sec}s`; }
+  } else {
+    if (submitBtn) { submitBtn.disabled = false; submitBtn.textContent = 'Entrar'; }
+  }
+}
+
+setInterval(refreshLockoutUI, 1000);
+document.addEventListener('DOMContentLoaded', refreshLockoutUI);
+
+document.getElementById('login-form').addEventListener('submit', async (e) => {
+  e.preventDefault();
+  const email = document.getElementById('email').value.trim();
+  const password = document.getElementById('password').value;
+  const errEl = document.getElementById('login-error');
+  errEl.classList.remove('visible');
+
+  const lock = getLockoutState();
+  if (lock.blockedUntil && Date.now() < lock.blockedUntil) {
+    const wait = Math.ceil((lock.blockedUntil - Date.now()) / 1000);
+    const m = Math.floor(wait / 60); const sec = wait % 60;
+    errEl.textContent = `Bloqueado por seguridad. Reintenta en ${m}m ${sec}s.`;
+    errEl.classList.add('visible');
+    return;
+  }
+
+  try {
+    const { token, user } = await api('/auth/login', { method: 'POST', body: JSON.stringify({ email, password }) });
+    _token = token; _user = user;
+    localStorage.setItem(TOKEN_KEY, token);
+    clearLockoutState();
+    enterApp();
+  } catch (e) {
+    const now = Date.now();
+    const s = getLockoutState();
+    let next;
+    if (now - s.firstAt > LOCKOUT_WINDOW_MS) {
+      next = { fails: 1, firstAt: now, blockedUntil: 0 };
+    } else {
+      const fails = (s.fails || 0) + 1;
+      const blockedUntil = fails >= LOCKOUT_MAX_FAILS ? now + LOCKOUT_WINDOW_MS : 0;
+      next = { fails, firstAt: s.firstAt || now, blockedUntil };
+    }
+    setLockoutState(next);
+
+    if (e.status === 429 || next.blockedUntil) {
+      const wait = Math.ceil((next.blockedUntil - now) / 1000);
+      const m = Math.floor(wait / 60); const sec = wait % 60;
+      errEl.textContent = `Demasiados intentos. Espera ${m}m ${sec}s.`;
+    } else if (e.status === 401) {
+      const left = LOCKOUT_MAX_FAILS - next.fails;
+      errEl.textContent = left > 0
+        ? `Email o clave incorrectos · ${left} intento${left === 1 ? '' : 's'} restante${left === 1 ? '' : 's'}`
+        : 'Email o clave incorrectos';
+    } else {
+      errEl.textContent = e.message || 'Error';
+    }
+    errEl.classList.add('visible');
+    refreshLockoutUI();
+  }
+});
+
+document.getElementById('logout-btn').onclick = () => {
+  _token = null; _user = null;
+  localStorage.removeItem(TOKEN_KEY);
+  document.getElementById('app').classList.remove('visible');
+  document.getElementById('login-screen').style.display = '';
+};
+
+async function enterApp() {
+  document.getElementById('login-screen').style.display = 'none';
+  document.getElementById('app').classList.add('visible');
+  document.getElementById('user-email').textContent = _user.email;
+  initUploadZone();
+  await loadAll();
+  showSection('dashboard');
+}
+
+async function loadAll() {
+  try {
+    const [me, orders, flavors, combos, promos, social, config, metrics, windows, recipients, users] = await Promise.all([
+      api('/me'),
+      api('/orders'),
+      api('/flavors'),
+      api('/combos'),
+      api('/promos'),
+      api('/social'),
+      api('/config'),
+      api('/metrics'),
+      api('/release-windows'),
+      api('/recipients'),
+      api('/users')
+    ]);
+    _user = me.user;
+    _orders = orders;
+    _flavors = flavors;
+    _combos = combos;
+    _promos = promos;
+    _social = social;
+    _config = config;
+    _metrics = metrics;
+    _openWindows = (windows || []).filter(w => w.status === 'open');
+    _recipients = (recipients && recipients.recipients) || [];
+    _users = (users && users.users) || [];
+  } catch (e) {
+    if (e.status === 401) {
+      document.getElementById('logout-btn').click();
+    } else {
+      toast('Error cargando datos: ' + e.message, 'error');
+    }
+  }
+}
+
+// ============ NAV ============
+document.querySelectorAll('.nav-item').forEach(el => {
+  el.onclick = () => {
+    document.querySelectorAll('.nav-item').forEach(n => n.classList.remove('active'));
+    el.classList.add('active');
+    showSection(el.dataset.section);
+    document.getElementById('sidebar').classList.remove('open');
+  };
+});
+
+function showSection(name) {
+  document.querySelectorAll('.section').forEach(s => s.classList.remove('active'));
+  document.getElementById('section-' + name).classList.add('active');
+  render[name]?.();
+  if (name === 'flavors' || name === 'combos') renderUploadGallery();
+}
+
+// ============ RENDER ============
+let _chartDaily = null;
+let _chartStatus = null;
+
+const render = {
+  dashboard() {
+    if (!_metrics) return;
+    const m = _metrics;
+    document.getElementById('kpi-today-count').textContent = m.today.count;
+    document.getElementById('kpi-today-gross').textContent = fmt(m.today.gross);
+    document.getElementById('kpi-7-count').textContent = m.last_7_days.count;
+    document.getElementById('kpi-7-gross').textContent = fmt(m.last_7_days.gross);
+    document.getElementById('kpi-total').textContent = fmt(m.totals.gross);
+    document.getElementById('kpi-total-hint').textContent = `${m.totals.count} pedidos`;
+    document.getElementById('kpi-ticket').textContent = fmt(m.totals.avg_ticket);
+
+    // Status pills
+    const pending = (m.by_status && m.by_status.pending) || 0;
+    document.getElementById('kpi-pending').textContent = pending;
+    document.getElementById('kpi-pending-hint').textContent = pending > 0 ? 'requieren acción ahora' : 'todo al día';
+    const openWindows = (_openWindows || []).length;
+    document.getElementById('kpi-open-windows').textContent = openWindows;
+    document.getElementById('kpi-open-windows-hint').textContent = openWindows > 0 ? `${openWindows} días de recogida` : 'sin recogidas abiertas';
+
+    // Chart.js: daily sales (bar)
+    if (typeof Chart === 'undefined') return;
+    const series = m.daily_series || [];
+    const labels = series.map(s => s.date.slice(5));
+    const data = series.map(s => Math.round(s.total));
+
+    const ctx = document.getElementById('chart-canvas');
+    if (_chartDaily) { _chartDaily.destroy(); }
+    _chartDaily = new Chart(ctx, {
+      type: 'bar',
+      data: {
+        labels,
+        datasets: [{
+          label: 'Ventas COP',
+          data,
+          backgroundColor: data.map(v => v > 0 ? '#FFB8C8' : 'rgba(244,233,220,0.5)'),
+          borderColor: data.map(v => v > 0 ? '#E94560' : 'rgba(232,224,209,0.6)'),
+          borderWidth: 1.5,
+          borderRadius: 8,
+          borderSkipped: false,
+        }]
+      },
+      options: {
+        responsive: true,
+        maintainAspectRatio: false,
+        plugins: { legend: { display: false } },
+        scales: {
+          x: { grid: { display: false }, ticks: { font: { size: 10 } } },
+          y: { grid: { color: 'rgba(120,80,40,0.08)' }, ticks: { font: { size: 10 } } }
+        }
+      }
+    });
+    document.getElementById('chart-legend').innerHTML = `<span>0 <span class="dot" style="color:#FFB8C8">●</span> venta / día</span>`;
+
+    // Chart.js: status pie
+    const ctxPie = document.getElementById('chart-status-pie');
+    if (_chartStatus) { _chartStatus.destroy(); }
+    const st = m.by_status || {};
+    const stLabels = Object.keys(st);
+    const stData = Object.values(st);
+    const stColors = {
+      pending: '#FFB8C8', confirmed: '#FBD773', ready: '#C9DC8A',
+      delivered: '#9DDDEC', cancelled: '#ECDFC9'
+    };
+    _chartStatus = new Chart(ctxPie, {
+      type: 'doughnut',
+      data: {
+        labels: stLabels,
+        datasets: [{
+          data: stData,
+          backgroundColor: stLabels.map(l => stColors[l] || '#FFB8C8'),
+          borderWidth: 2, borderColor: '#FAF3EA'
+        }]
+      },
+      options: {
+        responsive: true,
+        maintainAspectRatio: false,
+        plugins: { legend: { position: 'bottom', labels: { boxWidth: 12, font: { size: 11 } } } }
+      }
+    });
+
+    const flavorNames = Object.fromEntries(_flavors.map(f => [f.id, f.name]));
+    document.getElementById('top-flavors').innerHTML = m.top_flavors.length
+      ? m.top_flavors.map(([id, qty]) => `<div style="display:flex;justify-content:space-between;padding:6px 0;border-bottom:1px solid var(--line)"><span>${flavorNames[id] || id}</span><strong>${qty}</strong></div>`).join('')
+      : '<div style="opacity:0.5;font-size:13px">Sin ventas aún</div>';
+
+    document.getElementById('by-status').innerHTML = Object.entries(m.by_status)
+      .map(([k, v]) => `<div style="display:flex;justify-content:space-between;padding:6px 0"><span class="tag ${k}">${k}</span><strong>${v}</strong></div>`).join('') || '<div style="opacity:0.5;font-size:13px">Sin pedidos</div>';
+
+    document.getElementById('by-day').innerHTML = Object.entries(m.by_pickup_day)
+      .map(([k, v]) => `<div style="display:flex;justify-content:space-between;padding:6px 0"><span>${k === 'undefined' || k === 'null' || !k ? 'Sin día' : k}</span><strong>${v}</strong></div>`).join('') || '<div style="opacity:0.5;font-size:13px">Sin pedidos</div>';
+  },
+
+  orders() {
+    const status = document.getElementById('filter-status').value;
+    const day = document.getElementById('filter-day').value;
+    const q = document.getElementById('filter-q').value.toLowerCase();
+    const filtered = _orders.filter(o => {
+      if (status && o.status !== status) return false;
+      if (day && o.pickup_day !== day) return false;
+      if (q && !((o.customer_name || '').toLowerCase().includes(q) || (o.customer_phone || '').toLowerCase().includes(q))) return false;
+      return true;
+    });
+    document.getElementById('orders-count').textContent = `${filtered.length} de ${_orders.length} pedidos`;
+    const tbody = document.getElementById('orders-body');
+    if (!filtered.length) {
+      tbody.innerHTML = `<tr><td colspan="8"><div class="empty"><div class="icon">📦</div>Sin pedidos</div></td></tr>`;
+      return;
+    }
+    const flavorNames = Object.fromEntries(_flavors.map(f => [f.id, f.name]));
+    tbody.innerHTML = filtered.map(o => {
+      const items = Object.entries(o.items || {}).map(([id, q]) => `${flavorNames[id] || id} × ${q}`).join(', ');
+      const combos = (o.combos || []).map(c => {
+        const name = c.name || `Combo ${c.id || ''}`;
+        const qty = Number(c.qty || 1);
+        return `${name} × ${qty}`;
+      }).filter(Boolean).join(', ');
+      const itemsHtml = [items, combos].filter(Boolean).join(' · ') || '—';
+      return `<tr>
+        <td><small>${(o.created_at || '').slice(0, 16).replace('T', ' ')}</small></td>
+        <td><strong>${escapeHtml(o.customer_name)}</strong><br><small style="color:var(--ink-soft)">${escapeHtml(o.customer_phone)}</small></td>
+        <td><small>${o.pickup_day}</small></td>
+        <td class="order-items">${escapeHtml(itemsHtml)}${o.notes ? `<br><em style="color:var(--gold)">📝 ${escapeHtml(o.notes)}</em>` : ''}</td>
+        <td><strong>${fmt(o.total)}</strong></td>
+        <td><span class="tag ${o.status}">${o.status}</span></td>
+        <td><span class="tag ${o.payment_status === 'paid' ? 'paid' : 'pending'}">${o.payment_status}</span></td>
+        <td><select onchange="updateOrderStatus('${o.id}', this.value)" style="padding:5px 8px;font-size:12px;border-radius:6px;border:1px solid var(--line);background:#fff">
+          <option value="">cambiar...</option>
+          <option value="pending">pending</option>
+          <option value="confirmed">confirmed</option>
+          <option value="ready">ready</option>
+          <option value="delivered">delivered</option>
+          <option value="cancelled">cancelled</option>
+        </select>
+          <button class="btn btn-sm btn-danger" onclick="deleteOrder('${o.id}')" title="Eliminar">🗑</button></td>
+      </tr>`;
+    }).join('');
+  },
+
+  flavors() {
+    const grid = document.getElementById('flavors-grid');
+    if (!_flavors.length) { grid.innerHTML = '<div class="empty">No hay sabores</div>'; return; }
+    grid.innerHTML = _flavors.map(f => `
+      <div class="item-card">
+        <div style="display:flex;align-items:center;gap:10px">
+          <div style="width:32px;height:32px;border-radius:50%;background:${f.color || FLAVOR_PALETTE[f.id] || '#e88a9e'};box-shadow:inset -3px -2px 6px rgba(0,0,0,0.15)"></div>
+          <div class="item-name">${escapeHtml(f.name)}</div>
+        </div>
+        <div class="item-desc">${escapeHtml(f.description || '')}</div>
+        <div class="item-meta">
+          <span><strong>${fmt(f.price)}</strong></span>
+          <span class="tag ${f.available ? 'paid' : 'cancelled'}">${f.available ? 'disponible' : 'no disponible'}</span>
+          <small>id: ${escapeHtml(f.id)}</small>
+        </div>
+        <div class="item-actions">
+          <button class="btn btn-sm btn-ghost" onclick='openFlavorModal(${JSON.stringify(f)})'>Editar</button>
+          <button class="btn btn-sm btn-danger" onclick="deleteFlavor('${f.id}')">Eliminar</button>
+        </div>
+      </div>
+    `).join('');
+  },
+
+  combos() {
+    const grid = document.getElementById('combos-grid');
+    if (!_combos.length) { grid.innerHTML = '<div class="empty">No hay combos</div>'; return; }
+    grid.innerHTML = _combos.map(c => `
+      <div class="item-card" style="${c.featured ? 'border:2px solid var(--pink-deep);' : ''}">
+        ${c.featured ? '<div style="font-size:11px;color:var(--pink-deep);font-weight:700;letter-spacing:1px">★ DESTACADO</div>' : ''}
+        <div class="item-name">${escapeHtml(c.name)}</div>
+        <div class="item-desc">${escapeHtml(c.description || '')}</div>
+        <div class="item-meta">
+          <span>${c.units} unidades</span>
+          <span><strong>${fmt(c.price)}</strong>${c.compare_at_price ? ` <s style="color:var(--ink-soft)">${fmt(c.compare_at_price)}</s>` : ''}</span>
+          <span class="tag ${c.available ? 'paid' : 'cancelled'}">${c.available ? 'disponible' : 'no'}</span>
+        </div>
+        <div class="item-actions">
+          <button class="btn btn-sm btn-ghost" onclick='openComboModal(${JSON.stringify(c)})'>Editar</button>
+          <button class="btn btn-sm btn-danger" onclick="deleteCombo('${c.id}')">Eliminar</button>
+        </div>
+      </div>
+    `).join('');
+  },
+
+  promos() {
+    const grid = document.getElementById('promos-grid');
+    if (!_promos.length) { grid.innerHTML = '<div class="empty">No hay promociones</div>'; return; }
+    grid.innerHTML = _promos.map(p => `
+      <div class="item-card">
+        <div class="item-name">${escapeHtml(p.name)}</div>
+        <div class="item-desc">código: <code>${escapeHtml(p.code || '—')}</code> · tipo: ${p.type}</div>
+        <div class="item-meta">
+          <span><strong>${p.type === 'percent' ? p.value + '%' : fmt(p.value)}</strong> desc</span>
+          <span class="tag ${p.active ? 'paid' : 'cancelled'}">${p.active ? 'activa' : 'inactiva'}</span>
+        </div>
+        <div class="item-actions">
+          <button class="btn btn-sm btn-ghost" onclick='openPromoModal(${JSON.stringify(p)})'>Editar</button>
+          <button class="btn btn-sm btn-danger" onclick="deletePromo('${p.id}')">Eliminar</button>
+        </div>
+      </div>
+    `).join('');
+  },
+
+  social() {
+    const tbody = document.getElementById('social-body');
+    if (!_social.length) { tbody.innerHTML = '<tr><td colspan="5"><div class="empty">Sin posts en cola</div></td></tr>'; return; }
+    tbody.innerHTML = _social.map(p => `
+      <tr>
+        <td><small>${(p.scheduled_for || p.created_at || '').slice(0, 16).replace('T', ' ')}</small></td>
+        <td><span class="tag">${p.platform}</span></td>
+        <td><div style="max-width:380px;white-space:pre-wrap;font-size:13px">${escapeHtml(p.content)}</div></td>
+        <td><span class="tag ${p.status === 'posted' ? 'paid' : p.status === 'failed' ? 'cancelled' : 'pending'}">${p.status}</span></td>
+        <td>
+          <button class="btn btn-sm btn-ghost" onclick='openSocialModal(${JSON.stringify(p)})'>Editar</button>
+          <button class="btn btn-sm btn-danger" onclick="deleteSocial('${p.id}')">🗑</button>
+        </td>
+      </tr>
+    `).join('');
+  },
+
+  config() {
+    if (!_config) return;
+    const c = _config;
+    document.getElementById('cfg-business_name').value = c.business_name || '';
+    document.getElementById('cfg-whatsapp_number').value = c.whatsapp_number || '';
+    document.getElementById('cfg-tagline').value = c.tagline || '';
+    document.getElementById('cfg-description').value = c.description || '';
+    document.getElementById('cfg-instagram_handle').value = c.instagram_handle || '';
+    document.getElementById('cfg-instagram_url').value = c.instagram_url || '';
+    document.getElementById('cfg-facebook_url').value = c.facebook_url || '';
+    document.getElementById('cfg-tiktok_handle').value = c.tiktok_handle || '';
+    document.getElementById('cfg-pickup_address').value = c.pickup_address || '';
+    document.getElementById('cfg-pickup_schedule').value = c.pickup_schedule || '';
+    document.getElementById('cfg-hero_image_url').value = c.hero_image_url || '';
+  }
+};
+
+function escapeHtml(s) {
+  return String(s || '').replace(/[&<>"']/g, c => ({ '&':'&amp;','<':'&lt;','>':'&gt;','"':'&quot;',"'":'&#39;' }[c]));
+}
+
+// ============ ORDERS ACTIONS ============
+async function updateOrderStatus(id, status) {
+  if (!status) return;
+  try {
+    await api(`/orders/${id}`, { method: 'PATCH', body: JSON.stringify({ status }) });
+    toast('Estado actualizado', 'success');
+    await loadAll();
+    render.orders();
+  } catch (e) { toast('Error: ' + e.message, 'error'); }
+}
+
+async function deleteOrder(id) {
+  if (!confirm('¿Eliminar este pedido?')) return;
+  try {
+    await api(`/orders/${id}`, { method: 'DELETE' });
+    toast('Pedido eliminado', 'success');
+    await loadAll();
+    render.orders();
+  } catch (e) { toast('Error: ' + e.message, 'error'); }
+}
+
+['filter-status', 'filter-day', 'filter-q'].forEach(id => {
+  document.getElementById(id).oninput = render.orders;
+});
+
+// ============ FLAVORS CRUD ============
+function openFlavorModal(flavor) {
+  _editingItem = flavor || null;
+  document.getElementById('modal-content').innerHTML = `
+    <h2>${flavor ? 'Editar' : 'Nuevo'} sabor</h2>
+    <form id="entity-form">
+      <div class="modal-row">
+        <div class="form-group"><label>ID (slug)</label><input type="text" id="f-id" value="${flavor?.id || ''}" ${flavor ? 'readonly' : ''} required placeholder="ej: fresas-crema"></div>
+        <div class="form-group"><label>Nombre</label><input type="text" id="f-name" value="${escapeHtml(flavor?.name || '')}" required></div>
+      </div>
+      <div class="form-group"><label>Descripción</label><textarea id="f-description" rows="2">${escapeHtml(flavor?.description || '')}</textarea></div>
+      <div class="modal-row">
+        <div class="form-group"><label>Precio (COP)</label><input type="number" id="f-price" value="${flavor?.price || 8000}" required></div>
+        <div class="form-group"><label>Color (hex)</label><input type="text" id="f-color" value="${flavor?.color || '#e88a9e'}"></div>
+      </div>
+      <div class="form-group"><label>Imagen URL (opcional)</label><div style="display:flex;gap:8px"><input type="text" id="f-image_url" value="${escapeHtml(flavor?.image_url || '')}" placeholder="/uploads/xxx.jpg" style="flex:1"><button type="button" class="btn btn-ghost btn-sm" onclick="pickUploadFor('flavor','f-image_url')">📤 Elegir</button></div>${flavor?.image_url ? `<div id="f-image_preview" style="margin-top:6px"><img src="${escapeHtml(flavor.image_url)}" alt="" style="max-height:80px;border-radius:8px;border:1px solid var(--line)"></div>` : ''}</div>
+      <div class="modal-actions">
+        <button type="button" class="btn btn-ghost" onclick="closeModal()">Cancelar</button>
+        <button type="submit" class="btn btn-primary">Guardar</button>
+      </div>
+    </form>`;
+  document.getElementById('modal-back').classList.add('visible');
+  document.getElementById('entity-form').onsubmit = async (e) => {
+    e.preventDefault();
+    const body = {
+      id: document.getElementById('f-id').value.trim(),
+      name: document.getElementById('f-name').value.trim(),
+      description: document.getElementById('f-description').value.trim(),
+      price: Number(document.getElementById('f-price').value),
+      color: document.getElementById('f-color').value.trim(),
+      image_url: document.getElementById('f-image_url').value.trim() || null,
+      available: true,
+      sort_order: flavor?.sort_order || 99
+    };
+    try {
+      if (flavor) await api(`/flavors/${flavor.id}`, { method: 'PUT', body: JSON.stringify(body) });
+      else await api('/flavors', { method: 'POST', body: JSON.stringify(body) });
+      toast('Sabor guardado', 'success');
+      closeModal();
+      await loadAll(); render.flavors();
+    } catch (err) { toast('Error: ' + err.message, 'error'); }
+  };
+}
+
+async function deleteFlavor(id) {
+  if (!confirm('¿Eliminar este sabor?')) return;
+  try {
+    await api(`/flavors/${id}`, { method: 'DELETE' });
+    toast('Sabor eliminado', 'success');
+    await loadAll(); render.flavors();
+  } catch (e) { toast('Error: ' + e.message, 'error'); }
+}
+
+// ============ UPLOADS · drag-drop + gallery ============
+const ALLOWED_UPLOAD_MIMES = new Set(['image/jpeg','image/png','image/webp','image/gif','image/avif','video/mp4','video/webm','video/quicktime','application/pdf']);
+const MAX_UPLOAD_BYTES = 25 * 1024 * 1024;
+let _uploadCategory = 'flavor';
+let _uploads = [];
+
+function setUploadCategory(cat) {
+  _uploadCategory = cat;
+  document.querySelectorAll('#flavor-upload-cats .chip').forEach(el => {
+    el.classList.toggle('active', el.dataset.cat === cat);
+  });
+  renderUploadGallery();
+}
+
+function initUploadZone() {
+  const drop = document.getElementById('flavor-drop');
+  const fileInput = document.getElementById('flavor-file');
+  if (!drop || !fileInput) return;
+
+  document.querySelectorAll('#flavor-upload-cats .chip').forEach(el => {
+    el.onclick = () => setUploadCategory(el.dataset.cat);
+  });
+
+  drop.addEventListener('click', (e) => {
+    if (e.target.tagName === 'INPUT') return;
+    fileInput.click();
+  });
+  fileInput.addEventListener('change', () => {
+    if (fileInput.files?.length) uploadFiles(fileInput.files, _uploadCategory).then(() => { fileInput.value = ''; });
+  });
+
+  ['dragenter','dragover'].forEach(ev => drop.addEventListener(ev, (e) => {
+    e.preventDefault(); e.stopPropagation();
+    drop.classList.add('dragover');
+  }));
+  ['dragleave','drop'].forEach(ev => drop.addEventListener(ev, (e) => {
+    e.preventDefault(); e.stopPropagation();
+    if (ev === 'dragleave' && drop.contains(e.relatedTarget)) return;
+    drop.classList.remove('dragover');
+  }));
+  drop.addEventListener('drop', (e) => {
+    const dt = e.dataTransfer;
+    if (dt?.files?.length) uploadFiles(dt.files, _uploadCategory);
+  });
+}
+
+async function uploadFiles(fileList, category) {
+  const files = Array.from(fileList).slice(0, 8);
+  const bad = files.filter(f => !ALLOWED_UPLOAD_MIMES.has(f.type));
+  if (bad.length) { toast(`Tipo no permitido: ${bad[0].type}`, 'error'); return; }
+  const tooBig = files.filter(f => f.size > MAX_UPLOAD_BYTES);
+  if (tooBig.length) { toast(`Archivo > 25MB: ${tooBig[0].name}`, 'error'); return; }
+  if (!files.length) return;
+
+  const fd = new FormData();
+  for (const f of files) fd.append('files', f);
+  fd.append('category', category);
+
+  const drop = document.getElementById('flavor-drop');
+  const progress = drop?.querySelector('.progress');
+  const bar = drop?.querySelector('.progress > .bar');
+  progress?.classList.add('visible');
+  if (bar) bar.style.width = '0%';
+
+  try {
+    const xhr = new XMLHttpRequest();
+    const result = await new Promise((resolve, reject) => {
+      xhr.open('POST', API + '/uploads');
+      xhr.setRequestHeader('Authorization', 'Bearer ' + _token);
+      xhr.upload.onprogress = (e) => {
+        if (e.lengthComputable && bar) bar.style.width = `${Math.round(e.loaded / e.total * 100)}%`;
+      };
+      xhr.onload = () => {
+        if (xhr.status >= 200 && xhr.status < 300) resolve(JSON.parse(xhr.responseText));
+        else reject(new Error(`HTTP ${xhr.status}`));
+      };
+      xhr.onerror = () => reject(new Error('network error'));
+      xhr.send(fd);
+    });
+    toast(`${result.files.length} archivo(s) subido(s)`, 'success');
+    renderUploadGallery();
+  } catch (err) {
+    toast('Error subiendo: ' + err.message, 'error');
+  } finally {
+    setTimeout(() => progress?.classList.remove('visible'), 600);
+  }
+}
+
+async function renderUploadGallery() {
+  const gallery = document.getElementById('flavor-gallery');
+  if (!gallery) return;
+  try {
+    const { files } = await api(`/uploads?category=${encodeURIComponent(_uploadCategory)}&t=${Date.now()}`);
+    _uploads = files;
+    if (!files.length) {
+      gallery.innerHTML = '<div style="grid-column:1/-1;text-align:center;color:var(--ink-soft);font-size:12px;padding:14px">Sin archivos en esta categoría. Arrastra o haz clic para subir.</div>';
+      return;
+    }
+    gallery.innerHTML = files.map(f => {
+      const isImg = (f.mimetype || '').startsWith('image/');
+      const isVid = (f.mimetype || '').startsWith('video/');
+      const preview = isImg
+        ? `<div class="preview"><img src="${escapeHtml(f.url)}" alt="${escapeHtml(f.originalname)}" loading="lazy"></div>`
+        : isVid
+          ? `<div class="preview video">🎥 ${escapeHtml((f.mimetype.split('/')[1] || '').toUpperCase())}</div>`
+          : `<div class="preview">📄 ${escapeHtml((f.mimetype.split('/')[1] || 'file').toUpperCase())}</div>`;
+      const sizeKb = Math.round((f.size || 0) / 1024);
+      return `
+        <div class="upload-thumb" data-filename="${escapeHtml(f.filename)}">
+          ${preview}
+          <div class="meta">
+            <div class="name" title="${escapeHtml(f.originalname)}">${escapeHtml(f.originalname)}</div>
+            <div class="size">${sizeKb} KB · ${escapeHtml(f.category || '')}</div>
+          </div>
+          <div class="actions">
+            <button class="btn btn-sm btn-primary" onclick="useUpload('${escapeHtml(f.filename)}')">Usar</button>
+            <button class="btn btn-sm btn-ghost" onclick="copyUpload('${escapeHtml(f.url)}')">Copiar</button>
+            <button class="btn btn-sm btn-danger" onclick="deleteUpload('${escapeHtml(f.filename)}')">🗑</button>
+          </div>
+        </div>`;
+    }).join('');
+  } catch (e) {
+    gallery.innerHTML = `<div style="grid-column:1/-1;color:var(--accent);font-size:12px">Error cargando galería: ${escapeHtml(e.message)}</div>`;
+  }
+}
+
+async function deleteUpload(filename) {
+  if (!confirm('¿Eliminar este archivo?')) return;
+  try {
+    await api(`/uploads/${encodeURIComponent(filename)}`, { method: 'DELETE' });
+    toast('Archivo eliminado', 'success');
+    renderUploadGallery();
+  } catch (e) { toast('Error: ' + e.message, 'error'); }
+}
+
+async function copyUpload(url) {
+  try {
+    await navigator.clipboard.writeText(url);
+    toast('URL copiada al portapapeles', 'success');
+  } catch {
+    toast('No se pudo copiar', 'error');
+  }
+}
+
+function useUpload(filename) {
+  const file = _uploads.find(f => f.filename === filename);
+  if (!file) return;
+  const targetInputId = _pendingUploadTarget;
+  if (targetInputId && document.getElementById(targetInputId)) {
+    document.getElementById(targetInputId).value = file.url;
+    document.getElementById(targetInputId).dispatchEvent(new Event('input'));
+    toast('Imagen aplicada al campo', 'success');
+  } else {
+    copyUpload(file.url);
+    toast('Sin campo destino · URL copiada', '');
+  }
+  _pendingUploadTarget = null;
+}
+
+let _pendingUploadTarget = null;
+function pickUploadFor(category, inputId) {
+  setUploadCategory(category);
+  _pendingUploadTarget = inputId;
+  showSection('flavors');
+  setTimeout(() => {
+    document.getElementById('flavor-gallery')?.scrollIntoView({ behavior: 'smooth', block: 'center' });
+    toast('Selecciona una imagen o arrastra para subir', '');
+  }, 50);
+}
+
+// ============ COMBOS CRUD ============
+function openComboModal(combo) {
+  _editingItem = combo || null;
+  document.getElementById('modal-content').innerHTML = `
+    <h2>${combo ? 'Editar' : 'Nuevo'} combo</h2>
+    <form id="entity-form">
+      <div class="form-group"><label>Nombre</label><input type="text" id="c-name" value="${escapeHtml(combo?.name || '')}" required></div>
+      <div class="form-group"><label>Descripción</label><textarea id="c-description" rows="2">${escapeHtml(combo?.description || '')}</textarea></div>
+      <div class="modal-row">
+        <div class="form-group"><label>Unidades</label><input type="number" id="c-units" value="${combo?.units || 4}" required min="1"></div>
+        <div class="form-group"><label>Precio (COP)</label><input type="number" id="c-price" value="${combo?.price || 28000}" required min="0"></div>
+      </div>
+      <div class="modal-row">
+        <div class="form-group"><label>Precio tachado (opcional)</label><input type="number" id="c-compare_at_price" value="${combo?.compare_at_price || ''}"></div>
+        <div class="form-group"><label>Orden</label><input type="number" id="c-sort_order" value="${combo?.sort_order || 0}"></div>
+      </div>
+      <div class="form-group"><label>Imagen URL</label><div style="display:flex;gap:8px"><input type="text" id="c-image_url" value="${escapeHtml(combo?.image_url || '')}" placeholder="/uploads/xxx.jpg" style="flex:1"><button type="button" class="btn btn-ghost btn-sm" onclick="pickUploadFor('combo','c-image_url')">📤 Elegir</button></div>${combo?.image_url ? `<div id="c-image_preview" style="margin-top:6px"><img src="${escapeHtml(combo.image_url)}" alt="" style="max-height:80px;border-radius:8px;border:1px solid var(--line)"></div>` : ''}</div>
+      <div class="form-group"><label style="display:flex;align-items:center;gap:8px;text-transform:none;letter-spacing:0;font-size:14px;color:var(--ink)"><input type="checkbox" id="c-featured" ${combo?.featured ? 'checked' : ''}> Destacado (aparece primero)</label></div>
+      <div class="form-group"><label style="display:flex;align-items:center;gap:8px;text-transform:none;letter-spacing:0;font-size:14px;color:var(--ink)"><input type="checkbox" id="c-available" ${combo?.available !== false ? 'checked' : ''}> Disponible</label></div>
+      <div class="modal-actions">
+        <button type="button" class="btn btn-ghost" onclick="closeModal()">Cancelar</button>
+        <button type="submit" class="btn btn-primary">Guardar</button>
+      </div>
+    </form>`;
+  document.getElementById('modal-back').classList.add('visible');
+  document.getElementById('entity-form').onsubmit = async (e) => {
+    e.preventDefault();
+    const body = {
+      name: document.getElementById('c-name').value.trim(),
+      description: document.getElementById('c-description').value.trim(),
+      units: Number(document.getElementById('c-units').value),
+      price: Number(document.getElementById('c-price').value),
+      compare_at_price: Number(document.getElementById('c-compare_at_price').value) || null,
+      sort_order: Number(document.getElementById('c-sort_order').value) || 0,
+      image_url: document.getElementById('c-image_url').value.trim() || null,
+      featured: document.getElementById('c-featured').checked,
+      available: document.getElementById('c-available').checked
+    };
+    try {
+      if (combo) await api(`/combos/${combo.id}`, { method: 'PUT', body: JSON.stringify(body) });
+      else await api('/combos', { method: 'POST', body: JSON.stringify(body) });
+      toast('Combo guardado', 'success');
+      closeModal();
+      await loadAll(); render.combos();
+    } catch (err) { toast('Error: ' + err.message, 'error'); }
+  };
+}
+
+async function deleteCombo(id) {
+  if (!confirm('¿Eliminar este combo?')) return;
+  try {
+    await api(`/combos/${id}`, { method: 'DELETE' });
+    toast('Combo eliminado', 'success');
+    await loadAll(); render.combos();
+  } catch (e) { toast('Error: ' + e.message, 'error'); }
+}
+
+// ============ PROMOS CRUD ============
+function openPromoModal(promo) {
+  _editingItem = promo || null;
+  document.getElementById('modal-content').innerHTML = `
+    <h2>${promo ? 'Editar' : 'Nueva'} promoción</h2>
+    <form id="entity-form">
+      <div class="form-group"><label>Nombre</label><input type="text" id="p-name" value="${escapeHtml(promo?.name || '')}" required></div>
+      <div class="modal-row">
+        <div class="form-group"><label>Código (opcional)</label><input type="text" id="p-code" value="${escapeHtml(promo?.code || '')}" placeholder="VERANO20"></div>
+        <div class="form-group"><label>Tipo</label><select id="p-type">
+          <option value="percent" ${promo?.type === 'percent' ? 'selected' : ''}>Porcentaje</option>
+          <option value="fixed" ${promo?.type === 'fixed' ? 'selected' : ''}>Monto fijo</option>
+          <option value="bxgy" ${promo?.type === 'bxgy' ? 'selected' : ''}>2x1 / BXGY</option>
+        </select></div>
+      </div>
+      <div class="modal-row">
+        <div class="form-group"><label>Valor</label><input type="number" id="p-value" value="${promo?.value || 10}" required></div>
+        <div class="form-group"><label>Compra mínima</label><input type="number" id="p-min_purchase" value="${promo?.min_purchase || ''}"></div>
+      </div>
+      <div class="form-group"><label style="display:flex;align-items:center;gap:8px;text-transform:none;letter-spacing:0;font-size:14px;color:var(--ink)"><input type="checkbox" id="p-active" ${promo?.active !== false ? 'checked' : ''}> Activa</label></div>
+      <div class="modal-actions">
+        <button type="button" class="btn btn-ghost" onclick="closeModal()">Cancelar</button>
+        <button type="submit" class="btn btn-primary">Guardar</button>
+      </div>
+    </form>`;
+  document.getElementById('modal-back').classList.add('visible');
+  document.getElementById('entity-form').onsubmit = async (e) => {
+    e.preventDefault();
+    const body = {
+      name: document.getElementById('p-name').value.trim(),
+      code: document.getElementById('p-code').value.trim().toUpperCase() || null,
+      type: document.getElementById('p-type').value,
+      value: Number(document.getElementById('p-value').value),
+      min_purchase: Number(document.getElementById('p-min_purchase').value) || null,
+      active: document.getElementById('p-active').checked
+    };
+    try {
+      if (promo) await api(`/promos/${promo.id}`, { method: 'PUT', body: JSON.stringify(body) });
+      else await api('/promos', { method: 'POST', body: JSON.stringify(body) });
+      toast('Promo guardada', 'success');
+      closeModal();
+      await loadAll(); render.promos();
+    } catch (err) { toast('Error: ' + err.message, 'error'); }
+  };
+}
+
+async function deletePromo(id) {
+  if (!confirm('¿Eliminar esta promo?')) return;
+  try {
+    await api(`/promos/${id}`, { method: 'DELETE' });
+    toast('Promo eliminada', 'success');
+    await loadAll(); render.promos();
+  } catch (e) { toast('Error: ' + e.message, 'error'); }
+}
+
+// ============ SOCIAL CRUD ============
+function openSocialModal(post) {
+  _editingItem = post || null;
+  document.getElementById('modal-content').innerHTML = `
+    <h2>${post ? 'Editar' : 'Nuevo'} post</h2>
+    <form id="entity-form">
+      <div class="modal-row">
+        <div class="form-group"><label>Plataforma</label><select id="s-platform">
+          <option value="instagram" ${post?.platform === 'instagram' ? 'selected' : ''}>Instagram</option>
+          <option value="facebook" ${post?.platform === 'facebook' ? 'selected' : ''}>Facebook</option>
+          <option value="tiktok" ${post?.platform === 'tiktok' ? 'selected' : ''}>TikTok</option>
+          <option value="whatsapp" ${post?.platform === 'whatsapp' ? 'selected' : ''}>WhatsApp status</option>
+        </select></div>
+        <div class="form-group"><label>Estado</label><select id="s-status">
+          <option value="draft" ${post?.status === 'draft' ? 'selected' : ''}>Borrador</option>
+          <option value="scheduled" ${post?.status === 'scheduled' ? 'selected' : ''}>Programado</option>
+          <option value="posted" ${post?.status === 'posted' ? 'selected' : ''}>Publicado</option>
+          <option value="failed" ${post?.status === 'failed' ? 'selected' : ''}>Fallido</option>
+        </select></div>
+      </div>
+      <div class="form-group"><label>Contenido</label><textarea id="s-content" rows="5" required placeholder="Caption del post...">${escapeHtml(post?.content || '')}</textarea></div>
+      <div class="form-group"><label>Imagen URL (opcional)</label><input type="text" id="s-image_url" value="${escapeHtml(post?.image_url || '')}"></div>
+      <div class="form-group"><label>Programado para</label><input type="datetime-local" id="s-scheduled_for" value="${post?.scheduled_for ? post.scheduled_for.slice(0, 16) : ''}"></div>
+      <div class="form-group"><label>Notas internas</label><input type="text" id="s-notes" value="${escapeHtml(post?.notes || '')}"></div>
+      <div class="modal-actions">
+        <button type="button" class="btn btn-ghost" onclick="closeModal()">Cancelar</button>
+        <button type="submit" class="btn btn-primary">Guardar</button>
+      </div>
+    </form>`;
+  document.getElementById('modal-back').classList.add('visible');
+  document.getElementById('entity-form').onsubmit = async (e) => {
+    e.preventDefault();
+    const body = {
+      platform: document.getElementById('s-platform').value,
+      status: document.getElementById('s-status').value,
+      content: document.getElementById('s-content').value.trim(),
+      image_url: document.getElementById('s-image_url').value.trim() || null,
+      scheduled_for: document.getElementById('s-scheduled_for').value || null,
+      notes: document.getElementById('s-notes').value.trim() || null
+    };
+    try {
+      if (post) await api(`/social/${post.id}`, { method: 'PUT', body: JSON.stringify(body) });
+      else await api('/social', { method: 'POST', body: JSON.stringify(body) });
+      toast('Post guardado', 'success');
+      closeModal();
+      await loadAll(); render.social();
+    } catch (err) { toast('Error: ' + err.message, 'error'); }
+  };
+}
+
+async function deleteSocial(id) {
+  if (!confirm('¿Eliminar este post?')) return;
+  try {
+    await api(`/social/${id}`, { method: 'DELETE' });
+    toast('Post eliminado', 'success');
+    await loadAll(); render.social();
+  } catch (e) { toast('Error: ' + e.message, 'error'); }
+}
+
+// ============ ENTREGAS ============
+const ENTREGAS_DAYS = ['Domingo','Lunes','Martes','Miércoles','Jueves','Viernes','Sábado'];
+
+document.querySelectorAll('#entregas-tabs .pill').forEach(p => {
+  p.onclick = () => {
+    document.querySelectorAll('#entregas-tabs .pill').forEach(x => x.classList.remove('active'));
+    p.classList.add('active');
+    document.querySelectorAll('.subtab-panel').forEach(x => x.classList.remove('active'));
+    document.getElementById('entregas-' + p.dataset.sub).classList.add('active');
+    render.entregasSub(p.dataset.sub);
+  };
+});
+
+render.entregas = function() {
+  const active = document.querySelector('#entregas-tabs .pill.active');
+  render.entregasSub(active ? active.dataset.sub : 'inmediato');
+};
+
+render.entregasSub = function(sub) {
+  if (sub === 'inmediato') render.entregasInmediato();
+  else if (sub === 'horarios') render.entregasHorarios();
+  else if (sub === 'ventanas') render.entregasVentanas();
+  else if (sub === 'pagos') render.entregasPagos();
+};
+
+render.entregasInmediato = async function() {
+  const el = document.getElementById('entregas-inmediato');
+  try {
+    const cfg = await api('/delivery-config');
+    el.innerHTML = `
+      <form id="delivery-config-form">
+        <div class="cfg-group">
+          <h3>Estado del servicio</h3>
+          <div class="form-group"><label style="display:flex;align-items:center;gap:8px;text-transform:none;letter-spacing:0;font-size:14px;color:var(--ink)"><input type="checkbox" id="dc-enabled" ${cfg.delivery_immediate_enabled ? 'checked' : ''}> Habilitar entrega inmediata</label></div>
+        </div>
+        <div class="cfg-group">
+          <h3>Costos y zona</h3>
+          <div class="modal-row">
+            <div class="form-group"><label>Tarifa de domicilio (centavos COP)</label><input type="number" id="dc-fee" value="${cfg.delivery_immediate_fee_cents || 0}" min="0"><div class="hint">5000 = $50 COP</div></div>
+            <div class="form-group"><label>Pedido mínimo (centavos COP)</label><input type="number" id="dc-min" value="${cfg.delivery_immediate_min_order_cents || 0}" min="0"><div class="hint">Pedidos menores serán rechazados</div></div>
+          </div>
+          <div class="modal-row">
+            <div class="form-group"><label>Radio (km)</label><input type="number" id="dc-radius" value="${cfg.delivery_immediate_radius_km || 5}" step="0.5" min="0"></div>
+            <div class="form-group"><label>ETA (minutos)</label><input type="number" id="dc-eta" value="${cfg.delivery_immediate_eta_minutes || 45}" min="0"></div>
+          </div>
+        </div>
+        <div class="cfg-group">
+          <h3>Centro de la zona</h3>
+          <div class="form-group"><label>Etiqueta</label><input type="text" id="dc-label" value="${escapeHtml(cfg.delivery_zone_label || '')}" placeholder="ej: Neiva urbana"></div>
+          <div class="modal-row">
+            <div class="form-group"><label>Latitud</label><input type="number" id="dc-lat" value="${cfg.delivery_zone_center_lat || ''}" step="0.0001"></div>
+            <div class="form-group"><label>Longitud</label><input type="number" id="dc-lng" value="${cfg.delivery_zone_center_lng || ''}" step="0.0001"></div>
+          </div>
+          <div class="form-group"><label>Cutoff por defecto (horas)</label><input type="number" id="dc-cutoff" value="${cfg.delivery_default_cutoff_hours || 8}" min="0" max="168"><div class="hint">Horas antes del cierre para hacer pedidos programados</div></div>
+        </div>
+        <div class="modal-actions">
+          <button type="submit" class="btn btn-primary">Guardar cambios</button>
+        </div>
+      </form>`;
+    document.getElementById('delivery-config-form').onsubmit = async (e) => {
+      e.preventDefault();
+      const body = {
+        delivery_immediate_enabled: document.getElementById('dc-enabled').checked ? 1 : 0,
+        delivery_immediate_fee_cents: Number(document.getElementById('dc-fee').value),
+        delivery_immediate_min_order_cents: Number(document.getElementById('dc-min').value),
+        delivery_immediate_radius_km: Number(document.getElementById('dc-radius').value),
+        delivery_immediate_eta_minutes: Number(document.getElementById('dc-eta').value),
+        delivery_zone_label: document.getElementById('dc-label').value.trim(),
+        delivery_zone_center_lat: Number(document.getElementById('dc-lat').value),
+        delivery_zone_center_lng: Number(document.getElementById('dc-lng').value),
+        delivery_default_cutoff_hours: Number(document.getElementById('dc-cutoff').value)
+      };
+      try {
+        await api('/delivery-config', { method: 'PUT', body: JSON.stringify(body) });
+        toast('Config guardada', 'success');
+        render.entregasInmediato();
+      } catch (err) { toast('Error: ' + err.message, 'error'); }
+    };
+  } catch (e) { el.innerHTML = `<div class="card">Error: ${escapeHtml(e.message)}</div>`; }
+};
+
+render.entregasHorarios = async function() {
+  const el = document.getElementById('entregas-horarios');
+  try {
+    const rows = await api('/delivery-schedule?include_inactive=1');
+    el.innerHTML = `
+      <div class="page-head" style="margin-bottom:14px"><div><div class="sub">${rows.length} horarios</div></div><div class="actions"><button class="btn btn-primary" onclick="openScheduleModal()">+ Nuevo horario</button></div></div>
+      <div class="table-wrap"><table><thead><tr><th>Día</th><th>Horario</th><th>Modalidad</th><th>Cutoff</th><th>Orden</th><th>Notas</th><th></th></tr></thead><tbody>
+      ${rows.map(r => `<tr>
+        <td><strong>${ENTREGAS_DAYS[r.day_of_week]}</strong></td>
+        <td>${r.start_time} – ${r.end_time}</td>
+        <td><span class="tag">${r.mode}</span></td>
+        <td>${r.cutoff_offset_hours}h</td>
+        <td>${r.sort_order}</td>
+        <td>${escapeHtml(r.notes || '')}</td>
+        <td>
+          <button class="btn btn-sm btn-ghost" onclick='openScheduleModal(${JSON.stringify(r)})'>Editar</button>
+          <button class="btn btn-sm btn-danger" onclick="deleteSchedule(${r.id})">Eliminar</button>
+        </td>
+      </tr>`).join('')}
+      </tbody></table></div>`;
+  } catch (e) { el.innerHTML = `<div class="card">Error: ${escapeHtml(e.message)}</div>`; }
+};
+
+window.openScheduleModal = function(s) {
+  s = s || null;
+  document.getElementById('modal-content').innerHTML = `
+    <h2>${s ? 'Editar' : 'Nuevo'} horario</h2>
+    <form id="entity-form">
+      <div class="modal-row">
+        <div class="form-group"><label>Día</label><select id="s-day">${ENTREGAS_DAYS.map((d, i) => `<option value="${i}" ${s?.day_of_week === i ? 'selected' : ''}>${d}</option>`).join('')}</select></div>
+        <div class="form-group"><label>Modalidad</label><select id="s-mode">
+          <option value="pickup" ${s?.mode === 'pickup' ? 'selected' : ''}>Pickup</option>
+          <option value="delivery" ${s?.mode === 'delivery' ? 'selected' : ''}>Delivery</option>
+          <option value="both" ${(!s || s.mode === 'both') ? 'selected' : ''}>Ambos</option>
+        </select></div>
+      </div>
+      <div class="modal-row">
+        <div class="form-group"><label>Inicio (HH:MM)</label><input type="time" id="s-start" value="${s?.start_time || '15:00'}" required></div>
+        <div class="form-group"><label>Fin (HH:MM)</label><input type="time" id="s-end" value="${s?.end_time || '19:00'}" required></div>
+      </div>
+      <div class="modal-row">
+        <div class="form-group"><label>Cutoff (h antes)</label><input type="number" id="s-cutoff" value="${s?.cutoff_offset_hours ?? 8}" min="0" max="168"></div>
+        <div class="form-group"><label>Orden</label><input type="number" id="s-sort" value="${s?.sort_order ?? 0}"></div>
+      </div>
+      <div class="form-group"><label style="display:flex;align-items:center;gap:8px;text-transform:none;letter-spacing:0;font-size:14px;color:var(--ink)"><input type="checkbox" id="s-active" ${!s || s.active !== 0 ? 'checked' : ''}> Activo</label></div>
+      <div class="form-group"><label>Notas</label><input type="text" id="s-notes" value="${escapeHtml(s?.notes || '')}"></div>
+      <div class="modal-actions">
+        <button type="button" class="btn btn-ghost" onclick="closeModal()">Cancelar</button>
+        <button type="submit" class="btn btn-primary">Guardar</button>
+      </div>
+    </form>`;
+  document.getElementById('modal-back').classList.add('visible');
+  document.getElementById('entity-form').onsubmit = async (e) => {
+    e.preventDefault();
+    const body = {
+      day_of_week: Number(document.getElementById('s-day').value),
+      start_time: document.getElementById('s-start').value,
+      end_time: document.getElementById('s-end').value,
+      mode: document.getElementById('s-mode').value,
+      cutoff_offset_hours: Number(document.getElementById('s-cutoff').value),
+      sort_order: Number(document.getElementById('s-sort').value),
+      active: document.getElementById('s-active').checked ? 1 : 0,
+      notes: document.getElementById('s-notes').value.trim() || null
+    };
+    try {
+      if (s) await api(`/delivery-schedule/${s.id}`, { method: 'PUT', body: JSON.stringify(body) });
+      else await api('/delivery-schedule', { method: 'POST', body: JSON.stringify(body) });
+      toast('Horario guardado', 'success');
+      closeModal();
+      render.entregasHorarios();
+    } catch (err) { toast('Error: ' + err.message, 'error'); }
+  };
+};
+
+window.deleteSchedule = async function(id) {
+  if (!confirm('¿Eliminar este horario?')) return;
+  try {
+    await api(`/delivery-schedule/${id}`, { method: 'DELETE' });
+    toast('Horario eliminado', 'success');
+    render.entregasHorarios();
+  } catch (e) { toast('Error: ' + e.message, 'error'); }
+};
+
+render.entregasVentanas = async function() {
+  const el = document.getElementById('entregas-ventanas');
+  try {
+    const rows = await api('/release-windows?include_all=1');
+    el.innerHTML = `
+      <div class="page-head" style="margin-bottom:14px"><div><div class="sub">${rows.length} ventanas — para editar items, duplica + elimina la original</div></div><div class="actions"><button class="btn btn-primary" onclick="openWindowModal()">+ Nueva ventana</button></div></div>
+      <div class="table-wrap"><table><thead><tr><th>Fecha</th><th>Cutoff</th><th>Status</th><th>Items</th><th>Notas</th><th></th></tr></thead><tbody>
+      ${rows.map(r => `<tr>
+        <td><strong>${r.release_date}</strong></td>
+        <td>${(r.cutoff_at || '').replace('T', ' ').slice(0, 16)}</td>
+        <td><span class="tag status-${r.status}">${r.status}</span></td>
+        <td style="max-width:340px">${(r.items || []).map(it => `<span class="tag" style="background:var(--bg-soft);color:var(--ink);margin-right:4px">${escapeHtml(it.flavor_name)} × ${it.units_available}</span>`).join('')}</td>
+        <td>${escapeHtml(r.notes || '')}</td>
+        <td>
+          <button class="btn btn-sm btn-ghost" onclick='openWindowModal(${JSON.stringify(r)})'>Editar</button>
+          <button class="btn btn-sm btn-ghost" onclick='duplicateWindow(${JSON.stringify(r)})'>Duplicar</button>
+          <button class="btn btn-sm btn-danger" onclick="deleteWindow(${r.id})">Eliminar</button>
+        </td>
+      </tr>`).join('')}
+      </tbody></table></div>`;
+  } catch (e) { el.innerHTML = `<div class="card">Error: ${escapeHtml(e.message)}</div>`; }
+};
+
+window.openWindowModal = async function(w) {
+  w = w || null;
+  let flavors = _flavors;
+  if (!flavors || !flavors.length) {
+    try { flavors = await api('/flavors'); _flavors = flavors; } catch {}
+  }
+  if (!flavors || !flavors.length) {
+    toast('No hay sabores creados. Crea al menos uno primero.', 'error');
+    return;
+  }
+  window._windowItems = (w?.items || []).map(it => ({ flavor_id: it.flavor_id, units_available: it.units_available }));
+  if (!window._windowItems.length) window._windowItems.push({ flavor_id: flavors[0].id, units_available: 10 });
+
+  const renderItems = () => window._windowItems.map((it, idx) => `
+    <div class="item-row" data-idx="${idx}">
+      <select class="item-flavor">
+        ${flavors.map(f => `<option value="${f.id}" ${Number(it.flavor_id) === Number(f.id) ? 'selected' : ''}>${escapeHtml(f.name)}</option>`).join('')}
+      </select>
+      <input type="number" class="item-units" value="${it.units_available}" min="0" placeholder="unidades" style="max-width:120px">
+      <button type="button" onclick="removeItemRow(${idx})">×</button>
+    </div>`).join('');
+
+  document.getElementById('modal-content').innerHTML = `
+    <h2>${w ? 'Editar' : 'Nueva'} ventana de salida</h2>
+    <form id="entity-form">
+      <div class="modal-row">
+        <div class="form-group"><label>Fecha de salida (YYYY-MM-DD)</label><input type="date" id="w-date" value="${w?.release_date || ''}" required></div>
+        <div class="form-group"><label>Status</label><select id="w-status">
+          <option value="draft" ${w?.status === 'draft' ? 'selected' : ''}>draft</option>
+          <option value="open" ${(!w || w.status === 'open') ? 'selected' : ''}>open</option>
+          <option value="closed" ${w?.status === 'closed' ? 'selected' : ''}>closed</option>
+          <option value="completed" ${w?.status === 'completed' ? 'selected' : ''}>completed</option>
+        </select></div>
+      </div>
+      <div class="form-group"><label>Cutoff (fecha y hora)</label><input type="datetime-local" id="w-cutoff" value="${w?.cutoff_at ? w.cutoff_at.slice(0, 16) : ''}" required></div>
+      <div class="form-group"><label>Notas</label><input type="text" id="w-notes" value="${escapeHtml(w?.notes || '')}"></div>
+      <div class="form-group"><label>Items (sabor × unidades disponibles)</label>
+        <div class="items-repeater" id="items-list">${renderItems()}</div>
+        <button type="button" class="btn btn-ghost btn-sm" onclick="addItemRow()" style="margin-top:6px">+ Agregar sabor</button>
+      </div>
+      <div class="modal-actions">
+        <button type="button" class="btn btn-ghost" onclick="closeModal()">Cancelar</button>
+        <button type="submit" class="btn btn-primary">Guardar</button>
+      </div>
+    </form>`;
+  document.getElementById('modal-back').classList.add('visible');
+
+  window.addItemRow = function() {
+    window._windowItems.push({ flavor_id: flavors[0].id, units_available: 10 });
+    document.getElementById('items-list').innerHTML = renderItems();
+    syncItemsFromDOM();
+  };
+  window.removeItemRow = function(idx) {
+    window._windowItems.splice(idx, 1);
+    if (!window._windowItems.length) window._windowItems.push({ flavor_id: flavors[0].id, units_available: 10 });
+    document.getElementById('items-list').innerHTML = renderItems();
+    syncItemsFromDOM();
+  };
+  function syncItemsFromDOM() {
+    document.querySelectorAll('#items-list .item-row').forEach((row, i) => {
+      const sel = row.querySelector('.item-flavor');
+      const inp = row.querySelector('.item-units');
+      if (sel) sel.onchange = () => { window._windowItems[i].flavor_id = Number(sel.value); };
+      if (inp) inp.oninput = () => { window._windowItems[i].units_available = Number(inp.value); };
+    });
+  }
+  syncItemsFromDOM();
+
+  document.getElementById('entity-form').onsubmit = async (e) => {
+    e.preventDefault();
+    syncItemsFromDOM();
+    const release_date = document.getElementById('w-date').value;
+    const cutoff_at = document.getElementById('w-cutoff').value;
+    const status = document.getElementById('w-status').value;
+    const notes = document.getElementById('w-notes').value.trim() || null;
+    try {
+      if (w) {
+        if (confirm('El backend sólo permite editar fecha/cutoff/status/notas. Para cambiar items, duplica la ventana, edita los items en la copia y elimina la original. ¿Guardar cambios de fecha/estado?')) {
+          await api(`/release-windows/${w.id}`, { method: 'PUT', body: JSON.stringify({ release_date, cutoff_at, status, notes }) });
+          toast('Ventana actualizada', 'success');
+          closeModal();
+          render.entregasVentanas();
+        }
+      } else {
+        await api('/release-windows', { method: 'POST', body: JSON.stringify({ release_date, cutoff_at, status, notes, items: window._windowItems }) });
+        toast('Ventana creada', 'success');
+        closeModal();
+        render.entregasVentanas();
+      }
+    } catch (err) { toast('Error: ' + err.message, 'error'); }
+  };
+};
+
+window.duplicateWindow = function(w) {
+  openWindowModal({
+    release_date: '',
+    cutoff_at: '',
+    status: 'draft',
+    notes: (w.notes ? w.notes + ' ' : '') + '(copia de #' + w.id + ')',
+    items: (w.items || []).map(it => ({ flavor_id: it.flavor_id, units_available: it.units_available }))
+  });
+};
+
+window.deleteWindow = async function(id) {
+  if (!confirm('¿Eliminar esta ventana y todos sus items?')) return;
+  try {
+    await api(`/release-windows/${id}`, { method: 'DELETE' });
+    toast('Ventana eliminada', 'success');
+    render.entregasVentanas();
+  } catch (e) { toast('Error: ' + e.message, 'error'); }
+};
+
+render.entregasPagos = async function() {
+  const el = document.getElementById('entregas-pagos');
+  try {
+    const methods = await api('/payment-methods?include_inactive=1');
+    if (!methods.length) {
+      el.innerHTML = `
+        <div class="page-head" style="margin-bottom:14px"><div><div class="sub">Sin métodos aún</div></div><div class="actions"><button class="btn btn-primary" onclick="openPaymentModal()">+ Nuevo método</button></div></div>
+        <div class="card">No hay métodos de pago configurados.</div>`;
+      return;
+    }
+    el.innerHTML = `
+      <div class="page-head" style="margin-bottom:14px"><div><div class="sub">${methods.length} métodos</div></div><div class="actions"><button class="btn btn-primary" onclick="openPaymentModal()">+ Nuevo método</button></div></div>
+      ${methods.map(m => `
+        <div class="cfg-group">
+          <div style="display:flex;justify-content:space-between;align-items:start;gap:12px;flex-wrap:wrap">
+            <div style="flex:1;min-width:240px">
+              <h3 style="margin-bottom:4px">${escapeHtml(m.label)} <span style="color:var(--ink-soft);font-weight:400;font-size:13px;font-family:Inter">(${escapeHtml(m.code)})</span></h3>
+              ${m.instructions ? `<div style="font-size:13px;color:var(--ink-soft);margin-bottom:4px">${escapeHtml(m.instructions)}</div>` : ''}
+              ${m.qr_url ? `<div style="font-size:12px;color:var(--cyan-deep)">QR: ${escapeHtml(m.qr_url)}</div>` : ''}
+              <div style="font-size:12px;color:var(--ink-soft);margin-top:4px">Orden: ${m.sort_order} · ${m.active ? '✓ activo' : 'inactivo'}</div>
+            </div>
+            <div style="display:flex;gap:6px;flex-wrap:wrap">
+              <button class="expand-btn" data-toggle-payouts="${m.id}">▸ Cuentas (${(m.payout_accounts || []).length})</button>
+              <button class="btn btn-sm btn-ghost" onclick='openPaymentModal(${JSON.stringify(m)})'>Editar</button>
+              <button class="btn btn-sm btn-danger" onclick="deletePayment(${m.id})">Eliminar</button>
+            </div>
+          </div>
+          <div id="payouts-${m.id}" style="display:none;margin-top:10px;border-top:1px dashed var(--line);padding-top:8px"></div>
+          <div id="payouts-add-${m.id}" style="display:none;margin-top:8px">
+            <button class="btn btn-sm btn-primary" data-add-payout="${m.id}">+ Agregar cuenta</button>
+          </div>
+        </div>
+      `).join('')}`;
+    el.querySelectorAll('[data-toggle-payouts]').forEach(btn => {
+      btn.onclick = () => togglePayouts(Number(btn.dataset.togglePayouts));
+    });
+    el.querySelectorAll('[data-add-payout]').forEach(btn => {
+      btn.onclick = () => openPayoutModal(Number(btn.dataset.addPayout));
+    });
+  } catch (e) { el.innerHTML = `<div class="card">Error: ${escapeHtml(e.message)}</div>`; }
+};
+
+window.togglePayouts = async function(methodId) {
+  const wrap = document.getElementById('payouts-' + methodId);
+  const addWrap = document.getElementById('payouts-add-' + methodId);
+  const tog = document.querySelector('[data-toggle-payouts="' + methodId + '"]');
+  if (wrap.style.display !== 'none') {
+    wrap.style.display = 'none'; addWrap.style.display = 'none';
+    if (tog) tog.textContent = tog.textContent.replace('▾', '▸');
+    return;
+  }
+  try {
+    const rows = await api('/payout-accounts?method_id=' + methodId);
+    if (!rows.length) { wrap.innerHTML = '<div style="font-size:13px;color:var(--ink-soft);padding:8px">Sin cuentas aún.</div>'; }
+    else {
+      wrap.innerHTML = rows.map(p => `
+        <div class="payout-row">
+          ${p.is_default ? '<span class="star" title="Predeterminada">★</span>' : '<span style="display:inline-block;width:16px"></span>'}
+          <div style="flex:1"><strong>${escapeHtml(p.holder_name)}</strong> <span style="color:var(--ink-soft);font-size:12px">${escapeHtml(p.account_ref)}</span></div>
+          <button class="expand-btn" data-edit-payout='${JSON.stringify({ methodId, p })}'>Editar</button>
+          <button class="expand-btn" data-delete-payout='${p.id}' style="color:var(--accent)">Eliminar</button>
+        </div>`).join('');
+      wrap.querySelectorAll('[data-edit-payout]').forEach(b => {
+        b.onclick = () => { const { methodId, p } = JSON.parse(b.dataset.editPayout); openPayoutModal(methodId, p); };
+      });
+      wrap.querySelectorAll('[data-delete-payout]').forEach(b => {
+        b.onclick = () => deletePayout(Number(b.dataset.deletePayout), methodId);
+      });
+    }
+    wrap.style.display = 'block'; addWrap.style.display = 'block';
+    if (tog) tog.textContent = `▾ Cuentas (${rows.length})`;
+  } catch (e) { toast('Error: ' + e.message, 'error'); }
+};
+
+window.openPaymentModal = function(m) {
+  m = m || null;
+  document.getElementById('modal-content').innerHTML = `
+    <h2>${m ? 'Editar' : 'Nuevo'} método de pago</h2>
+    <form id="entity-form">
+      <div class="modal-row">
+        <div class="form-group"><label>Código</label><input type="text" id="pm-code" value="${escapeHtml(m?.code || '')}" ${m ? 'readonly' : ''} required placeholder="ej: nequi, daviplata"></div>
+        <div class="form-group"><label>Etiqueta</label><input type="text" id="pm-label" value="${escapeHtml(m?.label || '')}" required></div>
+      </div>
+      <div class="form-group"><label>Instrucciones</label><textarea id="pm-instructions" rows="2">${escapeHtml(m?.instructions || '')}</textarea></div>
+      <div class="modal-row">
+        <div class="form-group"><label>QR URL (opcional)</label><input type="text" id="pm-qr" value="${escapeHtml(m?.qr_url || '')}"></div>
+        <div class="form-group"><label>Orden</label><input type="number" id="pm-sort" value="${m?.sort_order ?? 0}"></div>
+      </div>
+      <div class="form-group"><label style="display:flex;align-items:center;gap:8px;text-transform:none;letter-spacing:0;font-size:14px;color:var(--ink)"><input type="checkbox" id="pm-active" ${!m || m.active !== 0 ? 'checked' : ''}> Activo</label></div>
+      <div class="modal-actions">
+        <button type="button" class="btn btn-ghost" onclick="closeModal()">Cancelar</button>
+        <button type="submit" class="btn btn-primary">Guardar</button>
+      </div>
+    </form>`;
+  document.getElementById('modal-back').classList.add('visible');
+  document.getElementById('entity-form').onsubmit = async (e) => {
+    e.preventDefault();
+    const body = {
+      code: document.getElementById('pm-code').value.trim(),
+      label: document.getElementById('pm-label').value.trim(),
+      instructions: document.getElementById('pm-instructions').value.trim() || null,
+      qr_url: document.getElementById('pm-qr').value.trim() || null,
+      sort_order: Number(document.getElementById('pm-sort').value),
+      active: document.getElementById('pm-active').checked ? 1 : 0
+    };
+    try {
+      if (m) await api(`/payment-methods/${m.id}`, { method: 'PUT', body: JSON.stringify(body) });
+      else await api('/payment-methods', { method: 'POST', body: JSON.stringify(body) });
+      toast('Método guardado', 'success');
+      closeModal();
+      render.entregasPagos();
+    } catch (err) { toast('Error: ' + err.message, 'error'); }
+  };
+};
+
+window.deletePayment = async function(id) {
+  if (!confirm('¿Eliminar este método y todas sus cuentas asociadas?')) return;
+  try {
+    await api(`/payment-methods/${id}`, { method: 'DELETE' });
+    toast('Método eliminado', 'success');
+    render.entregasPagos();
+  } catch (e) { toast('Error: ' + e.message, 'error'); }
+};
+
+window.openPayoutModal = function(methodId, p) {
+  p = p || null;
+  document.getElementById('modal-content').innerHTML = `
+    <h2>${p ? 'Editar' : 'Nueva'} cuenta de pago</h2>
+    <form id="entity-form">
+      <div class="form-group"><label>Titular</label><input type="text" id="pa-holder" value="${escapeHtml(p?.holder_name || '')}" required></div>
+      <div class="form-group"><label>Referencia (celular / número de cuenta)</label><input type="text" id="pa-ref" value="${escapeHtml(p?.account_ref || '')}" required></div>
+      <div class="form-group"><label style="display:flex;align-items:center;gap:8px;text-transform:none;letter-spacing:0;font-size:14px;color:var(--ink)"><input type="checkbox" id="pa-default" ${p?.is_default ? 'checked' : ''}> Predeterminada (las otras cuentas de este método se desactivarán)</label></div>
+      <div class="modal-actions">
+        <button type="button" class="btn btn-ghost" onclick="closeModal()">Cancelar</button>
+        <button type="submit" class="btn btn-primary">Guardar</button>
+      </div>
+    </form>`;
+  document.getElementById('modal-back').classList.add('visible');
+  document.getElementById('entity-form').onsubmit = async (e) => {
+    e.preventDefault();
+    const holder_name = document.getElementById('pa-holder').value.trim();
+    const account_ref = document.getElementById('pa-ref').value.trim();
+    const is_default = document.getElementById('pa-default').checked ? 1 : 0;
+    try {
+      if (p) await api(`/payout-accounts/${p.id}`, { method: 'PUT', body: JSON.stringify({ holder_name, account_ref, is_default }) });
+      else await api('/payout-accounts', { method: 'POST', body: JSON.stringify({ method_id: methodId, holder_name, account_ref, is_default }) });
+      toast('Cuenta guardada', 'success');
+      closeModal();
+      const wrap = document.getElementById('payouts-' + methodId);
+      if (wrap) {
+        wrap.style.display = 'none';
+        const tog = document.querySelector('[data-toggle-payouts="' + methodId + '"]');
+        if (tog) tog.textContent = tog.textContent.replace('▾', '▸');
+        await togglePayouts(methodId);
+      } else {
+        render.entregasPagos();
+      }
+    } catch (err) { toast('Error: ' + err.message, 'error'); }
+  };
+};
+
+window.deletePayout = async function(id, methodId) {
+  if (!confirm('¿Eliminar esta cuenta?')) return;
+  try {
+    await api(`/payout-accounts/${id}`, { method: 'DELETE' });
+    toast('Cuenta eliminada', 'success');
+    const wrap = document.getElementById('payouts-' + methodId);
+    if (wrap) {
+      wrap.style.display = 'none';
+      const tog = document.querySelector('[data-toggle-payouts="' + methodId + '"]');
+      if (tog) tog.textContent = tog.textContent.replace('▾', '▸');
+      await togglePayouts(methodId);
+    }
+  } catch (e) { toast('Error: ' + e.message, 'error'); }
+};
+
+// ============ CONFIG ============
+document.getElementById('config-form').onsubmit = async (e) => {
+  e.preventDefault();
+  const body = {
+    business_name: document.getElementById('cfg-business_name').value.trim(),
+    whatsapp_number: document.getElementById('cfg-whatsapp_number').value.trim(),
+    tagline: document.getElementById('cfg-tagline').value.trim(),
+    description: document.getElementById('cfg-description').value.trim(),
+    instagram_handle: document.getElementById('cfg-instagram_handle').value.trim(),
+    instagram_url: document.getElementById('cfg-instagram_url').value.trim(),
+    facebook_url: document.getElementById('cfg-facebook_url').value.trim(),
+    tiktok_handle: document.getElementById('cfg-tiktok_handle').value.trim(),
+    pickup_address: document.getElementById('cfg-pickup_address').value.trim(),
+    pickup_schedule: document.getElementById('cfg-pickup_schedule').value.trim(),
+    hero_image_url: document.getElementById('cfg-hero_image_url').value.trim()
+  };
+  try {
+    await api('/config', { method: 'PUT', body: JSON.stringify(body) });
+    toast('Config guardada', 'success');
+    await loadAll();
+  } catch (err) { toast('Error: ' + err.message, 'error'); }
+};
+
+function closeModal() {
+  document.getElementById('modal-back').classList.remove('visible');
+}
+
+// ============ NÚMEROS DE PEDIDO (multi-número / multi-admin) ============
+render.recipients = function () {
+  const body = document.getElementById('recipients-body');
+  if (!body) return;
+  const active = _recipients.filter(r => r.active);
+  body.innerHTML = _recipients.length ? _recipients.map(r => `
+    <tr>
+      <td>${escapeHtml(String(r.label || ''))}</td>
+      <td>+${escapeHtml(String(r.phone || ''))}</td>
+      <td>${r.active ? '<span class="tag on">Activo</span>' : '<span class="tag off">Pausado</span>'}</td>
+      <td style="text-align:right">
+        <button class="btn btn-sm btn-ghost" onclick="toggleRecipient(${r.id})">${r.active ? 'Pausar' : 'Activar'}</button>
+        <button class="btn btn-sm btn-danger" onclick="deleteRecipient(${r.id})">Eliminar</button>
+      </td>
+    </tr>
+  `).join('') : '<tr><td colspan="4" style="opacity:.6">Sin números. Agregá el WhatsApp de cada admin que debe recibir pedidos.</td></tr>';
+  const hint = document.getElementById('recipients-hint');
+  if (hint) {
+    hint.textContent = active.length
+      ? `${active.length} número${active.length > 1 ? 's' : ''} activo${active.length > 1 ? 's' : ''} · los pedidos web rotan entre ellos`
+      : 'Ningún número activo: los pedidos web usarán el WhatsApp de Configuración como respaldo.';
+  }
+};
+
+async function toggleRecipient(id) {
+  const r = _recipients.find(x => x.id === id);
+  if (!r) return;
+  try {
+    await api(`/recipients/${id}`, { method: 'PATCH', body: JSON.stringify({ active: r.active ? 0 : 1 }) });
+    toast(r.active ? 'Número pausado' : 'Número activado', 'success');
+    await loadAll(); render.recipients();
+  } catch (e) { toast('Error: ' + e.message, 'error'); }
+}
+
+async function deleteRecipient(id) {
+  if (!confirm('¿Quitar este número de la lista de pedidos?')) return;
+  try {
+    await api(`/recipients/${id}`, { method: 'DELETE' });
+    toast('Número eliminado', 'success');
+    await loadAll(); render.recipients();
+  } catch (e) { toast('Error: ' + e.message, 'error'); }
+}
+
+document.getElementById('recipient-form').onsubmit = async (e) => {
+  e.preventDefault();
+  const label = document.getElementById('rec-label').value.trim();
+  const phone = document.getElementById('rec-phone').value.replace(/\D/g, '');
+  if (!label) return toast('Poné un nombre para el admin', 'error');
+  if (!/^\d{8,15}$/.test(phone)) return toast('Número inválido: formato internacional sin espacios (ej: 573001234567)', 'error');
+  try {
+    await api('/recipients', { method: 'POST', body: JSON.stringify({ label, phone }) });
+    document.getElementById('rec-label').value = '';
+    document.getElementById('rec-phone').value = '';
+    toast('Número agregado — ya recibe pedidos', 'success');
+    await loadAll(); render.recipients();
+  } catch (err) { toast('Error: ' + err.message, 'error'); }
+};
+
+// ============ USUARIOS (multi-admin) ============
+render.users = function () {
+  const body = document.getElementById('users-body');
+  if (!body) return;
+  body.innerHTML = _users.length ? _users.map(u => {
+    const isSelf = _user && _user.id === u.id;
+    const isAdmin = u.role === 'admin';
+    return `
+    <tr>
+      <td>${escapeHtml(String(u.name || u.email.split('@')[0]))}${isSelf ? ' <span class="sub">(vos)</span>' : ''}</td>
+      <td>${escapeHtml(String(u.email))}</td>
+      <td>${isAdmin ? '<span class="tag on">Admin</span>' : '<span class="tag off">Cliente</span>'}</td>
+      <td class="sub">${escapeHtml(String((u.created_at || '').slice(0, 10)))}</td>
+      <td style="text-align:right">
+        ${!isSelf ? `<button class="btn btn-sm btn-danger" onclick="deleteUser(${u.id})">Eliminar</button>` : ''}
+      </td>
+    </tr>
+  `; }).join('') : '<tr><td colspan="5" style="opacity:.6">Sin usuarios.</td></tr>';
+};
+
+async function deleteUser(id) {
+  if (!confirm('¿Eliminar esta cuenta?')) return;
+  try {
+    await api(`/users/${id}`, { method: 'DELETE' });
+    toast('Cuenta eliminada', 'success');
+    await loadAll(); render.users();
+  } catch (e) { toast('Error: ' + e.message, 'error'); }
+}
+
+document.getElementById('user-form').onsubmit = async (e) => {
+  e.preventDefault();
+  const name = document.getElementById('usr-name').value.trim();
+  const email = document.getElementById('usr-email').value.trim().toLowerCase();
+  const password = document.getElementById('usr-password').value;
+  const role = document.getElementById('usr-role').value;
+  try {
+    await api('/users', { method: 'POST', body: JSON.stringify({ name, email, password, role }) });
+    document.getElementById('usr-name').value = '';
+    document.getElementById('usr-email').value = '';
+    document.getElementById('usr-password').value = '';
+    toast(role === 'admin' ? 'Admin creado — ya puede entrar al panel' : 'Cuenta creada', 'success');
+    await loadAll(); render.users();
+  } catch (err) { toast('Error: ' + err.message, 'error'); }
+};
+
+// ============ FONDO INTERACTIVO (mochis flotantes) ============
+(function bgMochis() {
+  const bg = document.getElementById('bg-mochis');
+  if (!bg) return;
+  const orbits = [...bg.querySelectorAll('.orbit')];
+  const mochis = [...bg.querySelectorAll('.mochi')];
+  const reduced = matchMedia('(prefers-reduced-motion: reduce)').matches;
+
+  if (!reduced) {
+    addEventListener('mousemove', (e) => {
+      const rx = e.clientX / innerWidth - 0.5;
+      const ry = e.clientY / innerHeight - 0.5;
+      orbits.forEach((o, i) => {
+        const d = (i % 4 + 1) * 9;
+        o.style.transform = `translate(${rx * d}px, ${ry * d}px)`;
+      });
+    }, { passive: true });
+  }
+
+  mochis.forEach((m, i) => {
+    // 1 de cada 3 mochis se "abre" (cut-open) con entrada escalonada
+    if (i % 3 === 0) setTimeout(() => m.classList.add('open'), 600 + i * 380);
+  });
+
+  bg.addEventListener('click', (e) => {
+    const m = e.target.closest('.mochi');
+    if (!m) return;
+    m.classList.remove('squash');
+    void m.offsetWidth;
+    m.classList.add('squash');
+    m.classList.toggle('open');
+  });
+})();
+
+// ============ INIT ============
+(async function init() {
+  if (_token) {
+    try {
+      const me = await api('/me');
+      _user = me.user;
+      enterApp();
+    } catch {
+      _token = null;
+      localStorage.removeItem(TOKEN_KEY);
+    }
+  }
+})();
+</script>
+
+</body>
+</html>
