@@ -4,6 +4,10 @@ import rateLimit from 'express-rate-limit';
 import { dirname, join } from 'node:path';
 import { fileURLToPath } from 'node:url';
 import { init } from './src/db.js';
+import { registerAdapter } from './src/lib/payments/adapter.js';
+import { registerConsumer } from './src/lib/payments/outbox.js';
+import { MockAdapter } from './src/lib/payments/adapters/mock.js';
+import { NequiAdapter } from './src/lib/payments/adapters/nequi.js';
 import authRoutes from './src/routes/auth.js';
 import meRoutes from './src/routes/me.js';
 import configRoutes from './src/routes/config.js';
@@ -23,6 +27,8 @@ import releaseWindowsRoutes from './src/routes/release-windows.js';
 import publicRoutes from './src/routes/public.js';
 import uploadsRoutes from './src/routes/uploads.js';
 import usersRoutes from './src/routes/users.js';
+import paymentsRoutes from './src/routes/payments.js';
+import webhooksRoutes from './src/routes/webhooks.js';
 
 const __dirname = dirname(fileURLToPath(import.meta.url));
 const PUBLIC_DIR = join(__dirname, 'public');
@@ -32,6 +38,10 @@ const PORT = Number(process.env.PORT || 3737);
 const CORS_ORIGIN = process.env.NEXOMOCHIS_CORS || '*';
 
 init();
+
+// Registrar adapters de pagos (Spec §22.9)
+registerAdapter(new MockAdapter());
+registerAdapter(new NequiAdapter());
 
 const app = express();
 
@@ -106,9 +116,17 @@ app.use('/api/', generalLimiter);
 app.use('/api/auth', authLimiter);
 app.use('/api/uploads', uploadLimiter);
 
-app.use(express.json({ limit: '256kb' }));
+app.use(express.json({
+  limit: '256kb',
+  verify: (req, _res, buf) => {
+    // Capture raw body so /api/webhooks can verify provider signatures.
+    if (Buffer.isBuffer(buf)) req.rawBody = buf;
+  },
+}));
 
 app.get('/api/health', (req, res) => res.json({ ok: true, service: 'mymochis', version: '2.1.0', ts: new Date().toISOString() }));
+
+app.use('/api/webhooks', webhooksRoutes);
 
 app.use('/api/auth', authRoutes);
 app.use('/api/me', meRoutes);
@@ -129,6 +147,7 @@ app.use('/api/metrics', metricsRoutes);
 app.use('/api/public', publicRoutes);
 app.use('/api/uploads', uploadsRoutes);
 app.use('/api/users', usersRoutes);
+app.use('/api/payments', paymentsRoutes);
 
 app.use('/uploads', express.static(UPLOAD_DIR, { maxAge: '30d', immutable: true, setHeaders: (res) => {
   res.setHeader('X-Content-Type-Options', 'nosniff');
@@ -162,4 +181,12 @@ app.listen(PORT, () => {
   console.log(`[mymochis] static: ${PUBLIC_DIR}`);
   console.log(`[mymochis] uploads: ${UPLOAD_DIR}`);
   console.log(`[mymochis] security: helmet + rate-limit active`);
+
+  // Workers async (Spec §22.7, §22.8, §22.11) — arrancan con el server.
+  // Desactivar con MYMOCHIS_NO_WORKERS=1 si se quiere correr standalone.
+  if (process.env.MYMOCHIS_NO_WORKERS !== '1') {
+    import('./worker/payments/outbox-relay.mjs').then(m => m.startOutboxRelay()).catch(e => console.error('[outbox-relay] failed to start', e));
+    import('./worker/payments/process-events.mjs').then(m => m.startEventProcessor()).catch(e => console.error('[event-processor] failed to start', e));
+    import('./worker/payments/reconciler.mjs').then(m => m.startReconciler()).catch(e => console.error('[reconciler] failed to start', e));
+  }
 });

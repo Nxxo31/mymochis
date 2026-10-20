@@ -11,15 +11,30 @@
     "worker:dev": "wrangler dev",
     "worker:deploy": "wrangler deploy",
     "d1:create": "wrangler d1 create mymochis",
-    "r2:create": "wrangler r2 bucket create mymochis-uploads"
+    "r2:create": "wrangler r2 bucket create mymochis-uploads",
+    "dev:web": "vite",
+    "build:web": "vite build",
+    "build:web:watch": "vite build --watch"
   },
   "devDependencies": {
+    "@types/react": "^18.3.12",
+    "@types/react-dom": "^18.3.1",
+    "@types/three": "^0.169.0",
+    "@vitejs/plugin-react": "^4.3.4",
+    "react": "^18.3.1",
+    "react-dom": "^18.3.1",
+    "three": "^0.169.0",
+    "typescript": "^5.6.3",
+    "vite": "^5.4.10",
     "wrangler": "^4.42.0"
   },
   "dependencies": {
+    "@react-three/drei": "^9.114.0",
+    "@react-three/fiber": "^8.17.10",
     "express": "^4.21.2",
     "express-rate-limit": "^7.5.1",
     "helmet": "^8.3.0",
+    "motion": "^12.0.0-alpha.0",
     "multer": "^2.4.0"
   },
   "engines": {
