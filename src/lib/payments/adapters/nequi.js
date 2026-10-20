@@ -2,7 +2,7 @@
 // Spec: PROJECT.md §22.12
 // En sandbox/cred-missing cae a modo mock con providerReference identificable.
 import { randomUUID } from 'node:crypto';
-import { createHmac } from 'node:crypto';
+import { createHmac, createHash } from 'node:crypto';
 import { MockAdapter } from './mock.js';
 
 /** @typedef {import('../adapter.js').PaymentAdapter} PaymentAdapter */
@@ -40,7 +40,10 @@ export class NequiAdapter {
 
     const body = {
       phoneNumber: input.customerPhone,
-      value: input.amountMinor / 100,         // Nequi espera pesos, NO centavos
+      // UNIDAD (auditoria 2026-10-20, bug #2): amountMinor YA viene en pesos
+      // (ver validateCreateRequest en lib/payments/index.js). Nequi espera pesos.
+      // El `/100` de antes cobraba 100x menos: un pedido de $41.000 => $410.
+      value: input.amountMinor,
       reference1: input.paymentId,
       reference2: (input.description || '').slice(0, 40),
     };
@@ -99,13 +102,27 @@ export class NequiAdapter {
     throw new Error('Nequi refund: implementar contra endpoint del contrato (no documentado públicamente)');
   }
 
-  /** @param {Buffer} rawBody @param {Record<string,any>} headers */
+  /** @param {Buffer} rawBody @param {Record<string,string>} headers */
   verifyWebhookSignature(rawBody, headers) {
     const sig = headers[this.webhookSignatureHeader];
     if (!sig || typeof sig !== 'string' || !NEQUI_WEBHOOK_SECRET) return false;
     const expected = createHmac('sha256', NEQUI_WEBHOOK_SECRET).update(rawBody).digest('hex');
-    return sig === expected;
+    // Comparacion timing-safe (auditoria 2026-10-20, bug #8): el `===` anterior
+    // filtra informacion byte a byte por timing y era inconsistente con el
+    // safeEqual que si usaba MockAdapter.
+    return safeEqual(sig, expected);
   }
+}
+
+/** Comparacion en tiempo constante de dos strings hex (evita timing attacks). */
+function safeEqual(a, b) {
+  if (typeof a !== 'string' || typeof b !== 'string') return false;
+  // Compara sobre el hash del string para igualar longitud sin ramificar en el input.
+  const ha = createHash('sha256').update(a).digest();
+  const hb = createHash('sha256').update(b).digest();
+  let r = 0;
+  for (let i = 0; i < ha.length; i++) r |= ha[i] ^ hb[i];
+  return r === 0;
 }
 
 function mapNequiState(s) {

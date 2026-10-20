@@ -65,6 +65,11 @@ CREATE TABLE IF NOT EXISTS combos (
   featured INTEGER NOT NULL DEFAULT 0,
   image_url TEXT,
   sort_order INTEGER NOT NULL DEFAULT 0,
+  -- Stock real de combos (auditoria 2026-10-20, bug #6). Antes la columna
+  -- available era un booleano y no habia forma de descontar unidades vendidas:
+  -- los combos se podian vender infinitamente. -1 = stock ilimitado.
+  units_available INTEGER NOT NULL DEFAULT -1,
+  units_sold INTEGER NOT NULL DEFAULT 0,
   created_at TEXT NOT NULL DEFAULT (datetime('now'))
 );
 
@@ -358,6 +363,13 @@ function ensureColumn(table, column, definition) {
 
 export function init() {
   db.exec(SCHEMA);
+
+  // Migraciones idempotentes para DBs creadas antes de estas columnas.
+  // CREATE TABLE IF NOT EXISTS no altera tablas existentes, asi que las
+  // columnas nuevas requieren ALTER explicito.
+  ensureColumn('combos', 'units_available', 'INTEGER NOT NULL DEFAULT -1');
+  ensureColumn('combos', 'units_sold', 'INTEGER NOT NULL DEFAULT 0');
+
   db.prepare('INSERT OR IGNORE INTO config (id) VALUES (1)').run();
 
   // Multi-número: al inicializar, si no hay destinatarios y la config ya tiene

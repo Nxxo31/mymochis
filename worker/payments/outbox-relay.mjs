@@ -2,8 +2,8 @@
 // Spec: PROJECT.md §22.7
 // Lee eventos pending, los dispatch-ea, marca como published.
 // At-least-once: el consumer DEBE ser idempotente.
-import { db } from '../src/db.js';
-import { fetchPendingOutbox, markOutboxPublished, incrementOutboxAttempts, dispatchOutboxEvent } from '../src/lib/payments/outbox.js';
+import { db } from '../../src/db.js';
+import { fetchPendingOutbox, markOutboxPublished, incrementOutboxAttempts, dispatchOutboxEvent } from '../../src/lib/payments/outbox.js';
 
 const BATCH = 50;
 const MAX_ATTEMPTS = 5;

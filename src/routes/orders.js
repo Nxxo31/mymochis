@@ -1,5 +1,9 @@
 import { Router } from 'express';
+// Pricing server-side: el total SIEMPRE se recalcula desde el catalogo.
+// El `total` que manda el cliente se usa solo como drifted de comparacion.
 import { db } from '../db.js';
+import { priceOrder } from '../lib/pricing.js';
+import { rememberOrderTotal } from '../lib/payments/index.js';
 import { authMiddleware } from '../auth.js';
 import { geocode, haversineKm } from '../lib/geocode.js';
 import { buildDispatch } from '../lib/whatsapp.js';
@@ -58,7 +62,7 @@ function getConfig() {
 }
 
 function validateScheduled(opts) {
-  const { pickup_day, items, nowMs, schedule, config } = opts;
+  const { pickup_day, items, combos, nowMs, schedule, config } = opts;
   const dow = dayOfWeek(pickup_day);
 
   const matchingSchedule = schedule.filter(s =>
@@ -91,12 +95,18 @@ function validateScheduled(opts) {
     return { ok: false, code: 'no_release_window', message: `No hay release_window 'open' para ${pickup_day}` };
   }
 
+  // El pedido puede traer SOLO sabores, SOLO combos, o ambos. Antes esto exigia
+  // `items` no vacio, lo que hacia imposible comprar un combo suelto.
   const requestedFlavors = Object.entries(items || {})
     .filter(([, qty]) => Number(qty) > 0)
     .map(([flavor_id, qty]) => ({ flavor_id, qty: Number(qty) }));
 
-  if (requestedFlavors.length === 0) {
-    return { ok: false, code: 'no_items', message: 'El pedido no tiene sabores' };
+  const requestedCombos = (Array.isArray(combos) ? combos : [])
+    .filter(c => Number(c?.qty ?? c?.units ?? 1) > 0)
+    .map(c => ({ id: String(c.id ?? c.combo_id), qty: Number(c.qty ?? c.units ?? 1) }));
+
+  if (requestedFlavors.length === 0 && requestedCombos.length === 0) {
+    return { ok: false, code: 'no_items', message: 'El pedido no tiene sabores ni combos' };
   }
 
   const itemsByFlavor = new Map();
@@ -118,7 +128,7 @@ function validateScheduled(opts) {
     }
   }
 
-  return { ok: true, pickup_day, window_id: openWindow.id, requestedFlavors, itemsByFlavor: Object.fromEntries(itemsByFlavor) };
+  return { ok: true, pickup_day, window_id: openWindow.id, requestedFlavors, requestedCombos, itemsByFlavor: Object.fromEntries(itemsByFlavor) };
 }
 
 function validateImmediate(opts) {
@@ -205,7 +215,7 @@ router.post('/', async (req, res) => {
   let finalLng = null;
 
   if (delivery_mode === 'scheduled') {
-    const r = validateScheduled({ pickup_day, items, nowMs, schedule, config });
+    const r = validateScheduled({ pickup_day, items, combos, nowMs, schedule, config });
     if (!r.ok) return res.status(400).json({ error: r.code, message: r.message });
     validated = r;
   } else {
@@ -239,6 +249,27 @@ router.post('/', async (req, res) => {
     finalLng = lng;
   }
 
+  // ---- Pricing server-side (auditoria 2026-10-20, bug #1) ----
+  // El `total` que manda el cliente es solo una declaracion: el server lo
+  // recalcula desde flavors.price / combos.price. Antes se persistia tal cual
+  // y un POST con total=1DCS compraba 2 mochi + 1 combo por un peso.
+  const clientTotal = Number(total);
+  const priced = priceOrder({ items, combos, deliveryFee: computedDeliveryFee });
+  if (!priced.ok) {
+    return res.status(400).json({
+      error: 'invalid_catalog_items',
+      message: 'El pedido referencia productos que no existen en el catálogo',
+      details: priced.errors,
+    });
+  }
+  if (priced.lines.length === 0) {
+    return res.status(400).json({ error: 'empty_order', message: 'El pedido no tiene productos' });
+  }
+  const authoritativeTotal = priced.total;
+  const totalDrift = Number.isFinite(clientTotal) && clientTotal !== authoritativeTotal
+    ? { client_sent: clientTotal, server_computed: authoritativeTotal }
+    : null;
+
   const insertOrderStmt = db.prepare(`
     INSERT INTO orders (
       id, customer_name, customer_phone, pickup_day,
@@ -253,13 +284,21 @@ router.post('/', async (req, res) => {
     SET units_sold = units_sold + ?
     WHERE window_id = ? AND flavor_id = ?
   `);
+  // units_available = -1 significa stock ilimitado (el default). Se descuenta
+  // solo cuando hay un limite explicito, y el WHERE con `>=` hace la operacion
+  // atomica: si dos pedidos compiten por la ultima unidad, uno solo gana.
+  const decComboStmt = db.prepare(`
+    UPDATE combos
+    SET units_sold = units_sold + ?, units_available = units_available - ?
+    WHERE id = ? AND (units_available < 0 OR units_available >= ?)
+  `);
 
   db.exec('BEGIN');
   try {
     insertOrderStmt.run(
       id, customer_name, customer_phone, pickup_day,
       JSON.stringify(items || {}), JSON.stringify(combos || []),
-      total, notes || null, source || 'web',
+      authoritativeTotal, notes || null, source || 'web',
       delivery_mode, delivery_provider, delivery_address || null,
       finalLat, finalLng, computedDistanceKm, computedDeliveryFee,
       payment_method_id || null
@@ -274,12 +313,28 @@ router.post('/', async (req, res) => {
       }
     }
 
-    if (computedDeliveryFee > 0) {
-      db.prepare('UPDATE orders SET total = ? WHERE id = ?').run(Number(total) + computedDeliveryFee, id);
+    // Stock de combos (auditoria 2026-10-20, bug #6). `available` es un
+    // contador, no un booleano: se descuenta y si no alcanza se revierte todo.
+    if (delivery_mode === 'scheduled' && validated.requestedCombos) {
+      for (const req of validated.requestedCombos) {
+        const r = decComboStmt.run(req.qty, req.qty, Number(req.id), req.qty);
+        if (r.changes !== 1) {
+          const def = db.prepare('SELECT name FROM combos WHERE id = ?').get(Number(req.id));
+          throw Object.assign(
+            new Error(`Stock insuficiente del combo ${def?.name || req.id}`),
+            { code: 'combo_out_of_stock' },
+          );
+        }
+      }
     }
 
     db.exec('COMMIT');
+    // Mantiene el indice de totales que usa POST /api/payments al dia, sin
+    // esperar un reinicio del server.
+    rememberOrderTotal(id, authoritativeTotal);
     const full = rowToOrder(db.prepare('SELECT * FROM orders WHERE id = ?').get(id));
+    full.pricing = { lines: priced.lines, total: authoritativeTotal };
+    if (totalDrift) full.pricing.client_drift = totalDrift;
 
     // ---- Dispatch WhatsApp multi-destinatario (2026-10-17) ----
     const flavorList = db.prepare('SELECT id, name, price FROM flavors').all();
@@ -323,7 +378,11 @@ router.post('/', async (req, res) => {
     res.status(201).json({ ...full, whatsapp: wsp });
   } catch (e) {
     db.exec('ROLLBACK');
-    if (String(e.message).includes('UNIQUE')) return res.status(409).json({ error: 'duplicate', message: 'Ya existe un pedido con ese id' });
+    const msg = String(e.message || '');
+    if (msg.includes('UNIQUE')) return res.status(409).json({ error: 'duplicate', message: 'Ya existe un pedido con ese id' });
+    if (e.code === 'combo_out_of_stock') {
+      return res.status(409).json({ error: 'combo_out_of_stock', message: msg });
+    }
     throw e;
   }
 });

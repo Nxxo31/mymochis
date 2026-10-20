@@ -5,7 +5,8 @@ import { dirname, join } from 'node:path';
 import { fileURLToPath } from 'node:url';
 import { init } from './src/db.js';
 import { registerAdapter } from './src/lib/payments/adapter.js';
-import { registerConsumer } from './src/lib/payments/outbox.js';
+import { registerPaymentConsumers } from './src/lib/payments/consumers.js';
+import { indexOrderTotals } from './src/lib/payments/index.js';
 import { MockAdapter } from './src/lib/payments/adapters/mock.js';
 import { NequiAdapter } from './src/lib/payments/adapters/nequi.js';
 import authRoutes from './src/routes/auth.js';
@@ -42,6 +43,13 @@ init();
 // Registrar adapters de pagos (Spec §22.9)
 registerAdapter(new MockAdapter());
 registerAdapter(new NequiAdapter());
+
+// Registrar consumers del outbox (Spec §22.7). Sin esto el relay marcaba cada
+// evento como publicado sin ejecutar nada — bug #4 de la auditoría 2026-10-20.
+const consumerCount = registerPaymentConsumers();
+
+// Indexar totales de pedidos para validar montos en POST /api/payments.
+const indexedOrders = indexOrderTotals();
 
 const app = express();
 
@@ -184,9 +192,15 @@ app.listen(PORT, () => {
 
   // Workers async (Spec §22.7, §22.8, §22.11) — arrancan con el server.
   // Desactivar con MYMOCHIS_NO_WORKERS=1 si se quiere correr standalone.
+  console.log(`[mymochis] payments: ${consumerCount} consumers registrados, ${indexedOrders} pedidos indexados`);
   if (process.env.MYMOCHIS_NO_WORKERS !== '1') {
-    import('./worker/payments/outbox-relay.mjs').then(m => m.startOutboxRelay()).catch(e => console.error('[outbox-relay] failed to start', e));
-    import('./worker/payments/process-events.mjs').then(m => m.startEventProcessor()).catch(e => console.error('[event-processor] failed to start', e));
-    import('./worker/payments/reconciler.mjs').then(m => m.startReconciler()).catch(e => console.error('[reconciler] failed to start', e));
+    const workers = [
+      ['outbox-relay', () => import('./worker/payments/outbox-relay.mjs').then(m => m.startOutboxRelay())],
+      ['event-processor', () => import('./worker/payments/process-events.mjs').then(m => m.startEventProcessor())],
+      ['reconciler', () => import('./worker/payments/reconciler.mjs').then(m => m.startReconciler())],
+    ];
+    for (const [name, start] of workers) {
+      start().catch(e => console.error(`[${name}] failed to start:`, e.message));
+    }
   }
 });

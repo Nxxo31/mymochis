@@ -2131,8 +2131,8 @@ render.entregasInmediato = async function() {
         <div class="cfg-group">
           <h3>Costos y zona</h3>
           <div class="modal-row">
-            <div class="form-group"><label>Tarifa de domicilio (centavos COP)</label><input type="number" id="dc-fee" value="${cfg.delivery_immediate_fee_cents || 0}" min="0"><div class="hint">5000 = $50 COP</div></div>
-            <div class="form-group"><label>Pedido mínimo (centavos COP)</label><input type="number" id="dc-min" value="${cfg.delivery_immediate_min_order_cents || 0}" min="0"><div class="hint">Pedidos menores serán rechazados</div></div>
+            <div class="form-group"><label>Tarifa de domicilio (COP)</label><input type="number" id="dc-fee" value="${cfg.delivery_immediate_fee_cents || 0}" min="0" step="500"><div class="hint">5000 = $5.000 COP</div></div>
+            <div class="form-group"><label>Pedido mínimo (COP)</label><input type="number" id="dc-min" value="${cfg.delivery_immediate_min_order_cents || 0}" min="0" step="500"><div class="hint">Pedidos menores serán rechazados</div></div>
           </div>
           <div class="modal-row">
             <div class="form-group"><label>Radio (km)</label><input type="number" id="dc-radius" value="${cfg.delivery_immediate_radius_km || 5}" step="0.5" min="0"></div>

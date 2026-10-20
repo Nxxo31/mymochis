@@ -3,9 +3,9 @@
 // Operational: cada 5 min, busca PROCESSING/UNRESOLVED y consulta provider.
 // Financial: diario 04:00 COL, sweep completo (placeholder — depende de export por provider).
 import { randomUUID } from 'node:crypto';
-import { db } from '../src/db.js';
-import { listAdapters, getAdapter } from '../src/lib/payments/adapter.js';
-import { transitionState } from '../src/lib/payments/index.js';
+import { db } from '../../src/db.js';
+import { listAdapters, getAdapter } from '../../src/lib/payments/adapter.js';
+import { transitionState } from '../../src/lib/payments/index.js';
 
 const OP_INTERVAL_MS = 5 * 60 * 1000;
 const FINANCIAL_CRON_HOUR = 4; // 04:00 COL

@@ -21,6 +21,7 @@ let child;
 let tmpDir;
 let adminToken;
 let testOrderId;
+let testOrderTotal;
 
 async function waitReady(timeoutMs = 15000) {
   const deadline = Date.now() + timeoutMs;
@@ -90,7 +91,10 @@ async function createTestOrder() {
   if (r.status !== 201) {
     throw new Error(`order create failed: ${r.status} ${JSON.stringify(r.json)}`);
   }
-  testOrderId = r.json.order?.id || r.json.id || orderId;
+  testOrderId = r.json.id || orderId;
+  // El server recalcula el total desde el catalogo (bug #1): el que manda es su
+  // `pricing.total`, no el `total` que mando el cliente.
+  testOrderTotal = r.json.pricing?.total ?? r.json.total;
   return testOrderId;
 }
 
@@ -136,10 +140,10 @@ test('POST /api/payments — crea intent con provider mock → 201', async () =>
     headers: { 'Idempotency-Key': 'test-key-001' },
     body: {
       order_id: testOrderId,
-      amount_minor: 16000,
+      amount_minor: testOrderTotal,      // debe cuadrar con orders.total
       currency: 'COP',
       provider: 'mock',
-      customer_phone: '+573001234567',
+      customer_phone: '573213050426',
       description: 'Test payment',
     },
   });
@@ -176,16 +180,19 @@ test('POST /api/payments — validation: amount_minor negativo → 400', async (
   });
   assert.equal(r.status, 400);
   assert.equal(r.json.error, 'validation');
-  assert.ok(r.json.details.includes('amount_minor must be positive integer'));
+  assert.ok(
+    r.json.details.some(d => d.includes('positive integer')),
+    `esperaba error de monto positivo,details=${JSON.stringify(r.json.details)}`
+  );
 });
 
 test('POST /api/payments — misma idempotency key + mismo body → 200 cached', async () => {
   const body = {
     order_id: testOrderId,
-    amount_minor: 8000,
+    amount_minor: testOrderTotal,
     currency: 'COP',
     provider: 'mock',
-    customer_phone: '+573001234567',
+    customer_phone: '573213050426',
     description: 'cached test',
   };
   const r1 = await api('POST', '/api/payments', {
@@ -203,7 +210,7 @@ test('POST /api/payments — misma key + distinto body → 409 conflict', async 
   const r = await api('POST', '/api/payments', {
     token: adminToken,
     headers: { 'Idempotency-Key': 'test-key-cache' },
-    body: { order_id: testOrderId, amount_minor: 99999, provider: 'mock' },
+    body: { order_id: testOrderId, amount_minor: testOrderTotal + 1, provider: 'mock' },
   });
   assert.equal(r.status, 409);
   assert.equal(r.json.error, 'idempotency_mismatch');

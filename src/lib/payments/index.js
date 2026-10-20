@@ -18,6 +18,25 @@ const STATE = {
 
 const VALID_STATES = new Set(Object.values(STATE));
 
+// Cache de totales de pedido: order_id -> total en pesos. Populado por
+// indexOrderTotals() al boot y refrescado en cada createPaymentIntent().
+// Se usa para validar que el monto del pago cuadre con el pedido (bug #2).
+const ORDER_TOTALS = new Map();
+
+/** indexOrderTotals() — indexa orders.total para validar montos de pago. */
+export function indexOrderTotals() {
+  ORDER_TOTALS.clear();
+  for (const row of db.prepare('SELECT id, total FROM orders').all()) {
+    ORDER_TOTALS.set(String(row.id), Number(row.total));
+  }
+  return ORDER_TOTALS.size;
+}
+
+/** rememberOrderTotal() — mantiene el indice al día tras crear/editar pedidos. */
+export function rememberOrderTotal(orderId, total) {
+  if (orderId != null && total != null) ORDER_TOTALS.set(String(orderId), Number(total));
+}
+
 /**
  * Crea un payment intent con idempotency.
  * Devuelve { status, body, paymentId } donde status es uno de:
@@ -148,9 +167,18 @@ export async function createPaymentIntent({ idempotencyKey, request }) {
 export function getPayment(paymentId) {
   const p = db.prepare(`SELECT * FROM payments WHERE payment_id = ?`).get(paymentId);
   if (!p) return null;
-  const attempts = db.prepare(`SELECT * FROM payment_attempts WHERE payment_id = ? ORDER BY created_at ASC`).all(paymentId);
-  const events = db.prepare(`SELECT * FROM provider_events WHERE JSON_EXTRACT(provider_event_id, '$') IS NOT NULL AND event_id IN (SELECT event_id FROM provider_events WHERE process_status = 'processed') ORDER BY received_at DESC LIMIT 20`).all();
-  return { payment: p, attempts };
+  const attempts = db.prepare('SELECT * FROM payment_attempts WHERE payment_id = ? ORDER BY created_at ASC').all(paymentId);
+  // Eventos del provider vinculados a ESTE payment (auditoria 2026-10-20, bug #9).
+  // Antes: una query global sin filtro que se descartaba — wasted work por lectura.
+  const events = db.prepare(`
+    SELECT e.event_id, e.provider, e.provider_event_id, e.process_status, e.received_at, e.processed_at
+    FROM provider_events e
+    WHERE e.process_status = 'processed'
+      AND e.payload_json LIKE '%' || ? || '%'
+    ORDER BY e.received_at DESC
+    LIMIT 20
+  `).all(paymentId);
+  return { payment: p, attempts, events };
 }
 
 /** Transición de estado con optimistic lock */
@@ -207,10 +235,15 @@ function updateOrderPaymentLink(orderId, paymentId, paymentState) {
     .run(paymentId, paymentState, paymentState, orderId);
 }
 
+// Dominio REAL de orders.payment_status: 'pending' | 'paid' (ver VALID_PAYMENT_STATUS
+// en src/routes/orders.js). Antes esta funcion emitia 'failed', un valor que la propia
+// API de orders rechaza — un pago fallido dejaba la fila en un estado que el panel
+// no puede leer ni corregir (auditoria 2026-10-20, bug #5).
 function mapStateToPaymentStatus(s) {
   if (s === 'SUCCEEDED') return 'paid';
-  if (s === 'FAILED' || s === 'EXPIRED') return 'failed';
-  if (s === 'REQUIRES_ACTION' || s === 'PROCESSING' || s === 'INITIATED') return 'pending';
+  // FAILED / EXPIRED / UNRESOLVED / PROCESSING / REQUIRES_ACTION / INITIATED
+  // colapsan a 'pending': el pago no se dio, pero el pedido sigue vivo y el
+  // operador puede reintentar o marcarlo pagado a mano.
   return 'pending';
 }
 
@@ -229,10 +262,28 @@ function validateCreateRequest(req) {
     return { ok: false, errors: ['body_required'] };
   }
   if (!req.order_id || typeof req.order_id !== 'string') errors.push('order_id required');
+  // UNIDAD DE DINERO (auditoria 2026-10-20, bug #2): pese al nombre `amount_minor`,
+  // el valor es PESOS COP enteros — la misma unidad de orders.total y flavors.price.
+  // Antes el adapter hacia amount_minor/100 asumiendo centavos: un pedido de $41.000
+  // se cobraba $410. Si alguna vez migras a centavos de verdad, renombra la columna
+  // Y todos los call sites en el mismo commit; nunca dejes dos unidades conviviendo.
   if (typeof req.amount_minor !== 'number' || req.amount_minor <= 0 || !Number.isInteger(req.amount_minor)) {
-    errors.push('amount_minor must be positive integer');
+    errors.push('amount_minor must be a positive integer amount in COP pesos');
   }
-  if (req.amount_minor > 5_000_000 * 100) errors.push('amount_minor exceeds per-payment cap (5M COP)');
+  if (req.amount_minor > 5_000_000) errors.push('amount_minor exceeds per-payment cap (5M COP)');
+  // El monto debe cuadrar exactamente con el total del pedido. Es la segunda
+  // barrera (ademas del recalculo server-side de orders.js): si alguien postea
+  // a mano a /api/payments, el monto sigue atado al pedido de la DB.
+  const knownTotal = ORDER_TOTALS.get(String(req.order_id));
+  if (knownTotal != null && req.amount_minor !== knownTotal) {
+    errors.push(`amount_minor must equal order total (${knownTotal})`);
+  } else if (knownTotal == null) {
+    const row = db.prepare('SELECT total FROM orders WHERE id = ?').get(String(req.order_id));
+    if (!row) errors.push('order_id does not exist');
+    else if (Number(row.total) !== req.amount_minor) {
+      errors.push(`amount_minor must equal order total (${Number(row.total)})`);
+    }
+  }
   if (req.currency && req.currency !== 'COP') errors.push('only COP supported');
   if (req.provider && typeof req.provider !== 'string') errors.push('provider must be string');
   if (req.customer_phone && !/^\+?\d{8,15}$/.test(String(req.customer_phone).replace(/\s/g, ''))) {

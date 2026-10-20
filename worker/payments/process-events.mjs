@@ -1,8 +1,8 @@
 // MyMochis · Webhook event processor
 // Spec: PROJECT.md §22.8
 // Aplica eventos de provider a payments con state-version guard.
-import { db } from '../src/db.js';
-import { transitionState } from '../src/lib/payments/index.js';
+import { db } from '../../src/db.js';
+import { transitionState } from '../../src/lib/payments/index.js';
 
 const BATCH = 50;
 const MAX_ATTEMPTS = 5;

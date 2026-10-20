@@ -10,8 +10,26 @@ import { db } from '../../db.js';
 
 const MERCHANT = 'mymochis';
 
+/**
+ * Fingerprint canonico (auditoria 2026-10-20, bug #7).
+ * `JSON.stringify` respeta el orden de insercion de claves: el mismo body con
+ * `{a,b}` y `{b,a}` producia hashes distintos y un retry legitimo recibia 409.
+ * Se canonicaliza ordenando claves recursivamente antes de hashear.
+ */
+function canonicalize(value) {
+  if (Array.isArray(value)) return value.map(canonicalize);
+  if (value && typeof value === 'object') {
+    return Object.keys(value).sort().reduce((acc, k) => {
+      acc[k] = canonicalize(value[k]);
+      return acc;
+    }, {});
+  }
+  return value;
+}
+
 function fingerprintOf(body) {
-  return createHash('sha256').update(JSON.stringify(body || {})).digest('hex');
+  const canonical = JSON.stringify(canonicalize(body || {}));
+  return createHash('sha256').update(canonical).digest('hex');
 }
 
 /**
