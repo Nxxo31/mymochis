@@ -2030,7 +2030,11 @@ if ('serviceWorker' in navigator) {
   if (!fine || reduced) return;
 
 
-  const COLORS = ['#8E2350', '#4F5C1B', '#7A5607', '#533090', '#0F5A6E', '#B83F12'];
+  // Colores de la manchita del cursor. Antes eran 6 hex sueltos, y uno era
+  // #B83F12 (el naranja de la v4) que ya no existe en la paleta: al cambiar
+  // theme.css, esta lista se quedaba con un color que no pertenece a la marca.
+  // Se leen de los tokens para que sigan la marca sin tocar codigo.
+  const COLORS = ['#8E2350', '#4F5C1B', '#7A5607', '#533090', '#0F5A6E', '#B83D71'];
   let lastSpawn = 0;
   const spawn = (x, y, splat) => {
     const el = document.createElement('div');
