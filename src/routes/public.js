@@ -1,5 +1,6 @@
 import { Router } from 'express';
 import { db } from '../db.js';
+import { pickupCutoffFor } from './orders.js';
 
 const router = Router();
 
@@ -71,11 +72,31 @@ router.get('/', (req, res) => {
     ORDER BY rw.release_date DESC, rw.id DESC, f.sort_order
   `).all();
   const releaseWindowsById = {};
+  // El cutoff es la regla que decide si una ventana ACEPTARA un pedido. El
+  // cliente la necesita para no ofrecer una fecha que POST /api/orders va a
+  // rechazar con un 400 `past_cutoff` despues de que el usuario lleno todo el
+  // formulario. Se calcula aqui con la MISMA funcion que usa la validacion, de
+  // modo que no haya dos copias de la regla que puedan divergir.
+  // Se cachea por fecha: varias ventanas comparten fecha y la regla no depende
+  // de la ventana, solo del dia de la semana y su horario.
+  const activeSchedule = deliverySchedule.filter(s => s.active === 1);
+  const cutoffCache = new Map();
+  const cutoffFor = (releaseDate) => {
+    if (!cutoffCache.has(releaseDate)) {
+      cutoffCache.set(releaseDate, pickupCutoffFor(releaseDate, activeSchedule));
+    }
+    return cutoffCache.get(releaseDate);
+  };
   for (const r of releaseWindows) {
     if (!releaseWindowsById[r.id]) {
+      const cutoff = cutoffFor(r.release_date);
       releaseWindowsById[r.id] = {
         id: r.id, release_date: r.release_date, cutoff_at: r.cutoff_at,
-        status: r.status, notes: r.notes, items: []
+        status: r.status, notes: r.notes,
+        orderable: r.status === 'open' && cutoff.orderable,
+        cutoff_computed_at: cutoff.cutoffAt,
+        not_orderable_reason: r.status !== 'open' ? 'window_not_open' : cutoff.reason,
+        items: []
       };
     }
     if (r.item_id != null) {

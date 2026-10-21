@@ -3,6 +3,7 @@
 <head>
 <meta charset="UTF-8">
 <meta name="viewport" content="width=device-width,initial-scale=1,viewport-fit=cover">
+<link rel="stylesheet" href="/theme.css">
 <meta name="theme-color" content="#FAF3EA">
 <title>Tienda · Mochi's Land — Neiva</title>
 <meta name="description" content="Catálogo de mochis artesanales y combos. Arma tu pedido, recoge en Neiva.">
@@ -13,47 +14,6 @@
 <link href="https://fonts.googleapis.com/css2?family=Baloo+2:wght@400;500;600;700;800&family=Quicksand:wght@300;400;500;600;700&display=swap" rel="stylesheet">
 
 <style>
-:root {
-  --clay-canvas:      #F2F8FC;   /* azul muy claro */
-  --clay-canvas-2:    #E4F1F9;   /* azul canvas profundo */
-  --clay-surface:     #FFFFFF;   /* blanco */
-  --clay-ink:         #20304A;   /* azul-gris texto principal */
-  --clay-ink-soft:    #6B7D95;   /* gris azulado */
-  --clay-line:        rgba(32,48,74,0.10);
-
-  /* Marca: azul del logo + rosado sakura */
-  --brand-sky:        #62D3EC;
-  --brand-sky-d:      #44B8D8;
-  --brand-sky-l:      #C9EEF8;
-  --brand-sakura:     #EF7FB3;
-  --brand-sakura-d:   #C94882;
-  --brand-sakura-l:   #FDE4EE;
-  --brand-gray:       #8A97A8;
-
-  --mochi-fresa:      #FFB8C8;
-  --mochi-fresa-d:    var(--brand-sakura-d);
-  --mochi-matcha:     #C9DC8A;
-  --mochi-matcha-d:   #7B8A2E;
-  --mochi-durazno:    #FBD773;
-  --mochi-durazno-d:  #C08E12;
-  --mochi-ube:        #C5B0E8;
-  --mochi-ube-d:      #6B48B0;
-  --mochi-crema:      #FFE8A8;
-  --mochi-crema-d:    #A87E0F;
-  --mochi-cyan:       #9DDDEC;
-  --mochi-cyan-d:     #44B8D8;
-
-  --mocha-1: #F4E4D4;
-  --mocha-3: #6F4E37;
-
-  --clay-shadow:    -10px 10px 26px rgba(120,80,40,0.22), inset 4px -4px 10px rgba(255,255,255,0.95);
-  --clay-shadow-md: -6px 6px 16px rgba(120,80,40,0.20), inset 3px -3px 8px rgba(255,255,255,0.85);
-  --clay-shadow-sm: -3px 3px 8px rgba(120,80,40,0.18), inset 2px -2px 5px rgba(255,255,255,0.75);
-  --clay-shadow-xs: -2px 2px 5px rgba(120,80,40,0.14), inset 1px -1px 2px rgba(255,255,255,0.65);
-  --clay-shadow-hover: -14px 14px 32px rgba(120,80,40,0.26), inset 5px -5px 12px rgba(255,255,255,1);
-  --clay-inset:    inset -4px 4px 10px rgba(120,80,40,0.22), inset 4px -4px 10px rgba(255,255,255,0.95);
-  --clay-inset-sm: inset -2px 2px 6px rgba(120,80,40,0.18), inset 2px -2px 6px rgba(255,255,255,0.85);
-}
 
 * { box-sizing: border-box; margin: 0; padding: 0; }
 html { scroll-behavior: smooth; }
@@ -62,10 +22,10 @@ body {
   font-family: 'Quicksand', 'Baloo 2', system-ui, sans-serif;
   background-color: var(--clay-canvas);
   background-image:
-    radial-gradient(circle at 12% 8%, rgba(255,184,200,0.22) 0%, transparent 26%),
-    radial-gradient(circle at 88% 14%, rgba(157,221,236,0.20) 0%, transparent 28%),
-    radial-gradient(circle at 14% 82%, rgba(201,220,138,0.18) 0%, transparent 24%),
-    radial-gradient(circle at 88% 78%, rgba(245,215,115,0.20) 0%, transparent 26%);
+    radial-gradient(circle at 12% 8%, color-mix(in srgb, var(--fresa) 22%, transparent) 0%, transparent 26%),
+    radial-gradient(circle at 88% 14%, color-mix(in srgb, var(--cyan) 20%, transparent) 0%, transparent 28%),
+    radial-gradient(circle at 14% 82%, color-mix(in srgb, var(--matcha) 18%, transparent) 0%, transparent 24%),
+    radial-gradient(circle at 88% 78%, color-mix(in srgb, var(--durazno) 20%, transparent) 0%, transparent 26%);
   background-attachment: fixed;
   color: var(--clay-ink);
   line-height: 1.55;
@@ -740,7 +700,14 @@ footer {
       </div>
       <div class="form-block">
         <label for="pickupDay">Día de recogida</label>
-        <input type="date" id="pickupDay">
+        <!-- Antes era un <input type="date"> libre de +1 a +14 días que solo
+             validaba el día de la SEMANA. El backend exige además una
+             release_window 'open' para la fecha exacta, así que casi todo
+             pedido moría en un 400 "no_release_window" SIN que el cliente
+             entendiera por qué. Ahora las opciones salen de las ventanas
+             reales abiertas, y si no hay ninguna se deshabilita con mensaje
+             claro. -->
+        <select id="pickupDay" required></select>
         <div class="hint" id="pickupHint">Elegí un día con horario disponible (mar–sáb).</div>
       </div>
       <div class="form-block">
@@ -1134,32 +1101,60 @@ footer {
   }
 
   // ========== DATE PICKER CONFIG ==========
+  // Las opciones salen de las release_windows que el servidor marco como
+  // `orderable`. Un <select> no puede ofrecer una fecha que el backend va a
+  // rechazar.
+  //
+  // `orderable` lo calcula el server (src/routes/public.js) con la MISMA
+  // funcion que valida el pedido: status='open' Y el cutoff (start_time -
+  // cutoff_offset_hours) todavia no vencio. Filtrar solo por `status` +
+  // `release_date >= today` NO alcanza: una ventana de HOY puede tener su
+  // cutoff ya vencido, y el cliente llena el formulario entero para recibir un
+  // 400 `past_cutoff` al enviar. No reimplementar la regla del cutoff aqui —
+  // dos copias divergen.
+  const DIAS_ES = ['domingo','lunes','martes','miércoles','jueves','viernes','sábado'];
+  const MESES_ES = ['ene','feb','mar','abr','may','jun','jul','ago','sep','oct','nov','dic'];
+
   function configureDateInput() {
     const input = $('#pickupDay');
-    const today = todayISO();
-    const minDate = plusDaysISO(today, 1);
-    const maxDate = plusDaysISO(today, 14);
-    input.min = minDate;
-    input.max = maxDate;
+    const hint = $('#pickupHint');
+    input.innerHTML = '';
 
-    if (catalog && catalog.delivery_schedule && catalog.delivery_schedule.length) {
-      const allowedDows = new Set();
-      for (const s of catalog.delivery_schedule) {
-        if (s.active) allowedDows.add(Number(s.day_of_week));
-      }
-      input.addEventListener('input', () => {
-        const v = input.value;
-        if (!/^\d{4}-\d{2}-\d{2}$/.test(v)) return;
-        const dow = new Date(v + 'T12:00:00').getDay();
-        if (!allowedDows.has(dow)) {
-          $('#pickupHint').textContent = 'Ese día no tenemos horario de pickup. Probá con mar–sáb.';
-          input.setCustomValidity('Día no disponible');
-        } else {
-          input.setCustomValidity('');
-          $('#pickupHint').textContent = 'Día disponible para recogida.';
-        }
-      });
+    const all = (catalog && Array.isArray(catalog.release_windows))
+      ? catalog.release_windows
+      : [];
+
+    // Fallback defensivo: si un server viejo no manda el flag `orderable`,
+    // se cae al criterio status+fecha para no dejar la tienda inservible.
+    const tieneFlag = all.some(w => typeof w.orderable === 'boolean');
+    const windows = all
+      .filter(w => tieneFlag
+        ? w.orderable === true
+        : (w.status === 'open' && w.release_date >= todayISO()))
+      .sort((a, b) => a.release_date.localeCompare(b.release_date));
+
+    if (!windows.length) {
+      input.innerHTML = '<option value="">— Sin días abiertos por ahora —</option>';
+      input.disabled = true;
+      hint.textContent = 'Por ahora no abrimos pedidos para fechas nuevas. Escríbenos por WhatsApp para avisarte cuando abramos.';
+      hint.style.color = 'var(--danger, #B3261E)';
+      return;
     }
+
+    input.disabled = false;
+    hint.style.color = '';
+    for (const w of windows) {
+      const d = new Date(w.release_date + 'T12:00:00');
+      const label = `${DIAS_ES[d.getDay()]} ${d.getDate()} ${MESES_ES[d.getMonth()]}`
+        + (w.items && w.items.length ? ` · ${w.items.length} ${w.items.length === 1 ? 'sabor' : 'sabores'}` : '');
+      input.insertAdjacentHTML('beforeend', `<option value="${w.release_date}">${label}</option>`);
+    }
+    // preseleccionar la primera ventana disponible
+    input.value = windows[0].release_date;
+    const restantes = windows.length - 1;
+    hint.textContent = restantes > 0
+      ? `Día disponible. Hay ${restantes} ${restantes === 1 ? 'fecha más' : 'fechas más'} abierta${restantes === 1 ? '' : 's'}.`
+      : 'Día disponible para recogida.';
   }
 
   // ========== SUBMIT ORDER ==========
@@ -1277,7 +1272,6 @@ footer {
   // ========== INIT ==========
   async function init() {
     bindEvents();
-    configureDateInput();
 
     $('#storeLoading').classList.add('visible');
 
@@ -1303,6 +1297,11 @@ footer {
     renderGrid();
     renderCart();
     syncQtyDisplays();
+    // DESPUES del fetch: el <select> de recogida se deriva de
+    // catalog.release_windows. Si se configura antes de que `catalog` exista,
+    // el control queda permanentemente deshabilitado con el mensaje de
+    // "sin días abiertos" aunque haya ventanas abiertas de verdad.
+    configureDateInput();
   }
 
   if (document.readyState === 'loading') {

@@ -64,6 +64,38 @@ function getConfig() {
   return db.prepare('SELECT * FROM config WHERE id = 1').get();
 }
 
+/**
+ * Cuanto le queda a una fecha de recogida para aceptar pedidos, en ms.
+ *
+ * Extraido de validateScheduled() porque el calculo del cutoff es la regla de
+ * negocio que el cliente NECESITA conocer para no ofrecer una fecha que el
+ * backend va a rechazar. Si esta logica se duplica en el front, las dos copias
+ * divergen: el cliente ofrece un dia, el cliente llena el formulario entero y
+ * solo al enviar recibe un 400 `past_cutoff` sin explicacion util.
+ *
+ * Se exporta para que /api/public/ marque cada ventana con `orderable`.
+ *
+ * @returns {{orderable: boolean, cutoffAt: string|null, reason: string|null}}
+ */
+export function pickupCutoffFor(pickup_day, schedule, nowMs = Date.now()) {
+  const dow = dayOfWeek(pickup_day);
+  const matching = schedule.filter(s =>
+    s.day_of_week === dow && (s.mode === 'pickup' || s.mode === 'both') && s.active === 1
+  );
+  if (matching.length === 0) {
+    return { orderable: false, cutoffAt: null, reason: 'no_pickup_schedule' };
+  }
+  const entry = matching[0];
+  const pickupStartMs = combineDateAndTime(pickup_day, entry.start_time);
+  const offset = Number(entry.cutoff_offset_hours) || 0;
+  const cutoffMs = pickupStartMs - offset * 3600 * 1000;
+  return {
+    orderable: nowMs <= cutoffMs,
+    cutoffAt: new Date(cutoffMs).toISOString(),
+    reason: nowMs <= cutoffMs ? null : 'past_cutoff'
+  };
+}
+
 function validateScheduled(opts) {
   const { pickup_day, items, combos, nowMs, schedule, config } = opts;
   const dow = dayOfWeek(pickup_day);
@@ -76,9 +108,9 @@ function validateScheduled(opts) {
   }
 
   const orderEntry = matchingSchedule[0];
-  const pickupStartMs = combineDateAndTime(pickup_day, orderEntry.start_time);
-  const cutoffMs = pickupStartMs - (Number(orderEntry.cutoff_offset_hours) || 0) * 3600 * 1000;
-  if (nowMs > cutoffMs) {
+  // Misma regla que /api/public/ publica como `orderable` (una sola copia).
+  const cutoff = pickupCutoffFor(pickup_day, schedule, nowMs);
+  if (!cutoff.orderable) {
     return {
       ok: false, code: 'past_cutoff',
       message: `Cutoff ya pasó: el pedido debe hacerse antes de ${orderEntry.start_time} - ${orderEntry.cutoff_offset_hours}h`
@@ -428,7 +460,11 @@ router.post('/:id/confirm-payment', [authMiddleware, requireRole('admin')], (req
   }
 });
 
-router.patch('/:id', authMiddleware, (req, res) => {
+// requireRole('admin'): /api/auth/register es PUBLICO y emite un token con
+// role:'customer'. Con solo authMiddleware cualquier visitante registrado
+// podia marcar pedidos ajenos como pagados, cambiar su estado o BORRARLOS
+// (verificado: 200 OK en los tres casos con un token de customer).
+router.patch('/:id', [authMiddleware, requireRole('admin')], (req, res) => {
   const existing = db.prepare('SELECT id FROM orders WHERE id = ?').get(req.params.id);
   if (!existing) return res.status(404).json({ error: 'not_found' });
   const allowed = ['status', 'payment_status', 'payment_method', 'payment_method_id', 'notes', 'delivery_provider'];
@@ -449,7 +485,7 @@ router.patch('/:id', authMiddleware, (req, res) => {
   res.json(rowToOrder(db.prepare('SELECT * FROM orders WHERE id = ?').get(req.params.id)));
 });
 
-router.delete('/:id', authMiddleware, (req, res) => {
+router.delete('/:id', [authMiddleware, requireRole('admin')], (req, res) => {
   const result = db.prepare('DELETE FROM orders WHERE id = ?').run(req.params.id);
   if (result.changes === 0) return res.status(404).json({ error: 'not_found' });
   res.json({ ok: true });
