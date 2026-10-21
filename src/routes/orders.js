@@ -4,7 +4,8 @@ import { Router } from 'express';
 import { db } from '../db.js';
 import { priceOrder } from '../lib/pricing.js';
 import { rememberOrderTotal } from '../lib/payments/index.js';
-import { authMiddleware } from '../auth.js';
+import { confirmManualPayment, ManualPaymentError } from '../lib/payments/manual.js';
+import { authMiddleware, requireRole } from '../auth.js';
 import { geocode, haversineKm } from '../lib/geocode.js';
 import { buildDispatch } from '../lib/whatsapp.js';
 
@@ -42,7 +43,9 @@ function rowToOrder(r) {
     delivery_lat: r.delivery_lat,
     delivery_lng: r.delivery_lng,
     delivery_distance_km: r.delivery_distance_km,
-    delivery_fee_cents: r.delivery_fee_cents
+    delivery_fee_cents: r.delivery_fee_cents,
+    payment_id: r.payment_id,
+    payment_state: r.payment_state
   };
 }
 
@@ -384,6 +387,44 @@ router.post('/', async (req, res) => {
       return res.status(409).json({ error: 'combo_out_of_stock', message: msg });
     }
     throw e;
+  }
+});
+
+// ============ CONFIRMACIÓN DE PAGO MANUAL (admin) ============
+// El caso real del negocio: el cliente transfiere a la cuenta, el operador
+// confirma que llegó. Cierra el ciclo por el MISMO state machine que un pago
+// automático (ledger + outbox + pedido marcado pagado), no editando la fila a
+// mano como se hacía antes.
+router.post('/:id/confirm-payment', [authMiddleware, requireRole('admin')], (req, res) => {
+  const { reference, note, amount } = req.body || {};
+  try {
+    const out = confirmManualPayment({
+      orderId: req.params.id,
+      actor: req.user?.email || 'admin',
+      reference: reference ? String(reference).trim() : null,
+      note: note ? String(note).trim() : null,
+      amount: amount != null && amount !== '' ? Number(amount) : null,
+    });
+    res.status(out.already_confirmed ? 200 : 201).json({
+      ok: true,
+      already_confirmed: out.already_confirmed,
+      payment_id: out.payment.payment_id,
+      state: out.payment.state,
+      amount: out.payment.amount_minor,
+      order_id: out.payment.order_id,
+      message: out.already_confirmed
+        ? 'Este pedido ya tenía un pago confirmado'
+        : 'Pago confirmado y registrado en el ledger',
+    });
+  } catch (e) {
+    if (e instanceof ManualPaymentError) {
+      const status = e.code === 'order_not_found' ? 404
+                   : e.code === 'amount_mismatch' ? 409
+                   : 400;
+      return res.status(status).json({ error: e.code, message: e.message, details: e.details });
+    }
+    console.error('[orders] confirm-payment error', e);
+    res.status(500).json({ error: 'internal', message: e.message });
   }
 });
 

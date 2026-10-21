@@ -60,6 +60,10 @@ export function registerPaymentConsumers() {
   registerConsumer('payment.succeeded', onPaymentSucceeded);
   registerConsumer('payment.failed', onPaymentFailed);
   registerConsumer('payment.expired', onPaymentFailed);
-  registerConsumer('payment.unresolved', onPaymentFailed);
-  return 4;
+  // payment.unresolved NO registra consumer a proposito: UNRESOLVED solo lo
+  // produce la reversa manual (el reconciler salta estados UNRESOLVED), y la
+  // reversa ya escribe orders.payment_state='REVERTED' explicitamente. Un
+  // consumer aqui lo pisaria en cuanto el relay corriera en produccion.
+  // payment.reverted tampoco: mismo razonamiento.
+  return 3;
 }

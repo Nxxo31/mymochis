@@ -894,6 +894,11 @@ tbody tr:hover { background: var(--clay-canvas); }
       Credenciales
     </div>
 
+    <div class="nav-item" data-section="cobros">
+      <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><line x1="12" y1="1" x2="12" y2="23"/><path d="M17 5H9.5a3.5 3.5 0 000 7h5a3.5 3.5 0 010 7H6"/></svg>
+      Cobros
+    </div>
+
     <div class="nav-section">Catálogo</div>
     <div class="nav-item" data-section="flavors">
       <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><circle cx="12" cy="12" r="10"/><path d="M12 2a10 10 0 010 20"/></svg>
@@ -1134,6 +1139,11 @@ tbody tr:hover { background: var(--clay-canvas); }
     <!-- ============== CREDS ============== -->
     <section id="section-creds" class="section">
       <div id="creds-body"></div>
+    </section>
+
+    <!-- ============== COBROS ============== -->
+    <section id="section-cobros" class="section">
+      <div id="cobros-body"></div>
     </section>
 
     <!-- ============== CONFIG ============== -->
@@ -2419,6 +2429,146 @@ window.deleteWindow = async function(id) {
     toast('Ventana eliminada', 'success');
     render.entregasVentanas();
   } catch (e) { toast('Error: ' + e.message, 'error'); }
+};
+
+// ====== COBROS (el panel de plata del admin) ======
+// Lo que el operador mira todos los dias: cuanto entro, que pedidos estan
+// sin confirmar y el estado del ledger. El caso real del negocio es pago
+// manual (transferencia + confirmacion), asi que el corazon de la seccion
+// es la lista de "Sin confirmar" con su boton de confirmar.
+render.cobros = async function() {
+  const el = document.getElementById('cobros-body');
+  if (!el) return;
+  try {
+    const s = await api('/payments/summary');
+    const fmt = n => '$' + Number(n || 0).toLocaleString('es-CO');
+    const st = (code, label) => {
+      const row = s.by_state.find(x => x.state === code);
+      return row ? `<span class="pill" style="background:var(--bg,#eef2f7)">${label}: ${row.n} · ${fmt(row.total)}</span>` : '';
+    };
+
+    el.innerHTML = `
+      <div class="page-head" style="margin-bottom:14px">
+        <div><h1>Cobros</h1><div class="sub">Plata recibida, pendientes y estado contable · ${escDate(s.last_reconcile?.finished_at || '')}</div></div>
+      </div>
+
+      <div style="display:grid;grid-template-columns:repeat(auto-fit,minmax(160px,1fr));gap:12px;margin-bottom:20px">
+        <div class="card"><div class="sub" style="font-size:11px;text-transform:uppercase;letter-spacing:.8px">Hoy</div>
+          <div style="font-size:22px;font-weight:800">${fmt(s.collected_today)}</div></div>
+        <div class="card"><div class="sub" style="font-size:11px;text-transform:uppercase;letter-spacing:.8px">Este mes</div>
+          <div style="font-size:22px;font-weight:800">${fmt(s.collected_month)}</div></div>
+        <div class="card" style="${s.unconfirmed_count ? 'border-left:4px solid var(--accent)' : ''}">
+          <div class="sub" style="font-size:11px;text-transform:uppercase;letter-spacing:.8px">Sin confirmar</div>
+          <div style="font-size:22px;font-weight:800">${s.unconfirmed_count}</div>
+          <div class="sub" style="font-size:12px">${fmt(s.unconfirmed_total)} por cobrar</div></div>
+      </div>
+
+      <h2 style="font-size:15px;margin-bottom:10px">Pedidos sin confirmar pago</h2>
+      ${s.unconfirmed.length ? `
+        <div class="card" style="padding:0;overflow:auto">
+          <table style="width:100%;font-size:13px;border-collapse:collapse">
+            <thead><tr style="text-align:left;opacity:.6;font-size:11px;text-transform:uppercase">
+              <th style="padding:10px 12px">Pedido</th><th>Cliente</th><th>Recogida</th><th>Total</th><th style="text-align:right">Acción</th></tr></thead>
+            <tbody>
+            ${s.unconfirmed.map(o => `
+              <tr style="border-top:1px solid var(--line,rgba(0,0,0,.08))">
+                <td style="padding:10px 12px"><code style="font-size:12px">${escapeHtml(o.id)}</code></td>
+                <td>${escapeHtml(o.customer_name)}<div class="sub" style="font-size:11px">${escapeHtml(o.customer_phone || '')}</div></td>
+                <td>${escapeHtml(o.pickup_day || '')}</td>
+                <td style="font-weight:700">${fmt(o.total)}</td>
+                <td style="text-align:right;padding:8px 12px">
+                  <button class="btn btn-primary" style="padding:8px 14px;font-size:12px"
+                          onclick="confirmPay('${escapeHtml(o.id)}', ${Number(o.total)})">Confirmar pago</button>
+                </td></tr>`).join('')}
+            </tbody></table>
+        </div>`
+        : `<div class="card" style="opacity:.7">Nada pendiente de confirmar. Todo al día. 🎉</div>`}
+
+      <h2 style="font-size:15px;margin:22px 0 10px">Últimos pagos registrados</h2>
+      <div id="cobros-payments"></div>
+
+      <div style="display:flex;gap:10px;flex-wrap:wrap;margin-top:14px;align-items:center">
+        ${st('SUCCEEDED', 'Confirmados')}
+        ${st('INITIATED', 'Iniciados')}
+        ${st('REQUIRES_ACTION', 'Por aprobar')}
+        ${st('UNRESOLVED', 'Revertidos')}
+        ${s.ledger_unbalanced.length ? `<span class="pill" style="background:var(--accent);color:#fff">⚠ ${s.ledger_unbalanced.length} pagos descuadrados</span>` : `<span class="pill" style="background:var(--success,#22c55e);color:#fff">✓ Ledger cuadrado</span>`}
+      </div>`;
+    render.cobrosPayments();
+  } catch (e) { toast('Error: ' + e.message, 'error'); }
+};
+
+render.cobrosPayments = async function() {
+  const el = document.getElementById('cobros-payments');
+  if (!el) return;
+  try {
+    const { payments } = await api('/payments?limit=15');
+    const fmt = n => '$' + Number(n || 0).toLocaleString('es-CO');
+    const statePill = s => ({
+      SUCCEEDED: '<span class="pill" style="background:var(--success,#22c55e);color:#fff">Pagado</span>',
+      REQUIRES_ACTION: '<span class="pill" style="background:#f59e0b;color:#fff">Por aprobar</span>',
+      INITIATED: '<span class="pill" style="background:#94a3b8;color:#fff">Iniciado</span>',
+      PROCESSING: '<span class="pill" style="background:#94a3b8;color:#fff">Procesando</span>',
+      UNRESOLVED: '<span class="pill" style="background:var(--accent);color:#fff">Revertido</span>',
+      EXPIRED: '<span class="pill" style="background:#64748b;color:#fff">Expirado</span>',
+      FAILED: '<span class="pill" style="background:#ef4444;color:#fff">Fallido</span>',
+    }[s] || `<span class="pill">${escapeHtml(s)}</span>`);
+
+    el.innerHTML = payments.length ? `
+      <div class="card" style="padding:0;overflow:auto">
+        <table style="width:100%;font-size:13px;border-collapse:collapse">
+          <thead><tr style="text-align:left;opacity:.6;font-size:11px;text-transform:uppercase">
+            <th style="padding:10px 12px">Cuándo</th><th>Pedido</th><th>Canal</th><th>Monto</th><th>Estado</th><th style="text-align:right">Acción</th></tr></thead>
+          <tbody>
+          ${payments.map(p => `
+            <tr style="border-top:1px solid var(--line,rgba(0,0,0,.08))">
+              <td style="padding:10px 12px;white-space:nowrap">${escDate(p.created_at)}</td>
+              <td><code style="font-size:12px">${escapeHtml(p.order_id)}</code></td>
+              <td>${p.provider === 'manual' ? 'Manual' : escapeHtml(p.provider)}</td>
+              <td style="font-weight:700">${fmt(p.amount_minor)}</td>
+              <td>${statePill(p.state)}</td>
+              <td style="text-align:right;padding:8px 12px">
+                ${p.provider === 'manual' && p.state === 'SUCCEEDED'
+                  ? `<button class="expand-btn" onclick="revertPay('${escapeHtml(p.payment_id)}')">Revertir</button>`
+                  : ''}
+              </td></tr>`).join('')}
+          </tbody></table></div>`
+      : '<div class="card" style="opacity:.7">Aún no hay pagos registrados. Confirma el primero desde "Pedidos sin confirmar".</div>';
+  } catch (e) { toast('Error: ' + e.message, 'error'); }
+};
+
+window.confirmPay = async function(orderId, total) {
+  const ref = prompt(
+    `Confirmar pago de $${Number(total).toLocaleString('es-CO')} para ${orderId}.\\n\\n` +
+    'Referencia de la transferencia (opcional — ej: NEQUI-1234):'
+  );
+  if (ref === null) return;   // cancelar
+  try {
+    const out = await api(`/orders/${orderId}/confirm-payment`, {
+      method: 'POST',
+      body: JSON.stringify({ reference: ref || undefined }),
+    });
+    toast(out.message || 'Pago confirmado', 'success');
+    render.cobros();
+  } catch (e) {
+    toast('Error: ' + (e.body?.message || e.message || 'no se pudo confirmar'), 'error');
+  }
+};
+
+window.revertPay = async function(paymentId) {
+  const reason = prompt('Motivo de la reversa (queda en el registro contable):');
+  if (!reason || reason.trim().length < 5) {
+    if (reason !== null) toast('El motivo debe tener al menos 5 caracteres', 'error');
+    return;
+  }
+  if (!confirm(`¿Revertir el pago ${paymentId}? El pedido vuelve a "sin confirmar".`)) return;
+  try {
+    await api(`/payments/${paymentId}/refund`, { method: 'POST', body: JSON.stringify({ reason }) });
+    toast('Pago revertido', 'success');
+    render.cobros();
+  } catch (e) {
+    toast('Error: ' + (e.body?.message || e.message || 'no se pudo revertir'), 'error');
+  }
 };
 
 // ====== CREDENCIALES (vault) ======
