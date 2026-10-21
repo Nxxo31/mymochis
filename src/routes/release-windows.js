@@ -1,6 +1,6 @@
 ﻿import { Router } from 'express';
 import { db } from '../db.js';
-import { authMiddleware, requireRole } from '../auth.js';
+import { authMiddleware, requireRole, verifyJwt } from '../auth.js';
 
 const router = Router();
 
@@ -18,8 +18,26 @@ function rowToWindow(r) {
   return { ...r, items };
 }
 
-router.get('/', (req, res) => {
-  const includeAll = req.query.include_all === '1' && req.user;
+// Middleware OPCIONAL: puebla req.user si hay un Bearer valido y, si no hay
+// ninguno, deja pasar la request con req.user = undefined. Es lo que necesitan
+// las rutas publicas que ofrecen un extra a los admins (include_all=1) sin
+// cerrar la lectura para el visitante.
+// NO usar authMiddleware aqui: ese devuelve 401 sin token y dejaria la tienda
+// sin catalogo.
+function optionalAuth(req, res, next) {
+  const auth = req.headers.authorization || '';
+  const token = auth.startsWith('Bearer ') ? auth.slice(7) : null;
+  req.user = token ? (verifyJwt(token) || null) : null;
+  next();
+}
+
+// `optionalAuth` puebla req.user cuando hay un Bearer valido. Sin el,
+// `req.user` es undefined y `include_all=1` queda muerto para TODOS, incluido
+// el admin: verificado 2026-10-21 con un draft real en la DB, el admin recibia
+// 0 drafts y el anonimo tambien. Falla cerrado (no habia fuga), pero el panel
+// no podia revisar borradores antes de abrirlos.
+router.get('/', optionalAuth, (req, res) => {
+  const includeAll = req.query.include_all === '1' && req.user?.role === 'admin';
   const sql = includeAll
     ? 'SELECT * FROM release_windows ORDER BY release_date DESC, id DESC'
     : `SELECT * FROM release_windows WHERE status IN ('open','closed','completed') ORDER BY release_date DESC, id DESC`;
@@ -27,7 +45,7 @@ router.get('/', (req, res) => {
   res.json(rows);
 });
 
-router.get('/:id', (req, res) => {
+router.get('/:id', optionalAuth, (req, res) => {
   const row = rowToWindow(db.prepare('SELECT * FROM release_windows WHERE id = ?').get(req.params.id));
   if (!row) return res.status(404).json({ error: 'not_found' });
   res.json(row);
