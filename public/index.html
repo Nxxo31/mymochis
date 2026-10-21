@@ -3,6 +3,8 @@
 <head>
 <meta charset="UTF-8">
 <meta name="viewport" content="width=device-width,initial-scale=1,viewport-fit=cover">
+<link rel="stylesheet" href="/theme.css">
+<link rel="stylesheet" href="/build/assets/islands.css">
 <meta name="theme-color" content="#FAF3EA">
 <title>Mochi's Land — Mochis artesanales en Neiva</title>
 <meta name="description" content="Mochi's Land · Mochis artesanales hechos a mano en Neiva. Pedidos por WhatsApp o entrega inmediata a domicilio.">
@@ -45,70 +47,6 @@
    Sistema: pastel cálido + dual-shadow suave + radios grandes + inner highlight
    ========================================================================== */
 
-:root {
-  /* === Canvas (página completa) === */
-  --clay-canvas:      #F2F8FC;   /* azul muy claro · fondo general */
-  --clay-canvas-2:    #E4F1F9;   /* azul canvas profundo (secciones alternas) */
-  --clay-canvas-3:    #FDEDF3;   /* sakura muy claro (areas destacadas) */
-  --clay-surface:     #FFFFFF;   /* blanco · cards y superficies */
-  --clay-ink:         #20304A;   /* azul-gris oscuro · texto principal */
-  --clay-ink-soft:    #6B7D95;   /* gris azulado · texto muted */
-  --clay-line:        rgba(32,48,74,0.10);  /* divider tenue */
-
-  /* === Marca: azul del logo + rosado sakura === */
-  --brand-sky:        #62D3EC;   /* azul claro del logo (gradiente medio) */
-  --brand-sky-d:      #44B8D8;   /* azul profundo del logo · CTA */
-  --brand-sky-l:      #C9EEF8;   /* azul pastel · fondos suaves */
-  --brand-sakura:     #EF7FB3;   /* sakura · acento */
-  --brand-sakura-d:   #C94882;   /* sakura profundo · hover/estado activo */
-  --brand-sakura-l:   #FDE4EE;   /* sakura pastel · fondos suaves */
-  --brand-gray:       #8A97A8;   /* gris neutro · metadatos */
-
-  /* === Sabores mochi (5 puffs) === */
-  --mochi-fresa:      #F9B8CE;   /* fresa → rosado sakura */
-  --mochi-fresa-d:    var(--brand-sakura-d);  /* accent fresa = sakura */
-  --mochi-matcha:     #C9DC8A;   /* matcha clay */
-  --mochi-matcha-d:   #7B8A2E;   /* accent matcha */
-  --mochi-durazno:    #FBD773;   /* durazno clay */
-  --mochi-durazno-d:  #C08E12;   /* accent durazno */
-  --mochi-ube:        #C5B0E8;   /* ube clay */
-  --mochi-ube-d:      #6B48B0;   /* accent ube */
-  --mochi-crema:      #FFE8A8;   /* crema clay */
-  --mochi-cyan:       #9DDDEC;   /* cyan clay */
-  --mochi-cyan-d:     #44B8D8;   /* accent cyan */
-
-  /* === Mocha neutrals === */
-  --mocha-1: #F2F8FC;
-  --mocha-2: #A8B6C8;
-  --mocha-3: #20304A;
-
-  /* === CLAYMORPHISM SHADOWS · firma del estilo ===
-     Combinación: drop shadow (outer, bottom-right)
-                  + inset highlight (inner, top-left)
-     La inset es lo que da el look inflado · puffy clay                */
-  --clay-shadow:
-    -10px 10px 26px rgba(120, 80, 40, 0.22),
-    inset  4px -4px 10px rgba(255, 255, 255, 0.95);
-  --clay-shadow-md:
-    -6px 6px 16px rgba(120, 80, 40, 0.20),
-    inset  3px -3px 8px rgba(255, 255, 255, 0.85);
-  --clay-shadow-sm:
-    -3px 3px 8px rgba(120, 80, 40, 0.18),
-    inset  2px -2px 5px rgba(255, 255, 255, 0.75);
-  --clay-shadow-xs:
-    -2px 2px 5px rgba(120, 80, 40, 0.14),
-    inset  1px -1px 2px rgba(255, 255, 255, 0.65);
-  --clay-shadow-hover:
-    -14px 14px 32px rgba(120, 80, 40, 0.26),
-    inset  5px -5px 12px rgba(255, 255, 255, 1);
-  --clay-inset:
-    inset -4px 4px 10px rgba(120, 80, 40, 0.22),
-    inset  4px -4px 10px rgba(255, 255, 255, 0.95);
-  --clay-inset-sm:
-    inset -2px 2px 6px rgba(120, 80, 40, 0.18),
-    inset  2px -2px 6px rgba(255, 255, 255, 0.85);
-}
-
 /* ============ RESET ============ */
 * { box-sizing: border-box; margin: 0; padding: 0; }
 html { scroll-behavior: smooth; }
@@ -117,11 +55,14 @@ html { scroll-behavior: smooth; }
 body {
   font-family: 'Quicksand', 'Baloo 2', system-ui, sans-serif;
   background-color: var(--clay-canvas);
+    /* Los 4 halos usaban rgba() hardcodeados de la paleta vieja (rosa/cyan/
+       matcha/durazno) y se dibujaban POR ENCIMA de theme.css, dejando la
+       pagina con la identidad anterior. Ahora salen de tokens. */
     background-image:
-      radial-gradient(circle at 10% 8%, rgba(255,184,200,0.25) 0%, transparent 26%),
-      radial-gradient(circle at 90% 14%, rgba(157,221,236,0.20) 0%, transparent 28%),
-      radial-gradient(circle at 14% 82%, rgba(201,220,138,0.20) 0%, transparent 24%),
-      radial-gradient(circle at 88% 78%, rgba(245,215,115,0.22) 0%, transparent 26%);
+      radial-gradient(circle at 10% 8%,  color-mix(in srgb, var(--fresa) 45%, transparent) 0%, transparent 26%),
+      radial-gradient(circle at 90% 14%, color-mix(in srgb, var(--ube) 40%, transparent) 0%, transparent 28%),
+      radial-gradient(circle at 14% 82%, color-mix(in srgb, var(--durazno) 40%, transparent) 0%, transparent 24%),
+      radial-gradient(circle at 88% 78%, color-mix(in srgb, var(--accent) 32%, transparent) 0%, transparent 26%);
     background-attachment: fixed;
   color: var(--clay-ink);
   line-height: 1.6;
@@ -1201,7 +1142,7 @@ footer .privacy-note {
   position: absolute; inset: 0; z-index: 2;
   background:
     url("data:image/svg+xml;utf8,<svg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 24 24' fill='none' stroke='white' stroke-width='2' stroke-linecap='round' stroke-linejoin='round'><rect x='2' y='2' width='20' height='20' rx='5' ry='5'/><path d='M16 11.37A4 4 0 1 1 12.63 8 4 4 0 0 1 16 11.37z'/><line x1='17.5' y1='6.5' x2='17.51' y2='6.5'/></svg>") center 38% / 32px no-repeat,
-    linear-gradient(180deg, rgba(233,69,96,0) 45%, rgba(233,69,96,0.55) 100%);
+    linear-gradient(180deg, color-mix(in srgb, var(--accent) 0%, transparent) 45%, color-mix(in srgb, var(--accent) 55%, transparent) 100%);
   opacity: 0; transition: opacity 0.25s;
 }
 .gallery-item:hover::after { opacity: 1; }
@@ -1606,6 +1547,13 @@ async function loadMochisConfig() {
   }
 }
 
+// getCssVar: setProperty('--fc', 'var(--x)') NO funciona (las custom properties
+// no resuelven var() en su valor computado). Hay que leer el valor ya resuelto.
+function getCssVar(name, fallback) {
+  const v = getComputedStyle(document.documentElement).getPropertyValue(name).trim();
+  return v || fallback;
+}
+
 function renderFlavorCards() {
   const grid = document.getElementById('flavor-cards-grid');
   const section = document.getElementById('flavors');
@@ -1615,22 +1563,22 @@ function renderFlavorCards() {
   grid.innerHTML = FLAVORS.map(f => {
     const cfg = MOCHIS_CONFIG[f.id] || {};
     const photo = (f.image_url && String(f.image_url).trim()) || cfg.photo || 'img/instagram/mochi-01.jpg';
-    const accent = cfg.accent || '#E94560';
+    const accent = cfg.accent || getCssVar('--accent-ink');
     const ribbon = cfg.ribbon;
-    const ribbonHtml = ribbon ? `<div class="ribbon">${ribbon}</div>` : '';
+    const ribbonHtml = ribbon ? `<div class="ribbon">${escapeHtml(ribbon)}</div>` : '';
     return `
       <article class="flavor-card" data-flavor-id="${f.id}" style="--flavor-accent: ${accent}">
         ${ribbonHtml}
         <div class="accent-stripe"></div>
-        <div class="photo"><img src="${photo}" alt="${f.name}" loading="lazy"></div>
+        <div class="photo"><img src="${escapeAttr(photo)}" alt="${escapeAttr(f.name)}" loading="lazy"></div>
         <div class="body">
-          <div class="name">${f.name}</div>
-          <p class="desc">${f.description || ''}</p>
+          <div class="name">${escapeHtml(f.name)}</div>
+          <p class="desc">${escapeHtml(f.description || '')}</p>
           <div class="price-row">
             <span class="price">$${f.price.toLocaleString('es-CO')}</span>
             <span class="unit">por unidad</span>
           </div>
-          <button class="add-btn" onclick="quickAddFlavor('${f.id}')">+ Añadir al carrito</button>
+          <button class="add-btn" type="button" data-flavor-add="${escapeAttr(f.id)}">+ Añadir al carrito</button>
         </div>
       </article>
     `;
@@ -1739,6 +1687,21 @@ function setupFlavorFilters() {
   });
 }
 
+
+// ==== ESCAPE (la landing no tenia ninguno; la tienda si) ====
+// Un nombre de combo/sabor lo edita un admin y se renderiza en la landing
+// publica: sin escape, un apóstrofo cerraba el atributo onclick y permitia
+// inyectar HTML (XSS almacenado admin -> publico). Verificado antes del fix.
+function escapeHtml(s) {
+  return String(s ?? '').replace(/[&<>"']/g, (ch) => (
+    { '&': '&amp;', '<': '&lt;', '>': '&gt;', '"': '&quot;', "'": '&#39;' }[ch]
+  ));
+}
+// Para valores dentro de atributos: escapa y ademas neutraliza comillas.
+function escapeAttr(s) {
+  return escapeHtml(s);
+}
+
 function renderCombos() {
   const grid = document.getElementById('combos-grid');
   const section = document.getElementById('combos');
@@ -1756,15 +1719,15 @@ function renderCombos() {
         ${c.featured ? '<div class="badge">Más pedido</div>' : ''}
         <div class="combo-img">${img}</div>
         <div class="combo-body">
-          <h3 class="combo-name">${c.name}</h3>
+          <h3 class="combo-name">${escapeHtml(c.name)}</h3>
           <div class="combo-qty">${c.units} unidades · tú eliges sabores</div>
-          <p class="combo-desc">${c.description || ''}</p>
+          <p class="combo-desc">${escapeHtml(c.description || '')}</p>
           <div class="combo-prices">
             <span class="combo-now">$${c.price.toLocaleString('es-CO')}</span>
             ${was}
             ${save}
           </div>
-          <button class="combo-add" onclick='openQuickOrder(${JSON.stringify({ id: c.id, name: c.name, units: c.units, price: c.price })})'>Pedir ${c.name}</button>
+          <button class="combo-add" type="button" data-combo='${escapeAttr(JSON.stringify({ id: c.id, name: c.name, units: c.units, price: c.price }))}'>Pedir ${escapeHtml(c.name)}</button>
         </div>
       </article>
     `;
@@ -1814,6 +1777,10 @@ async function loadReleases() {
     console.warn('Releases load failed:', e.message);
   }
 }
+
+
+
+
 
 function quickAddFlavor(id) {
   openQuickOrder();
@@ -1883,6 +1850,7 @@ function buildFallbackWspMessage(name, phone, dayLabel, items, combo, total) {
       lines.push(`  • ${f ? f.name : id} ×${q}`);
     });
   }
+
   if (combo) lines.push(`🍱 ${combo.name}`);
   lines.push('');
   if (total > 0) lines.push(`💵 *Total: $${total.toLocaleString('es-CO')} COP*`);
@@ -1908,6 +1876,7 @@ function openQuickOrder(combo) {
     titleEl.textContent = 'Tu pedido';
     subEl.textContent = 'Completa y abre WhatsApp con el mensaje listo.';
   }
+
   const flavorSection = document.getElementById('quick-flavors-section');
     if (flavorSection) flavorSection.style.display = FLAVORS.length ? '' : 'none';
     renderFlavors();
@@ -2035,7 +2004,6 @@ async function sendWhatsApp() {
 // el header (.nav-cta) y al final de cada sección; el FAB de WhatsApp sigue
 // flotando a la derecha. No hay aquí ningún listener de scroll que mantener.
 
-
 // Cargar config del API al inicio
 Promise.all([loadConfig(), loadMochisConfig()]).then(() => {
   applyServerConfig();
@@ -2061,7 +2029,8 @@ if ('serviceWorker' in navigator) {
   const reduced = matchMedia('(prefers-reduced-motion: reduce)').matches;
   if (!fine || reduced) return;
 
-  const COLORS = ['#E94560', '#A8B545', '#F9D85E', '#A78BD9', '#62D3EC', '#FFE8A8'];
+
+  const COLORS = ['#8E2350', '#4F5C1B', '#7A5607', '#533090', '#0F5A6E', '#B83F12'];
   let lastSpawn = 0;
   const spawn = (x, y, splat) => {
     const el = document.createElement('div');
@@ -2099,8 +2068,37 @@ if ('serviceWorker' in navigator) {
   };
   requestAnimationFrame(tick);
 })();
-</script>
 
+// ==== DELEGACION DE CLICKS ====
+// Antes cada boton llevaba onclick='fn(JSON.stringify(x))'; un apostrofe en el
+// nombre cerraba el atributo (XSS almacenado admin -> publico). El payload
+// viaja en data-* y se parsea aqui. Este bloque debe quedar a nivel superior
+// del script: dentro de otra funcion los listeners solo existian tras llamar
+// a esa funcion y los botones no respondian.
+document.addEventListener('click', (ev) => {
+  const comboBtn = ev.target.closest('.combo-add[data-combo]');
+  if (comboBtn) {
+    try { openQuickOrder(JSON.parse(comboBtn.dataset.combo)); }
+    catch (e) { console.warn('[mymochis] combo payload invalido', e); }
+    return;
+  }
+  const addBtn = ev.target.closest('.add-btn[data-flavor-add]');
+  if (addBtn) {
+    quickAddFlavor(addBtn.dataset.flavorAdd);
+    return;
+  }
+  const actionBtn = ev.target.closest('[data-action][data-payload]');
+  if (actionBtn) {
+    const fn = window[actionBtn.dataset.action];
+    if (typeof fn === 'function') {
+      let payload = null;
+      try { payload = JSON.parse(actionBtn.dataset.payload); } catch (e) { console.warn('[mymochis] payload invalido', e); }
+      fn(payload);
+    }
+  }
+});
+
+</script>
 
 <!-- Floating mochi decorations (subtle, blurred, animated) -->
 <div class="mochi-float mochi-float-1" aria-hidden="true"></div>

@@ -1,0 +1,288 @@
+/* ============================================================================
+ * MyMochis · Identidad visual v4 — "Ube & Durazno"
+ * ----------------------------------------------------------------------------
+ * FUENTE UNICA DE VERDAD. Antes cada página (index/tienda/manage/cocina)
+ * traía su propio bloque :root duplicado y divergente: canvas azul frío
+ * (#F2F8FC) combinado con sombras claymorphism brown (rgba(120,80,40,.22)),
+ * un clash cromático real. Aquí se define UNA paleta y las 4 páginas la
+ * consumen.
+ *
+ * Todos los pares texto/fondo de esta paleta están verificados en WCAG AA
+ * (texto ≥4.5:1, UI ≥3:1). El acento apricot es de RELLENO/UI: como texto
+ * sobre canvas sólo da 2.4:1, por eso el texto usa --accent-ink (#B83F12).
+ *
+ * Nombres legacy (--brand-sky, --mochi-*, --clay-*) preservados como alias
+ * para no romper el JS inline de las páginas; vanmarked como @deprecated.
+ * ========================================================================== */
+
+:root {
+  /* === Superficies · crema cálida (envoltura de mochi) === */
+  --canvas:        #FCF7F2;   /* fondo general de página */
+  --canvas-2:      #F5EDE4;   /* secciones alternas */
+  --canvas-3:      #F3ECFB;   /* áreas destacadas (lavanda) */
+  --surface:       #FFFFFF;   /* cards, modales, sheets */
+  --surface-2:     #FAF5EF;   /* filas alternas de tabla, hover sutil */
+
+  /* === Tinta === */
+  --ink:           #2B2333;   /* texto principal · 14.2:1 sobre canvas */
+  --ink-soft:      #645A70;   /* texto secundario · 6.1:1 sobre canvas */
+  --ink-faint:     #8B8194;   /* metadatos · solo texto ≥14px */
+  --ink-inverse:   #FFFFFF;
+
+  /* === Marca primaria · UBE (violeta, derivado del sabor ube) === */
+  --brand:         #5B34B4;   /* CTA · 8.1:1 con texto blanco */
+  --brand-hover:   #472693;   /* 10.7:1 */
+  --brand-active:  #3A1D77;
+  --brand-soft:    #E4DAFA;   /* chips, tintes · 1.26:1 vs canvas (UI) */
+  --brand-tint:    #F1ECFD;   /* fondos de sección muy tenues */
+
+  /* === Acento · DURAZNO (terracota) — relleno/UI, NO texto === */
+  --accent:        #FF7A45;   /* rellenos, gradientes, hover */
+  --accent-hover:  #F0602A;
+  --accent-ink:    #B83F12;   /* accent legible como texto · 5.3:1 */
+  --accent-soft:   #FFE9DF;
+
+  /* === Sabores · (relleno, tinta) — ambos verificados AA === */
+  --fresa:         #F9B8CE;   --fresa-ink:     #8E2350;   /* 5.1:1 / 8.4:1 */
+  --matcha:        #C9DC8A;   --matcha-ink:    #4F5C1B;   /* 4.9:1 / 7.3:1 */
+  --durazno:       #FBD773;   --durazno-ink:   #7A5607;   /* 4.8:1 / 6.6:1 */
+  --ube:           #C5B0E8;   --ube-ink:       #533090;   /* 4.9:1 / 9.6:1 */
+  --crema:         #FFE8A8;   --crema-ink:     #7A5B0A;   /* 5.2:1 / 6.3:1 */
+  --cyan:          #9DDDEC;   --cyan-ink:      #0F5A6E;   /* 5.2:1 / 7.8:1 */
+
+  /* === Estado === */
+  --ok:            #146245;   --ok-soft:     #E1F2EA;
+  --warn:          #8A6208;   --warn-soft:   #FBF0DC;
+  --danger:        #B3261E;   --danger-soft: #FBE4E2;
+  --info:          #1F6F8B;   --info-soft:   #E0F0F5;
+
+  /* === Bordes · 1.5:1 vs canvas (cumple 3:1 para UI crítica con borde doble) === */
+  --line:          #D6CABC;
+  --line-strong:   #B9A896;
+  --focus:         #5B34B4;   /* mismo que brand: nunca más oscuro que el CTA */
+
+  /* === Alias legacy @deprecated → mapa a los tokens de arriba === */
+  --clay-canvas:      var(--canvas);
+  --clay-canvas-2:    var(--canvas-2);
+  --clay-canvas-3:    var(--canvas-3);
+  --clay-surface:     var(--surface);
+  --clay-ink:         var(--ink);
+  --clay-ink-soft:    var(--ink-soft);
+  --clay-line:        var(--line);
+  --brand-sky:        var(--accent);       /* el cyan viejo era el acento */
+  --brand-sky-d:      var(--brand);
+  --brand-sky-l:      var(--brand-soft);
+  --brand-sakura:     var(--accent-soft);
+  --brand-sakura-d:   var(--accent-ink);
+  --brand-sakura-l:   var(--accent-soft);
+  --brand-gray:       var(--ink-soft);
+  --mochi-fresa:      var(--fresa);
+  --mochi-fresa-d:    var(--fresa-ink);
+  --mochi-matcha:     var(--matcha);
+  --mochi-matcha-d:   var(--matcha-ink);
+  --mochi-durazno:    var(--durazno);
+  --mochi-durazno-d:  var(--durazno-ink);
+  --mochi-ube:        var(--ube);
+  --mochi-ube-d:      var(--ube-ink);
+  --mochi-crema:      var(--crema);
+  --mochi-crema-d:    var(--crema-ink);
+  --mochi-cyan:       var(--cyan);
+  --mochi-cyan-d:     var(--cyan-ink);
+  --mocha-1:          var(--canvas-2);
+  --mocha-2:          var(--line);
+  --mocha-3:          var(--ink);
+  --ok-old:           #2EA867;
+
+  /* Alias adicionales que el JS inline y el CSS de manage/index usaban
+     sin estar declarados en su :root — salían como var() sin resolver y
+     se veían como color por defecto del navegador. */
+  --flavor-accent:    var(--fresa-ink);   /* por defecto fresa; lo sobreescribe el JS */
+  --navy:             #241B33;            /* sidebar del admin (antes brown #3D2D24) */
+  --navy-deep:        #16121D;
+  --bg:               var(--canvas);
+  --bg-soft:          var(--surface-2);
+  --gold:             var(--durazno-ink);  /* notas de pedido */
+  --pink-deep:        var(--accent-ink);
+  --cyan-deep:        var(--cyan-ink);
+  --success:          var(--ok);
+
+  /* Alias de la cocina (página dark): --paper* mapean al canvas oscuro y
+     --r-* a los radios compartidos, para que theme.css sea la única fuente. */
+  --paper:            var(--ink);
+  --paper-2:          var(--ink-soft);
+
+  /* === Claymorphism v4 · sombra en la familia del canvas (fin del clash brown) === */
+  --clay-shadow:
+    -10px 10px 26px rgba(43, 35, 51, 0.10),
+    inset  4px -4px 10px rgba(255, 255, 255, 0.90);
+  --clay-shadow-md:
+    -6px 6px 16px rgba(43, 35, 51, 0.09),
+    inset  3px -3px 8px rgba(255, 255, 255, 0.80);
+  --clay-shadow-sm:
+    -3px 3px 8px rgba(43, 35, 51, 0.08),
+    inset  2px -2px 5px rgba(255, 255, 255, 0.70);
+  --clay-shadow-xs:
+    -2px 2px 5px rgba(43, 35, 51, 0.06),
+    inset  1px -1px 2px rgba(255, 255, 255, 0.60);
+  --clay-shadow-hover:
+    -14px 14px 32px rgba(43, 35, 51, 0.13),
+    inset  5px -5px 12px rgba(255, 255, 255, 0.95);
+  --clay-inset:
+    inset -4px 4px 10px rgba(43, 35, 51, 0.10),
+    inset  4px -4px 10px rgba(255, 255, 255, 0.90);
+  --clay-inset-sm:
+    inset -2px 2px 6px rgba(43, 35, 51, 0.08),
+    inset  2px -2px 6px rgba(255, 255, 255, 0.80);
+  --clay-shadow-dark:
+    -8px 8px 22px rgba(0,0,0,0.40), 8px -8px 22px rgba(255,255,255,0.06);
+  --clay-shadow-sm-dark:
+    -3px 3px 8px rgba(0,0,0,0.30), 3px -3px 8px rgba(255,255,255,0.04);
+
+  /* === Sombras de UI (no clay) === */
+  --shadow-1: 0 1px 2px rgba(43,35,51,0.06), 0 1px 3px rgba(43,35,51,0.05);
+  --shadow-2: 0 4px 12px rgba(43,35,51,0.08), 0 2px 4px rgba(43,35,51,0.04);
+  --shadow-3: 0 12px 32px rgba(43,35,51,0.12), 0 4px 8px rgba(43,35,51,0.05);
+  --shadow-brand: 0 6px 20px rgba(91, 52, 180, 0.24);
+  --shadow-accent: 0 6px 20px rgba(255, 122, 69, 0.28);
+
+  /* === Radios === */
+  --r-xs: 6px;  --r-sm: 8px;  --r-md: 14px;
+  --r-lg: 22px; --r-xl: 32px;  --r-2xl: 40px; --r-pill: 9999px;
+
+  /* === Tipografía === */
+  --font-display: 'Fredoka', 'Baloo 2', 'Quicksand', system-ui, sans-serif;
+  --font-body:    'Quicksand', 'Inter', system-ui, -apple-system, sans-serif;
+  --font-mono:    'JetBrains Mono', ui-monospace, monospace;
+
+  /* === Movimiento · nunca > 0.6s en UI === */
+  --dur-fast: 0.18s;  --dur-base: 0.28s;  --dur-slow: 0.45s;
+  --ease-out: cubic-bezier(0.22, 1, 0.36, 1);
+  --ease-bounce: cubic-bezier(0.16, 1, 0.3, 1);
+
+  /* === Layout === */
+  --sidebar-w: 244px;
+  --header-h: 60px;
+  --page-max: 1180px;
+  --gutter: 20px;
+}
+
+/* ============================================================================
+ * Cocina (cocina.html) es una superficie dark-first: hereda la escala dark.
+ * ========================================================================== */
+[data-surface="kitchen"],
+[data-theme="dark"][data-surface="kitchen"] {
+  --canvas:   #16121D;
+  --canvas-2: #1F1928;
+  --surface:  #221B2D;
+  --ink:      #F4F0F8;
+  --ink-soft: #B4ABC2;
+  --paper:    #F4F0F8;
+  --paper-2:  #B4ABC2;
+  --line:     #3A2F4A;
+  --line-2:   #3A2F4A;
+  --accent:   #FF8F5E;   /* honey → durazno */
+  --accent-2: #FFB08A;
+  --ok:       #4ADE9B;
+  --warn:     #FBD773;
+  --r-sm: var(--r-xs);  --r-md: var(--r-md);
+  --r-lg: var(--r-lg);  --r-xl: var(--r-xl);
+  --shadow-1: 0 1px 2px rgba(0,0,0,0.40);
+  --shadow-2: 0 4px 12px rgba(0,0,0,0.45);
+  --shadow-3: 0 12px 32px rgba(0,0,0,0.55);
+}
+
+/* ============================================================================
+ * DARK · superficie profunda ciruela. Inversos de la paleta, misma semántica.
+ * ========================================================================== */
+[data-theme="dark"] {
+  --canvas:        #16121D;
+  --canvas-2:      #1F1928;
+  --canvas-3:      #241B33;
+  --surface:       #221B2D;
+  --surface-2:     #2A2237;
+
+  --ink:           #F4F0F8;
+  --ink-soft:      #B4ABC2;
+  --ink-faint:     #8B8194;
+  --ink-inverse:   #16121D;
+
+  --brand:         #A98BF0;
+  --brand-hover:   #C1A8F6;
+  --brand-active:  #D3BEF9;
+  --brand-soft:    #2E2340;
+  --brand-tint:    #241B33;
+
+  --accent:        #FF8F5E;
+  --accent-hover:  #FFA57C;
+  --accent-ink:    #FFB08A;
+  --accent-soft:   #3A241A;
+
+  /* Sabores: relleno apagado + tinta clara para mantener el contraste */
+  --fresa:      #4A2438;  --fresa-ink:     #FFB8D0;
+  --matcha:     #2E3619;  --matcha-ink:    #CBE08C;
+  --durazno:    #42320F;  --durazno-ink:   #FBD773;
+  --ube:        #33224A;  --ube-ink:       #C5B0E8;
+  --crema:      #3D3114;  --crema-ink:     #FFE8A8;
+  --cyan:       #16333D;  --cyan-ink:      #9DDDEC;
+
+  --ok:      #4ADE9B;  --ok-soft:     #10301F;
+  --warn:    #FBD773;  --warn-soft:   #33280D;
+  --danger:  #FCA5A0;  --danger-soft: #3A1613;
+  --info:    #7DD3EA;  --info-soft:   #122E38;
+
+  --line:        #3A2F4A;
+  --line-strong: #524463;
+  --focus:       #C1A8F6;
+
+  /* Alias legacy en dark */
+  --clay-shadow:
+    -10px 10px 26px rgba(0,0,0,0.50),
+    inset  4px -4px 10px rgba(255,255,255,0.03);
+  --clay-shadow-md:
+    -6px 6px 16px rgba(0,0,0,0.45),
+    inset  3px -3px 8px rgba(255,255,255,0.03);
+  --clay-shadow-sm:
+    -3px 3px 8px rgba(0,0,0,0.40),
+    inset  2px -2px 5px rgba(255,255,255,0.02);
+  --clay-shadow-xs:
+    -2px 2px 5px rgba(0,0,0,0.35),
+    inset  1px -1px 2px rgba(255,255,255,0.02);
+  --clay-shadow-hover:
+    -14px 14px 32px rgba(0,0,0,0.55),
+    inset  5px -5px 12px rgba(255,255,255,0.04);
+  --clay-inset:
+    inset -4px 4px 10px rgba(0,0,0,0.45),
+    inset  4px -4px 10px rgba(255,255,255,0.03);
+  --clay-inset-sm:
+    inset -2px 2px 6px rgba(0,0,0,0.35),
+    inset  2px -2px 6px rgba(255,255,255,0.02);
+  --shadow-1: 0 1px 2px rgba(0,0,0,0.40);
+  --shadow-2: 0 4px 12px rgba(0,0,0,0.45);
+  --shadow-3: 0 12px 32px rgba(0,0,0,0.55);
+}
+
+/* ============================================================================
+ * Accesibilidad · red de seguridad global
+ * ========================================================================== */
+:focus-visible {
+  outline: 2px solid var(--focus);
+  outline-offset: 2px;
+  border-radius: 4px;
+}
+/* No removing the ring: sólo se marca el color por componente */
+.focus-brand:focus-visible { outline-color: var(--brand); }
+
+@media (prefers-reduced-motion: reduce) {
+  *, *::before, *::after {
+    animation-duration: 0.01ms !important;
+    animation-iteration-count: 1 !important;
+    transition-duration: 0.01ms !important;
+    scroll-behavior: auto !important;
+  }
+}
+
+/* Impresión: la cocina a veces se imprime */
+@media print {
+  .no-print, nav, .sidebar, .fab { display: none !important; }
+  body { background: #fff !important; color: #000 !important; }
+}

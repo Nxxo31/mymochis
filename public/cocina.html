@@ -1,8 +1,9 @@
 <!DOCTYPE html>
-<html lang="es">
+<html lang="es" data-surface="kitchen">
 <head>
 <meta charset="UTF-8">
 <meta name="viewport" content="width=device-width,initial-scale=1,viewport-fit=cover">
+<link rel="stylesheet" href="/theme.css">
 <meta name="theme-color" content="#0E0B08">
 <title>MyMochis — Cocina oculta en Neiva</title>
 <meta name="description" content="Pedidos por unidad, sin carrito. Apartá tus mochis de la semana y recogé en Neiva.">
@@ -28,32 +29,6 @@
    - Micro-interactions on every click
    - Single-tap "Apartar N" — opens WhatsApp with pre-filled message
    ========================================================================= */
-:root {
-  --ink:        #0E0B08;
-  --ink-soft:   #1A1612;
-  --paper:      #FAF6EE;
-  --paper-2:    #F2ECDF;
-  --line:       rgba(250, 246, 238, 0.10);
-  --line-2:     rgba(14, 11, 8, 0.08);
-  --accent:     #E8B85F;       /* warm honey */
-  --accent-2:   #D58C3F;       /* dark honey */
-  --fresa:      #E94560;
-  --matcha:     #7B8A2E;
-  --durazno:    #E8A040;
-  --ube:        #8B6BBA;
-  --crema:      #C9A85B;
-  --ok:         #2EA867;
-  --warn:       #E8A040;
-
-  --r-sm: 8px;
-  --r-md: 14px;
-  --r-lg: 22px;
-  --r-xl: 32px;
-
-  --shadow-1: 0 1px 2px rgba(14,11,8,0.06), 0 4px 12px rgba(14,11,8,0.04);
-  --shadow-2: 0 4px 12px rgba(14,11,8,0.10), 0 12px 32px rgba(14,11,8,0.08);
-  --shadow-3: 0 12px 32px rgba(14,11,8,0.18), 0 24px 64px rgba(14,11,8,0.12);
-}
 
 * { box-sizing: border-box; margin: 0; padding: 0; }
 html { scroll-behavior: smooth; -webkit-text-size-adjust: 100%; }
@@ -276,7 +251,7 @@ section { padding: 88px 0; position: relative; }
 .flavor__stock-dot { width: 6px; height: 6px; border-radius: 50%; background: var(--ok); }
 .flavor__stock--low { background: rgba(232,160,64,0.10); color: var(--warn); border-color: rgba(232,160,64,0.30); }
 .flavor__stock--low .flavor__stock-dot { background: var(--warn); }
-.flavor__stock--out { background: rgba(233,69,96,0.10); color: var(--fresa); border-color: rgba(233,69,96,0.30); }
+.flavor__stock--out { background: color-mix(in srgb, var(--accent) 10%, transparent); color: var(--fresa); border-color: color-mix(in srgb, var(--accent) 30%, transparent); }
 .flavor__stock--out .flavor__stock-dot { background: var(--fresa); }
 
 .flavor__qty { display: flex; align-items: center; gap: 4px; margin-top: 14px; }

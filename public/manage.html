@@ -3,6 +3,7 @@
 <head>
 <meta charset="UTF-8">
 <meta name="viewport" content="width=device-width,initial-scale=1">
+<link rel="stylesheet" href="/theme.css">
 <meta name="theme-color" content="#FAF3EA">
 <title>Mochi's Land · Panel de gestión</title>
 <link rel="icon" type="image/svg+xml" href="favicon.svg">
@@ -17,66 +18,15 @@
    Mismo lenguaje visual que landing · sidebar en clay dark · content cards en warm cream
    ========================================================================== */
 
-:root {
-  /* === Canvas === */
-  --clay-canvas:      #F2F8FC;   /* azul muy claro */
-  --clay-canvas-2:    #E4F1F9;   /* azul canvas profundo */
-  --clay-surface:     #FFFFFF;   /* blanco */
-  --clay-ink:         #20304A;   /* azul-gris texto principal */
-  --clay-ink-soft:    #6B7D95;   /* gris azulado */
-  --clay-line:        rgba(32,48,74,0.10);
-
-  /* Marca: azul del logo + rosado sakura */
-  --brand-sky:        #62D3EC;
-  --brand-sky-d:      #44B8D8;
-  --brand-sky-l:      #C9EEF8;
-  --brand-sakura:     #EF7FB3;
-  --brand-sakura-d:   #C94882;
-  --brand-sakura-l:   #FDE4EE;
-  --brand-gray:       #8A97A8;
-
-  /* === Mochi palette === */
-  --mochi-fresa:      #FFB8C8;
-  --mochi-fresa-d:    var(--brand-sakura-d);
-  --mochi-matcha:     #C9DC8A;
-  --mochi-matcha-d:   #7B8A2E;
-  --mochi-durazno:    #FBD773;
-  --mochi-durazno-d:  #C08E12;
-  --mochi-ube:        #C5B0E8;
-  --mochi-ube-d:      #6B48B0;
-  --mochi-crema:      #FFE8A8;
-  --mochi-cyan:       #9DDDEC;
-  --mochi-cyan-d:     #44B8D8;
-
-  /* === Sidebar palette (clay dark) === */
-  --mocha-1: #F4E4D4;
-  --mocha-2: #C9A88A;
-  --mocha-3: #6F4E37;
-  --navy:    #3D2D24;
-  --navy-deep: #2A1E18;
-
-  /* === Claymorphism shadow system (inset + drop) === */
-  --clay-shadow:    -10px 10px 26px rgba(120,80,40,0.22), inset  4px -4px 10px rgba(255,255,255,0.95);
-  --clay-shadow-md: -6px 6px 16px rgba(120,80,40,0.20), inset  3px -3px 8px rgba(255,255,255,0.85);
-  --clay-shadow-sm: -3px 3px 8px rgba(120,80,40,0.18), inset  2px -2px 5px rgba(255,255,255,0.75);
-  --clay-shadow-xs: -2px 2px 5px rgba(120,80,40,0.14), inset  1px -1px 2px rgba(255,255,255,0.65);
-  --clay-shadow-hover: -14px 14px 32px rgba(120,80,40,0.26), inset  5px -5px 12px rgba(255,255,255,1);
-  --clay-inset:    inset -4px 4px 10px rgba(120,80,40,0.22), inset  4px -4px 10px rgba(255,255,255,0.95);
-  --clay-inset-sm: inset -2px 2px 6px rgba(120,80,40,0.18), inset  2px -2px 6px rgba(255,255,255,0.85);
-  /* Shadow en dark sidebar (light only) */
-  --clay-shadow-dark: -8px 8px 22px rgba(0,0,0,0.40), 8px -8px 22px rgba(255,255,255,0.08);
-  --clay-shadow-sm-dark: -3px 3px 8px rgba(0,0,0,0.30), 3px -3px 8px rgba(255,255,255,0.06);
-}
-
 * { box-sizing: border-box; margin: 0; padding: 0; }
 
 body {
   font-family: 'Inter', 'Quicksand', system-ui, sans-serif;
   background:
-    radial-gradient(circle at 12% 8%, rgba(255,184,200,0.30) 0%, transparent 28%),
-    radial-gradient(circle at 88% 14%, rgba(157,221,236,0.28) 0%, transparent 30%),
-    radial-gradient(circle at 14% 82%, rgba(201,220,138,0.28) 0%, transparent 26%),
-    radial-gradient(circle at 88% 78%, rgba(245,215,115,0.30) 0%, transparent 28%),
+    radial-gradient(circle at 12% 8%, color-mix(in srgb, var(--fresa) 30%, transparent) 0%, transparent 28%),
+    radial-gradient(circle at 88% 14%, color-mix(in srgb, var(--cyan) 28%, transparent) 0%, transparent 30%),
+    radial-gradient(circle at 14% 82%, color-mix(in srgb, var(--matcha) 28%, transparent) 0%, transparent 26%),
+    radial-gradient(circle at 88% 78%, color-mix(in srgb, var(--durazno) 30%, transparent) 0%, transparent 28%),
     var(--clay-canvas);
   background-attachment: fixed;
   color: var(--clay-ink);
@@ -93,9 +43,9 @@ a:hover { text-decoration: underline; }
   min-height: 100vh;
   display: flex; align-items: center; justify-content: center;
   background:
-    radial-gradient(circle at 30% 20%, rgba(157,221,236,0.40), transparent 55%),
-    radial-gradient(circle at 80% 80%, rgba(255,184,200,0.40), transparent 55%),
-    radial-gradient(circle at 50% 100%, rgba(245,215,115,0.30), transparent 60%),
+    radial-gradient(circle at 30% 20%, color-mix(in srgb, var(--cyan) 40%, transparent), transparent 55%),
+    radial-gradient(circle at 80% 80%, color-mix(in srgb, var(--fresa) 40%, transparent), transparent 55%),
+    radial-gradient(circle at 50% 100%, color-mix(in srgb, var(--durazno) 30%, transparent), transparent 60%),
     var(--clay-canvas);
   padding: 24px;
   position: relative; z-index: 1;
@@ -163,7 +113,7 @@ a:hover { text-decoration: underline; }
 }
 .btn:hover { transform: translateY(-1px); box-shadow: var(--clay-shadow-md); }
 .btn:active { transform: scale(0.97); box-shadow: var(--clay-inset-sm); }
-.btn:focus-visible { outline: 3px solid rgba(157,221,236,0.7); outline-offset: 2px; }
+.btn:focus-visible { outline: 3px solid color-mix(in srgb, var(--cyan) 70%, transparent); outline-offset: 2px; }
 .btn-primary {
   background: var(--mochi-fresa); color: var(--mochi-fresa-d);
   box-shadow: var(--clay-shadow-sm), inset 2px -2px 4px rgba(255,255,255,0.8);
@@ -266,7 +216,11 @@ a:hover { text-decoration: underline; }
 .sidebar .btn-ghost:hover { background: rgba(255,255,255,0.10); }
 
 /* ============ MAIN · área de contenido ============ */
-.main { padding: 36px 40px; max-width: 1400px; }
+/* min-width:0 es obligatorio: como item de un grid, el default es
+   min-width:auto (= min-content), asi que una tabla de 746px estira la
+   columna y el scroll horizontal ocurre a nivel de pagina en vez de dentro
+   del contenedor .table-wrap. */
+.main { padding: 36px 40px; max-width: 1400px; min-width: 0; }
 .page-head {
   display: flex; justify-content: space-between; align-items: flex-start;
   flex-wrap: wrap; gap: 16px; margin-bottom: 28px;
@@ -295,6 +249,10 @@ a:hover { text-decoration: underline; }
 .grid-2 { grid-template-columns: repeat(auto-fit, minmax(280px, 1fr)); }
 .grid-3 { grid-template-columns: repeat(auto-fit, minmax(220px, 1fr)); }
 .grid-4 { grid-template-columns: repeat(auto-fit, minmax(180px, 1fr)); }
+/* Sin min-width:0 los hijos de un grid conservan su min-content y el
+   contenido ancho (canvas, tablas, pre) empuja la columna mas alla de su
+   track,Overflow horizontal en cualquier ancho. */
+.grid-2 > *, .grid-3 > *, .grid-4 > * { min-width: 0; }
 
 /* ============ KPI · clay numbers ============ */
 .kpi {
@@ -567,19 +525,81 @@ tbody tr:hover { background: var(--clay-canvas); }
 .items-breakdown { display: flex; flex-direction: column; gap: 4px; font-size: 12px; }
 .items-breakdown .row { display: flex; justify-content: space-between; gap: 8px; }
 
-/* ============ RESPONSIVE ============ */
+/* El scrim solo existe en movil: en desktop se oculta siempre.
+   Debe declararse ANTES del @media que lo muestra, porque a igual
+   especificidad (0,1,0) gana la ultima regla y lo dejaria en display:none. */
+.sidebar-scrim { display: none; }
+
+/* ============ RESPONSIVE ============
+   Antes solo habia un breakpoint (880px) que colapsaba el grid: el sidebar
+   se volca off-canvas pero sin overlay, los charts quedaban mas anchos que
+   el viewport (scroll horizontal en 375px) y las tablas no tenian contenedor
+   propio de scroll. Tres breakpoints: tablet / movil / movil-estrecho. */
+@media (max-width: 1024px) {
+  .main { padding: 28px 26px; }
+  .grid-2, .grid-3 { grid-template-columns: repeat(auto-fit, minmax(200px, 1fr)); }
+  /* El canvas de la torta se dimensiona en px al crearse; a 1024px el
+     sidebar (260px) + padding dejaba el chart 9px mas ancho que su columna. */
+  #chart-canvas, #chart-status-pie { max-width: 100%; display: block; }
+  .chart-box { min-width: 0; }
+}
+
 @media (max-width: 880px) {
   .app.visible { grid-template-columns: 1fr; }
   .sidebar {
-    position: fixed; z-index: 50; width: 260px;
-    transform: translateX(-100%); transition: transform 0.25s;
+    position: fixed; z-index: 60; width: 260px; max-width: 84vw;
+    height: 100vh; overflow-y: auto;
+    /* Sin left/right explicitos el elemento queda en su posicion estatica y
+       transform: translateX(-100%) lo saca del viewport, pero al volver a
+       desktop el sticky del grid lo recoloca a la izquierda en vez de
+       ocupar la columna. */
+    left: 0; top: 0;
+    transform: translateX(-100%); transition: transform 0.25s var(--ease-out);
     box-shadow: var(--clay-shadow-dark);
   }
   .sidebar.open { transform: translateX(0); }
-  .main { padding: 24px 20px; }
+  .main { padding: 24px 18px; }
   .page-head h1 { font-size: 28px; }
   .menu-btn { display: block !important; }
+
+  /* Overlay: sin esto el contenido detras sigue siendo clickeable aunque
+     el sidebar este "abierto" encima, y no hay forma de cerrarlo tocando
+     fuera. */
+  .sidebar-scrim {
+    display: block; position: fixed; inset: 0; z-index: 55;
+    background: rgba(43, 35, 51, 0.45);
+    opacity: 0; pointer-events: none; transition: opacity 0.25s;
+  }
+  .sidebar-scrim.visible { opacity: 1; pointer-events: auto; }
+
+  /* Charts: el canvas se dimensiona en px al crearse, asi que sin un max-width
+     con ancho de columna conserva el tamano viejo y desborda. */
+  #chart-canvas, #chart-status-pie { max-width: 100%; display: block; }
+
+  /* Tablas: contenedor propio de scroll en vez de empujar la pagina entera */
+  .table-wrap, .table-scroll { overflow-x: auto; -webkit-overflow-scrolling: touch; }
+  table { min-width: 560px; }
+  /* Contenedor de scroll que se adapta al padre: sin min-width:0 hereda
+     min-content y la tabla de 746px vuelve a estirar la pagina. */
+  .table-wrap, .table-scroll { min-width: 0; max-width: 100%; }
+  .section, .card, .filters { min-width: 0; }
+  .filters { flex-direction: column; align-items: stretch; }
+  .filters input, .filters select { width: 100%; }
 }
+
+@media (max-width: 560px) {
+  .main { padding: 18px 12px; }
+  .page-head h1 { font-size: 24px; }
+  .grid-2, .grid-3, .grid-4 { grid-template-columns: 1fr; }
+  .card, .kpi { padding: 14px; }
+  .modal { padding: 16px; }
+  .btn { padding: 9px 14px; font-size: 13px; }
+  /* Filtros y acciones a ancho completo: con 375px un boton de 2 palabras
+     al lado de un input deja el input en ~120px, insuficiente. */
+  .modal-actions { flex-direction: column-reverse; }
+  .modal-actions .btn { width: 100%; }
+}
+
 .menu-btn {
   display: none;
   background: var(--mochi-fresa-d);
@@ -936,8 +956,47 @@ tbody tr:hover { background: var(--clay-canvas); }
     </div>
   </aside>
 
+
+
+
   <main class="main">
-    <button class="menu-btn" onclick="document.getElementById('sidebar').classList.toggle('open')">☰ Menú</button>
+
+  <div class="sidebar-scrim" id="sidebar-scrim" aria-hidden="true"></div>
+
+  <!-- El boton de menu va FUERA de .main a proposito: dentro, el click
+     propagaba al listener global de navegacion, que hace
+     classList.remove('open') y cerraba el panel en el mismo gesto que lo
+     abria. El sidebar nunca se veia en movil. -->
+  <button class="menu-btn" id="menu-btn" aria-expanded="false" aria-controls="sidebar">☰ Menú</button>
+  <script>
+    (function () {
+      var btn = document.getElementById('menu-btn');
+      var sb = document.getElementById('sidebar');
+      var scrim = document.getElementById('sidebar-scrim');
+      function setOpen(on) {
+        sb.classList.toggle('open', on);
+        scrim.classList.toggle('visible', on);
+        btn.setAttribute('aria-expanded', on ? 'true' : 'false');
+        document.body.style.overflow = on ? 'hidden' : '';
+      }
+      // stopPropagation: el document tiene un listener de navegacion que
+      // cierra el panel; sin esto el sidebar se cerraba en el mismo click
+      // que lo abria y nunca se veia en movil.
+      btn.addEventListener('click', function (e) {
+        e.stopPropagation();
+        setOpen(!sb.classList.contains('open'));
+      });
+      scrim.addEventListener('click', function () { setOpen(false); });
+      document.addEventListener('keydown', function (e) {
+        if (e.key === 'Escape' && sb.classList.contains('open')) setOpen(false);
+      });
+      // Al volver a desktop el sidebar se muestra siempre: sin esto el
+      // body queda con overflow:hidden y la pagina no hace scroll.
+      window.addEventListener('resize', function () {
+        if (window.innerWidth > 880 && sb.classList.contains('open')) setOpen(false);
+      });
+    })();
+  </script>
 
     <!-- ============== DASHBOARD ============== -->
     <section id="section-dashboard" class="section active">
@@ -1459,6 +1518,11 @@ document.querySelectorAll('.nav-item').forEach(el => {
     el.classList.add('active');
     showSection(el.dataset.section);
     document.getElementById('sidebar').classList.remove('open');
+    // Estado del menú lateral en móvil: el toggle de clase dejaba el scrim
+    // desincronizado y no había forma de cerrar tocando fuera del panel.
+    document.getElementById('sidebar-scrim').classList.remove('visible');
+    document.getElementById('menu-btn').setAttribute('aria-expanded', 'false');
+    document.body.style.overflow = '';
   };
 });
 
@@ -1628,7 +1692,7 @@ const render = {
           <small>id: ${escapeHtml(f.id)}</small>
         </div>
         <div class="item-actions">
-          <button class="btn btn-sm btn-ghost" onclick='openFlavorModal(${JSON.stringify(f)})'>Editar</button>
+          <button class="btn btn-sm btn-ghost" data-action="openFlavorModal" data-payload='${esc(JSON.stringify(f))}'>Editar</button>
           <button class="btn btn-sm btn-danger" onclick="deleteFlavor('${f.id}')">Eliminar</button>
         </div>
       </div>
@@ -1649,7 +1713,7 @@ const render = {
           <span class="tag ${c.available ? 'paid' : 'cancelled'}">${c.available ? 'disponible' : 'no'}</span>
         </div>
         <div class="item-actions">
-          <button class="btn btn-sm btn-ghost" onclick='openComboModal(${JSON.stringify(c)})'>Editar</button>
+          <button class="btn btn-sm btn-ghost" data-action="openComboModal" data-payload='${esc(JSON.stringify(c))}'>Editar</button>
           <button class="btn btn-sm btn-danger" onclick="deleteCombo('${c.id}')">Eliminar</button>
         </div>
       </div>
@@ -1668,7 +1732,7 @@ const render = {
           <span class="tag ${p.active ? 'paid' : 'cancelled'}">${p.active ? 'activa' : 'inactiva'}</span>
         </div>
         <div class="item-actions">
-          <button class="btn btn-sm btn-ghost" onclick='openPromoModal(${JSON.stringify(p)})'>Editar</button>
+          <button class="btn btn-sm btn-ghost" data-action="openPromoModal" data-payload='${esc(JSON.stringify(p))}'>Editar</button>
           <button class="btn btn-sm btn-danger" onclick="deletePromo('${p.id}')">Eliminar</button>
         </div>
       </div>
@@ -1685,7 +1749,7 @@ const render = {
         <td><div style="max-width:380px;white-space:pre-wrap;font-size:13px">${escapeHtml(p.content)}</div></td>
         <td><span class="tag ${p.status === 'posted' ? 'paid' : p.status === 'failed' ? 'cancelled' : 'pending'}">${p.status}</span></td>
         <td>
-          <button class="btn btn-sm btn-ghost" onclick='openSocialModal(${JSON.stringify(p)})'>Editar</button>
+          <button class="btn btn-sm btn-ghost" data-action="openSocialModal" data-payload='${esc(JSON.stringify(p))}'>Editar</button>
           <button class="btn btn-sm btn-danger" onclick="deleteSocial('${p.id}')">🗑</button>
         </td>
       </tr>
@@ -1712,6 +1776,26 @@ const render = {
 function escapeHtml(s) {
   return String(s || '').replace(/[&<>"']/g, c => ({ '&':'&amp;','<':'&lt;','>':'&gt;','"':'&quot;',"'":'&#39;' }[c]));
 }
+
+// ==== ESCAPE para payloads JSON en data-attributes ====
+// Antes cada boton llevaba onclick='fn(JSON.stringify(x))'. Un apostrofe en
+// el nombre (lo edita un admin) cerraba el atributo y permitia inyectar HTML.
+// Ahora el payload viaja en data-payload y se parsea en un listener unico.
+function esc(s) {
+  return String(s ?? '')
+    .replace(/&/g, '&amp;').replace(/</g, '&lt;').replace(/>/g, '&gt;')
+    .replace(/"/g, '&quot;').replace(/'/g, '&#39;');
+}
+
+document.addEventListener('click', (ev) => {
+  const el = ev.target.closest('[data-action][data-payload]');
+  if (!el) return;
+  const fn = window[el.dataset.action];
+  if (typeof fn !== 'function') { console.warn('[mymochis] accion desconocida', el.dataset.action); return; }
+  let payload = null;
+  try { payload = JSON.parse(el.dataset.payload); } catch (err) { console.warn('[mymochis] payload invalido', err); }
+  fn(payload);
+});
 
 // ============ ORDERS ACTIONS ============
 async function updateOrderStatus(id, status) {
@@ -2228,7 +2312,7 @@ render.entregasHorarios = async function() {
         <td>${r.sort_order}</td>
         <td>${escapeHtml(r.notes || '')}</td>
         <td>
-          <button class="btn btn-sm btn-ghost" onclick='openScheduleModal(${JSON.stringify(r)})'>Editar</button>
+          <button class="btn btn-sm btn-ghost" data-action="openScheduleModal" data-payload='${esc(JSON.stringify(r))}'>Editar</button>
           <button class="btn btn-sm btn-danger" onclick="deleteSchedule(${r.id})">Eliminar</button>
         </td>
       </tr>`).join('')}
@@ -2310,8 +2394,8 @@ render.entregasVentanas = async function() {
         <td style="max-width:340px">${(r.items || []).map(it => `<span class="tag" style="background:var(--bg-soft);color:var(--ink);margin-right:4px">${escapeHtml(it.flavor_name)} × ${it.units_available}</span>`).join('')}</td>
         <td>${escapeHtml(r.notes || '')}</td>
         <td>
-          <button class="btn btn-sm btn-ghost" onclick='openWindowModal(${JSON.stringify(r)})'>Editar</button>
-          <button class="btn btn-sm btn-ghost" onclick='duplicateWindow(${JSON.stringify(r)})'>Duplicar</button>
+          <button class="btn btn-sm btn-ghost" data-action="openWindowModal" data-payload='${esc(JSON.stringify(r))}'>Editar</button>
+          <button class="btn btn-sm btn-ghost" data-action="duplicateWindow" data-payload='${esc(JSON.stringify(r))}'>Duplicar</button>
           <button class="btn btn-sm btn-danger" onclick="deleteWindow(${r.id})">Eliminar</button>
         </td>
       </tr>`).join('')}
@@ -2763,7 +2847,7 @@ render.entregasPagos = async function(containerId) {
             </div>
             <div style="display:flex;gap:6px;flex-wrap:wrap">
               <button class="expand-btn" data-toggle-payouts="${m.id}">▸ Cuentas (${(m.payout_accounts || []).length})</button>
-              <button class="btn btn-sm btn-ghost" onclick='openPaymentModal(${JSON.stringify(m)})'>Editar</button>
+              <button class="btn btn-sm btn-ghost" data-action="openPaymentModal" data-payload='${esc(JSON.stringify(m))}'>Editar</button>
               <button class="btn btn-sm btn-danger" onclick="deletePayment(${m.id})">Eliminar</button>
             </div>
           </div>
