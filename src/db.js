@@ -287,6 +287,45 @@ CREATE TABLE IF NOT EXISTS provider_events (
 );
 CREATE INDEX IF NOT EXISTS idx_events_pending ON provider_events(process_status, received_at);
 
+-- ============================================================================
+-- 2026-10-20 · Vault de credenciales de comercio (admin)
+-- AES-256-GCM, write-only por API: el secreto NUNCA sale por HTTP.
+-- ============================================================================
+CREATE TABLE IF NOT EXISTS app_secrets (
+  key TEXT PRIMARY KEY,
+  value TEXT NOT NULL,
+  created_at TEXT NOT NULL DEFAULT (datetime('now'))
+);
+
+CREATE TABLE IF NOT EXISTS merchant_credentials (
+  id INTEGER PRIMARY KEY AUTOINCREMENT,
+  provider TEXT NOT NULL,
+  field TEXT NOT NULL,
+  iv TEXT NOT NULL,
+  tag TEXT NOT NULL,
+  ciphertext TEXT NOT NULL,
+  masked TEXT NOT NULL,
+  is_active INTEGER NOT NULL DEFAULT 1,
+  created_at TEXT NOT NULL DEFAULT (datetime('now')),
+  updated_at TEXT NOT NULL DEFAULT (datetime('now')),
+  last_used_at TEXT,
+  UNIQUE(provider, field)
+);
+
+CREATE TABLE IF NOT EXISTS credential_audit (
+  id INTEGER PRIMARY KEY AUTOINCREMENT,
+  action TEXT NOT NULL,
+  provider TEXT NOT NULL,
+  field TEXT,
+  actor TEXT,
+  ok INTEGER NOT NULL DEFAULT 1,
+  detail TEXT,
+  created_at TEXT NOT NULL DEFAULT (datetime('now'))
+);
+
+CREATE INDEX IF NOT EXISTS idx_cred_audit_created ON credential_audit(created_at DESC);
+
+
 CREATE TABLE IF NOT EXISTS ledger_entries (
   entry_id        TEXT PRIMARY KEY,
   payment_id      TEXT NOT NULL,

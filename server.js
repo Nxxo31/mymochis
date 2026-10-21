@@ -30,6 +30,7 @@ import uploadsRoutes from './src/routes/uploads.js';
 import usersRoutes from './src/routes/users.js';
 import paymentsRoutes from './src/routes/payments.js';
 import webhooksRoutes from './src/routes/webhooks.js';
+import credentialsRoutes from './src/routes/credentials.js';
 
 const __dirname = dirname(fileURLToPath(import.meta.url));
 const PUBLIC_DIR = join(__dirname, 'public');
@@ -156,6 +157,7 @@ app.use('/api/public', publicRoutes);
 app.use('/api/uploads', uploadsRoutes);
 app.use('/api/users', usersRoutes);
 app.use('/api/payments', paymentsRoutes);
+app.use('/api/credentials', credentialsRoutes);
 
 app.use('/uploads', express.static(UPLOAD_DIR, { maxAge: '30d', immutable: true, setHeaders: (res) => {
   res.setHeader('X-Content-Type-Options', 'nosniff');

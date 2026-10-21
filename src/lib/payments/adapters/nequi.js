@@ -4,6 +4,7 @@
 import { randomUUID } from 'node:crypto';
 import { createHmac, createHash } from 'node:crypto';
 import { MockAdapter } from './mock.js';
+import { useCredential } from '../../vault.js';
 
 /** @typedef {import('../adapter.js').PaymentAdapter} PaymentAdapter */
 /** @typedef {import('../adapter.js').CreateInput} CreateInput */
@@ -11,8 +12,36 @@ import { MockAdapter } from './mock.js';
 /** @typedef {import('../adapter.js').ProviderStatus} ProviderStatus */
 
 const NEQUI_BASE = process.env.NEQUI_API_BASE || 'https://api.nequi.com';
-const NEQUI_API_KEY = process.env.NEQUI_API_KEY || '';
-const NEQUI_WEBHOOK_SECRET = process.env.NEQUI_WEBHOOK_SECRET || '';
+
+// Orden de resolucion: vault (lo que el admin guarda desde el dashboard) y
+// luego env (deploy). El vault gana. LA LECTURA ES LAZY a proposito: este
+// modulo se importa durante el boot y la DB puede no estar inicializada aun;
+// resolver en tiempo de import lanzaria. useCredential() ya devuelve null si
+// no encuentra la fila, asi que la ausencia de vault no rompe nada.
+let _apiKey = null;
+let _webhookSecret = null;
+
+function apiKey() {
+  if (_apiKey === null) {
+    _apiKey = useCredential('nequi', 'api_key', 'autenticacion contra la API de Nequi')
+           || process.env.NEQUI_API_KEY || '';
+  }
+  return _apiKey;
+}
+
+function webhookSecret() {
+  if (_webhookSecret === null) {
+    _webhookSecret = useCredential('nequi', 'webhook_secret', 'verificar firma de webhooks de Nequi')
+                || process.env.NEQUI_WEBHOOK_SECRET || '';
+  }
+  return _webhookSecret;
+}
+
+/** El admin puede rotar credenciales sin reiniciar: invalida la cache. */
+export function resetCredentialCache() {
+  _apiKey = null;
+  _webhookSecret = null;
+}
 
 /** @implements {PaymentAdapter} */
 export class NequiAdapter {
@@ -22,8 +51,8 @@ export class NequiAdapter {
 
   /** Si no hay creds, cae a un mock que firma con Nequi (para dev) */
   constructor() {
-    this.real = !!NEQUI_API_KEY;
-    this.fallback = new MockAdapter({ name: 'nequi-fallback', webhookSecret: NEQUI_WEBHOOK_SECRET || 'nequi-dev' });
+    this.real = !!apiKey();
+    this.fallback = new MockAdapter({ name: 'nequi-fallback', webhookSecret: webhookSecret() || 'nequi-dev' });
   }
 
   /** @param {CreateInput} input */
@@ -52,7 +81,7 @@ export class NequiAdapter {
       method: 'POST',
       headers: {
         'Content-Type': 'application/json',
-        'X-Api-Key': NEQUI_API_KEY,
+        'X-Api-Key': apiKey(),
         'X-Request-Id': input.paymentId, // provider idempotency-key
       },
       body: JSON.stringify(body),
@@ -80,7 +109,7 @@ export class NequiAdapter {
       return { ...st, providerReference: providerRef };
     }
     const res = await fetch(`${NEQUI_BASE}/payments/v2/-services-paymentservice-getstatus?code=${encodeURIComponent(providerRef)}`, {
-      headers: { 'X-Api-Key': NEQUI_API_KEY },
+      headers: { 'X-Api-Key': apiKey() },
     });
     if (!res.ok) throw new Error(`Nequi status ${res.status}`);
     const data = await res.json();
@@ -105,8 +134,9 @@ export class NequiAdapter {
   /** @param {Buffer} rawBody @param {Record<string,string>} headers */
   verifyWebhookSignature(rawBody, headers) {
     const sig = headers[this.webhookSignatureHeader];
-    if (!sig || typeof sig !== 'string' || !NEQUI_WEBHOOK_SECRET) return false;
-    const expected = createHmac('sha256', NEQUI_WEBHOOK_SECRET).update(rawBody).digest('hex');
+    const secret = webhookSecret();
+    if (!sig || typeof sig !== 'string' || !secret) return false;
+    const expected = createHmac('sha256', secret).update(rawBody).digest('hex');
     // Comparacion timing-safe (auditoria 2026-10-20, bug #8): el `===` anterior
     // filtra informacion byte a byte por timing y era inconsistente con el
     // safeEqual que si usaba MockAdapter.

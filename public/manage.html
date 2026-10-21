@@ -884,6 +884,16 @@ tbody tr:hover { background: var(--clay-canvas); }
       Entregas
     </div>
 
+    <div class="nav-item" data-section="pagos">
+      <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><rect x="1" y="4" width="22" height="16" rx="2"/><line x1="1" y1="10" x2="23" y2="10"/></svg>
+      Métodos de pago
+    </div>
+
+    <div class="nav-item" data-section="creds">
+      <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><rect x="3" y="11" width="18" height="11" rx="2"/><path d="M7 11V7a5 5 0 0110 0v4"/></svg>
+      Credenciales
+    </div>
+
     <div class="nav-section">Catálogo</div>
     <div class="nav-item" data-section="flavors">
       <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><circle cx="12" cy="12" r="10"/><path d="M12 2a10 10 0 010 20"/></svg>
@@ -1114,6 +1124,16 @@ tbody tr:hover { background: var(--clay-canvas); }
       <div id="entregas-horarios" class="subtab-panel"></div>
       <div id="entregas-ventanas" class="subtab-panel"></div>
       <div id="entregas-pagos" class="subtab-panel"></div>
+    </section>
+
+    <!-- ============== PAGOS ============== -->
+    <section id="section-pagos" class="section">
+      <div id="pagos-body"></div>
+    </section>
+
+    <!-- ============== CREDS ============== -->
+    <section id="section-creds" class="section">
+      <div id="creds-body"></div>
     </section>
 
     <!-- ============== CONFIG ============== -->
@@ -2401,8 +2421,177 @@ window.deleteWindow = async function(id) {
   } catch (e) { toast('Error: ' + e.message, 'error'); }
 };
 
-render.entregasPagos = async function() {
-  const el = document.getElementById('entregas-pagos');
+// ====== CREDENCIALES (vault) ======
+render.creds = async function() {
+  const el = document.getElementById('creds-body');
+  if (!el) return;
+  try {
+    const [status, data] = await Promise.all([
+      api('/credentials/status'),
+      api('/credentials'),
+    ]);
+    const byProvider = {};
+    for (const c of data.credentials || []) (byProvider[c.provider] ||= []).push(c);
+
+    if (!status.configured) {
+      el.innerHTML = `
+        <div class="page-head" style="margin-bottom:14px">
+          <div><h1>Credenciales</h1><div class="sub">Conexiones con tus proveedores de pago</div></div>
+        </div>
+        <div class="card" style="border-left:4px solid var(--accent)">
+          <strong>Falta la llave del almacén cifrado</strong>
+          <p style="font-size:13px;color:var(--ink-soft);margin:8px 0">
+            Define <code>NEXOMOCHIS_VAULT_KEY</code> en el entorno del servidor y reinicia.
+            Generala con <code>openssl rand -hex 32</code>. Hasta entonces el sistema
+            <strong>rechaza</strong> guardar credenciales — nunca las guarda en claro.
+          </p>
+        </div>`;
+      return;
+    }
+
+    el.innerHTML = `
+      <div class="page-head" style="margin-bottom:14px">
+        <div><h1>Credenciales</h1><div class="sub">Conexiones con tus proveedores de pago</div></div>
+        <div class="actions"><button class="btn btn-ghost" onclick="render.credsAudit()">Ver auditoría</button></div>
+      </div>
+
+      <div class="card" style="margin-bottom:18px;border-left:4px solid var(--success,#22c55e)">
+        <strong style="font-size:14px">Cómo se protegen tus claves</strong>
+        <ul style="font-size:13px;color:var(--ink-soft);margin:8px 0 0;padding-left:18px;line-height:1.8">
+          <li>Cifradas con AES-256-GCM en la base de datos</li>
+          <li><strong>Nunca se vuelven a mostrar</strong> — ni siquiera aquí. Se guardan y se usan, pero no se releen</li>
+          <li>La llave maestra no está en la base de datos (vive en el entorno del servidor)</li>
+          <li>Cada uso queda registrado en la auditoría</li>
+        </ul>
+      </div>
+
+      ${status.providers.map(p => {
+        const saved = byProvider[p.id] || [];
+        const done = p.fields.every(f => saved.some(s => s.field === f));
+        return `
+        <div class="card" style="margin-bottom:12px">
+          <div style="display:flex;justify-content:space-between;align-items:flex-start;gap:12px;flex-wrap:wrap">
+            <div style="flex:1;min-width:220px">
+              <div style="display:flex;align-items:center;gap:8px">
+                <strong style="font-size:15px">${escapeHtml(p.label)}</strong>
+                <span class="pill" style="${done ? 'background:var(--success,#22c55e);color:#fff' : 'background:var(--ink-soft);color:#fff'}">${done ? 'Completo' : 'Incompleto'}</span>
+              </div>
+              <div class="sub" style="font-size:12.5px;margin-top:4px">${escapeHtml(p.hint)}</div>
+              ${p.docs ? `<a href="${escapeHtml(p.docs)}" target="_blank" rel="noopener" style="font-size:12px">Ver documentación →</a>` : ''}
+            </div>
+          </div>
+          <div style="margin-top:12px;display:flex;flex-direction:column;gap:8px">
+            ${p.fields.map(f => {
+              const rec = saved.find(s => s.field === f);
+              return `
+              <div style="display:flex;align-items:center;gap:10px;flex-wrap:wrap">
+                <code style="font-size:12px;background:var(--bg,#f5f5f5);padding:4px 8px;border-radius:6px;min-width:140px">${escapeHtml(f)}</code>
+                ${rec
+                  ? `<span style="font-family:monospace;font-size:12.5px;color:var(--ink-soft)">${escapeHtml(rec.masked)}</span>
+                     <span class="sub" style="font-size:11px">guardado ${escDate(rec.updated_at)}</span>
+                     <button class="expand-btn" onclick="openCredModal('${p.id}','${f}')">Reemplazar</button>
+                     <button class="expand-btn" onclick="deleteCred('${p.id}','${f}')" style="color:var(--accent)">Eliminar</button>`
+                  : `<span class="sub" style="font-size:12px;color:var(--ink-soft)">Sin configurar</span>
+                     <button class="expand-btn" onclick="openCredModal('${p.id}','${f}')">Configurar</button>`}
+              </div>`;
+            }).join('')}
+          </div>
+        </div>`;
+      }).join('')}`;
+  } catch (e) { toast('Error: ' + e.message, 'error'); }
+};
+
+function escDate(s) {
+  if (!s) return '';
+  const d = new Date(s.includes('T') ? s : s.replace(' ', 'T') + 'Z');
+  return isNaN(d) ? s : d.toLocaleString('es-CO', { day: '2-digit', month: '2-digit', hour: '2-digit', minute: '2-digit' });
+}
+
+window.openCredModal = function(provider, field) {
+  document.getElementById('modal-content').innerHTML = `
+    <h2>Guardar credencial</h2>
+    <p class="sub" style="font-size:13px;margin-bottom:14px">
+      <strong>${escapeHtml(provider)}</strong> · <code>${escapeHtml(field)}</code><br>
+      Se cifrará y no volverá a mostrarse. Si la pierdes, genera una nueva en el proveedor.
+    </p>
+    <form id="cred-form">
+      <div class="form-group">
+        <label>Valor</label>
+        <input type="password" id="cred-value" required autocomplete="off" placeholder="pega aquí tu clave">
+      </div>
+      <div class="modal-actions">
+        <button type="button" class="btn btn-ghost" onclick="closeModal()">Cancelar</button>
+        <button type="submit" class="btn btn-primary">Guardar cifrado</button>
+      </div>
+    </form>`;
+  document.getElementById('modal-back').classList.add('visible');
+  const input = document.getElementById('cred-value');
+  input.focus();
+  document.getElementById('cred-form').onsubmit = async (e) => {
+    e.preventDefault();
+    try {
+      const value = input.value;
+      if (value.length < 8) { toast('La credencial debe tener al menos 8 caracteres', 'error'); return; }
+      await api('/credentials', { method: 'POST', body: JSON.stringify({ provider, field, value }) });
+      input.value = '';
+      toast('Credencial guardada y cifrada', 'success');
+      closeModal();
+      render.creds();
+    } catch (err) { toast('Error: ' + (err.message || err.body?.message || 'fallo'), 'error'); }
+  };
+};
+
+window.deleteCred = async function(provider, field) {
+  if (!confirm(`¿Eliminar ${provider}.${field}? You'll have to paste it again.`)) return;
+  try {
+    await api('/credentials', { method: 'DELETE', body: JSON.stringify({ provider, field }) });
+    toast('Credencial eliminada', 'success');
+    render.creds();
+  } catch (e) { toast('Error: ' + e.message, 'error'); }
+};
+
+render.credsAudit = async function() {
+  try {
+    const { entries } = await api('/credentials/audit?limit=60');
+    document.getElementById('modal-content').innerHTML = `
+      <h2>Auditoría de credenciales</h2>
+      ${entries.length ? `<div style="max-height:55vh;overflow:auto">
+        <table style="width:100%;font-size:13px;border-collapse:collapse">
+          <thead><tr style="text-align:left;opacity:.6;font-size:11px;text-transform:uppercase">
+            <th style="padding:6px">Cuándo</th><th>Acción</th><th>Proveedor</th><th>Campo</th><th>Detalle</th></tr></thead>
+          <tbody>${entries.map(e => `<tr style="border-top:1px solid var(--line,rgba(0,0,0,.08))">
+            <td style="padding:6px;white-space:nowrap">${escDate(e.created_at)}</td>
+            <td>${escapeHtml(e.action)}</td>
+            <td>${escapeHtml(e.provider)}</td>
+            <td>${escapeHtml(e.field || '')}</td>
+            <td style="opacity:.7">${escapeHtml(e.detail || '')}</td></tr>`).join('')}</tbody>
+        </table></div>`
+        : '<div class="sub">Sin movimientos todavía.</div>'}
+      <div class="modal-actions"><button class="btn btn-primary" onclick="closeModal()">Cerrar</button></div>`;
+    document.getElementById('modal-back').classList.add('visible');
+  } catch (e) { toast('Error: ' + e.message, 'error'); }
+};
+
+// Sección propia "Métodos de pago" (2026-10-20). El CRUD ya existía como
+// subpestaña de Entregas pero era invisible: el admin no lo encontraba. Ahora
+// tiene entrada propia en el nav y esta sección lo monta.
+//
+// NOTA: la sección usa el id "pagos-panels" (NO "entregas-pagos"). Con el mismo
+// id quedaban dos elementos en el DOM y getElementById devolvía el de Entregas,
+// que está oculto: la sección salía en blanco aunque el render generara 9 KB de HTML.
+render.pagos = async function() {
+  const el = document.getElementById('pagos-body');
+  if (!el) return;
+  if (el.dataset.mounted !== '1') {
+    el.innerHTML = '<div id="pagos-panels"></div>';
+    el.dataset.mounted = '1';
+  }
+  await render.entregasPagos('pagos-panels');
+};
+
+render.entregasPagos = async function(containerId) {
+  const el = document.getElementById(containerId || 'entregas-pagos');
+  if (!el) return;
   try {
     const methods = await api('/payment-methods?include_inactive=1');
     if (!methods.length) {
