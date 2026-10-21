@@ -1,0 +1,166 @@
+/* ============================================================================
+ * MyMochis · Islands — estilos solo de los React islands
+ * Consume los tokens de /theme.css (identidad v4 "Ube & Durazno").
+ * Antes este archivo usaba los tokens del §21 (--bg-tint, --brand-blue-600,
+ * --space-8...) que ya no existen: todas caían a sin definir.
+ * ========================================================================== */
+
+/* ---- Hero island ---- */
+.hero-island {
+  position: relative;
+  min-height: 360px;
+  padding: var(--space-8, 2rem) var(--space-4, 1rem);
+  background: var(--brand-tint);
+  border-radius: var(--r-xl);
+  overflow: hidden;
+  isolation: isolate;
+}
+
+/* El canvas del shader: absolute, detrás del contenido, sin capturar eventos */
+.hero-island__bg {
+  position: absolute;
+  inset: 0;
+  z-index: -1;
+  pointer-events: none;
+  overflow: hidden;
+}
+
+.hero-island__bg canvas {
+  display: block;
+  width: 100%;
+  height: 100%;
+}
+
+/* Fallback si no hay WebGL o el shader no compila: gradiente de marca.
+   El decorativo sigue siendo legible, el contenido textual nunca depende
+   de que el shader funcione. */
+.hero-island__bg--fallback {
+  background:
+    radial-gradient(ellipse at 30% 25%, var(--brand-soft) 0%, transparent 55%),
+    radial-gradient(ellipse at 72% 65%, var(--accent-soft) 0%, transparent 58%),
+    linear-gradient(135deg, var(--brand-tint) 0%, var(--canvas-3) 100%);
+}
+
+.hero-island__content {
+  position: relative;
+  z-index: 1;
+  max-width: 720px;
+  margin: 0 auto;
+  text-align: center;
+  color: var(--ink);
+}
+
+.hero-island__title {
+  font-family: var(--font-display);
+  font-size: clamp(1.875rem, 5vw, 3rem);
+  font-weight: 700;
+  line-height: 1.2;
+  margin: 0 0 var(--space-4);
+  letter-spacing: -0.02em;
+}
+
+.hero-island__title em {
+  background: linear-gradient(135deg, var(--brand) 0%, var(--accent) 100%);
+  -webkit-background-clip: text;
+  background-clip: text;
+  color: transparent;
+  font-style: normal;
+}
+
+.hero-island__subtitle {
+  font-size: 1.125rem;
+  color: var(--ink-soft);
+  margin: 0 0 var(--space-6);
+  line-height: 1.625;
+}
+
+.hero-island__cta {
+  display: inline-flex;
+  align-items: center;
+  gap: var(--space-2);
+  padding: var(--space-3) var(--space-6);
+  background: var(--brand);
+  color: var(--ink-inverse);
+  border: 1px solid var(--brand);
+  border-radius: var(--r-md);
+  font-weight: 600;
+  font-size: 1rem;
+  cursor: pointer;
+  box-shadow: var(--shadow-brand);
+  transition: transform 0.15s var(--ease-out), box-shadow 0.15s var(--ease-out),
+              background 0.15s var(--ease-out);
+  will-change: transform;
+}
+
+.hero-island__cta:hover {
+  background: var(--brand-hover);
+  border-color: var(--brand-hover);
+  box-shadow: var(--shadow-brand), var(--shadow-3);
+}
+
+.hero-island__cta:focus-visible {
+  outline: 2px solid var(--focus);
+  outline-offset: 3px;
+}
+
+.hero-island__status {
+  display: inline-flex;
+  align-items: center;
+  gap: var(--space-2);
+  padding: var(--space-1) var(--space-3);
+  background: var(--surface);
+  border: 1px solid var(--line);
+  border-radius: var(--r-pill);
+  font-size: 0.875rem;
+  color: var(--ink-soft);
+  margin-bottom: var(--space-4);
+}
+
+.hero-island__status-dot {
+  width: 8px;
+  height: 8px;
+  background: var(--ok);
+  border-radius: 50%;
+  box-shadow: 0 0 8px var(--ok);
+  flex: none;
+}
+
+/* ---- Cards de sabores (MenuGrid) ---- */
+.menu-card {
+  background: var(--surface);
+  border: 1px solid var(--line);
+  border-radius: var(--r-lg);
+  padding: var(--space-5);
+  box-shadow: var(--shadow-2);
+  transition: transform 0.2s var(--ease-out), box-shadow 0.2s var(--ease-out),
+              border-color 0.2s var(--ease-out);
+  will-change: transform;
+}
+
+.menu-card:hover {
+  border-color: var(--brand);
+  box-shadow: var(--shadow-3);
+}
+
+.menu-card__title {
+  font-size: 1.125rem;
+  font-weight: 600;
+  color: var(--ink);
+  margin: 0 0 var(--space-2);
+}
+
+.menu-card__price {
+  font-size: 1.25rem;
+  font-weight: 700;
+  color: var(--brand);
+}
+
+.menu-card__chip {
+  display: inline-block;
+  padding: var(--space-1) var(--space-2);
+  background: var(--brand-soft);
+  color: var(--brand);
+  border-radius: var(--r-xs);
+  font-size: 0.75rem;
+  font-weight: 600;
+}
