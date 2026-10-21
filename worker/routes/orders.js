@@ -1,7 +1,8 @@
 import { Router } from '../router.js';
-import { authMiddleware } from '../auth.js';
+import { authMiddleware , requireRole } from '../auth.js';
 import { geocode, haversineKm } from '../lib/geocode.js';
 import { buildDispatch } from '../lib/whatsapp.js';
+import { priceOrder } from '../lib/pricing.js';
 
 const router = new Router();
 
@@ -237,7 +238,28 @@ router.post('/', async (req, res) => {
     finalLng = lng;
   }
 
-  const finalTotal = computedDeliveryFee > 0 ? Number(total) + computedDeliveryFee : Number(total);
+  // ---- Pricing server-side (paridad con src/routes/orders.js) ----
+  // El `total` que manda el cliente es solo una declaracion: se recalcula desde
+  // flavors.price / combos.price. Antes el Worker lo persistia tal cual, asi
+  // que un POST con total=1 compraba el catalogo entero por un peso SI el
+  // pedido entra por la ruta del Worker y no por el server de Node. Las
+  // pruebas no lo detectan porque manejan el mismo cliente que defines el total.
+  const clientTotal = Number(total);
+  const priced = await priceOrder({ db, items, combos, deliveryFee: computedDeliveryFee });
+  if (!priced.ok) {
+    return res.status(400).json({
+      error: 'invalid_catalog_items',
+      message: 'El pedido referencia productos que no existen en el catálogo',
+      details: priced.errors,
+    });
+  }
+  if (priced.lines.length === 0) {
+    return res.status(400).json({ error: 'empty_order', message: 'El pedido no tiene productos' });
+  }
+  const authoritativeTotal = priced.total;
+  const totalDrift = Number.isFinite(clientTotal) && clientTotal !== authoritativeTotal
+    ? { client_sent: clientTotal, server_computed: authoritativeTotal }
+    : null;
 
   const existing = await db.prepare('SELECT id FROM orders WHERE id = ?').get(id);
   if (existing) return res.status(409).json({ error: 'duplicate', message: 'Ya existe un pedido con ese id' });
@@ -254,7 +276,7 @@ router.post('/', async (req, res) => {
     `).bind(
       id, customer_name, customer_phone, pickup_day,
       JSON.stringify(items || {}), JSON.stringify(combos || []),
-      finalTotal, notes || null, source || 'web',
+      authoritativeTotal, notes || null, source || 'web',
       delivery_mode, delivery_provider, delivery_address || null,
       finalLat, finalLng, computedDistanceKm, computedDeliveryFee,
       payment_method_id || null
@@ -344,6 +366,12 @@ router.post('/', async (req, res) => {
       pickup_window_start: sched?.start_time || null,
       pickup_window_end: sched?.end_time || null
     });
+    // Desglose que el server computo (paridad con src/routes/orders.js): el
+    // cliente recibe el recibo y, si mando un total distinto, queda visible el
+    // drift en la respuesta en vez de esconderse en un reporte aparte.
+    full.pricing = { lines: priced.lines, total: authoritativeTotal };
+    if (totalDrift) full.pricing.client_drift = totalDrift;
+
     res.status(201).json({ ...full, whatsapp: wsp });
   } catch (e) {
     console.warn('[orders] dispatch failed:', e?.message || e);
@@ -351,7 +379,9 @@ router.post('/', async (req, res) => {
   }
 });
 
-router.patch('/:id', authMiddleware, async (req, res) => {
+// requireRole('admin'): sin esto, un token role:'customer' (que /api/auth/register
+// emite sin coste) puede marcar pedidos ajenos como pagados o borrarlos.
+router.patch('/:id', [authMiddleware, requireRole('admin')], async (req, res) => {
   const existing = await req.db.prepare('SELECT id FROM orders WHERE id = ?').get(req.params.id);
   if (!existing) return res.status(404).json({ error: 'not_found' });
   const allowed = ['status', 'payment_status', 'payment_method', 'payment_method_id', 'notes', 'delivery_provider'];
@@ -372,7 +402,7 @@ router.patch('/:id', authMiddleware, async (req, res) => {
   res.json(rowToOrder(await req.db.prepare('SELECT * FROM orders WHERE id = ?').get(req.params.id)));
 });
 
-router.delete('/:id', authMiddleware, async (req, res) => {
+router.delete('/:id', [authMiddleware, requireRole('admin')], async (req, res) => {
   const result = await req.db.prepare('DELETE FROM orders WHERE id = ?').run(req.params.id);
   if (result.changes === 0) return res.status(404).json({ error: 'not_found' });
   res.json({ ok: true });
