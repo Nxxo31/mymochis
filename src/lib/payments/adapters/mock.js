@@ -1,6 +1,6 @@
 // MyMochis · Mock provider adapter (para local dev / tests / sandbox Nequi sin creds)
 // Spec: PROJECT.md §22 — funciona como "nequi" con respuestas deterministas.
-import { randomUUID, createHmac } from 'node:crypto';
+import { randomUUID, createHmac, randomBytes } from 'node:crypto';
 
 /**
  * @typedef {import('../adapter.js').PaymentAdapter} PaymentAdapter
@@ -18,7 +18,24 @@ export class MockAdapter {
 
   /** @param {{ webhookSecret?: string, name?: string }} [opts] */
   constructor(opts = {}) {
-    this.webhookSecret = opts.webhookSecret || process.env.PAYMENT_MOCK_WEBHOOK_SECRET || 'mock-secret';
+    // El default anterior era el string literal 'mock-secret', publicado en el
+    // repo. Con el adapter registrado, ese string basta para firmar un "pago
+    // aprobado" y que el sistema lo acepte (verificado 2026-10-21). Un default
+    // inseguro que nunca falla es peor que ningun default.
+    //
+    // Ahora: sin secreto explicito genera uno aleatorio por proceso. El mock
+    // sigue siendo utilizable en dev y en tests (quien manda el webhook
+    // necesita conocer el secreto, y en dev se lee del log), pero deja de ser
+    // adivinable. server.js además NO registra este adapter en produccion sin
+    // PAYMENT_MOCK_WEBHOOK_SECRET.
+    const explicit = opts.webhookSecret || process.env.PAYMENT_MOCK_WEBHOOK_SECRET;
+    this.webhookSecret = explicit || randomBytes(32).toString('hex');
+    if (!explicit) {
+      console.warn(
+        `[mock-adapter] sin PAYMENT_MOCK_WEBHOOK_SECRET: se genero un secreto aleatorio para esta instancia ` +
+        `(${this.webhookSecret.slice(0, 8)}...). Los webhooks de test hay que firmarlos con el valor completo.`
+      );
+    }
     this.name = opts.name || 'mock';
   }
 

@@ -189,10 +189,32 @@ function validateImmediate(opts) {
   return { ok: true };
 }
 
+// Solo admin ve el libro completo de pedidos (PII: nombre, telefono, direccion,
+// notas). `PATCH`, `DELETE` y `confirm-payment` ya exigian requireRole('admin');
+// estos dos GET solo exigian autenticacion, asi que cualquier cuenta creada con
+// POST /api/auth/register —que es publico y emite role:'customer' sin coste—
+// podia leer los pedidos de todos los clientes y filtrarlos por ?q= para
+// buscar a una persona concreta. Verificado 2026-10-21: un customer recien
+// registrado leyo los 2 pedidos con telefono y total.
+//
+// Un customer solo puede ver SUS propios pedidos, y se filtran por telefono:
+// no se acepta un ?customer_phone= del cliente para leer los ajenos.
+function ordersVisibleTo(req) {
+  return req.user?.role === 'admin' ? null : req.user?.phone || null;
+}
+
 router.get('/', authMiddleware, (req, res) => {
   const { status, day, week, q, limit = 100 } = req.query;
   const wheres = [];
   const params = [];
+
+  // Customer: forzado a su propio telefono, sin importar lo que mande.
+  const onlyPhone = ordersVisibleTo(req);
+  if (onlyPhone != null) {
+    wheres.push('customer_phone = ?');
+    params.push(String(onlyPhone).replace(/\D/g, ''));
+  }
+
   if (status) { wheres.push('status = ?'); params.push(status); }
   if (day) { wheres.push('pickup_day = ?'); params.push(day); }
   if (q) { wheres.push('(customer_name LIKE ? OR customer_phone LIKE ?)'); params.push(`%${q}%`, `%${q}%`); }
@@ -212,6 +234,11 @@ router.get('/', authMiddleware, (req, res) => {
 router.get('/:id', authMiddleware, (req, res) => {
   const row = db.prepare('SELECT * FROM orders WHERE id = ?').get(req.params.id);
   if (!row) return res.status(404).json({ error: 'not_found' });
+  // Customer: 404 (no 403) para no confirmar que el pedido ajeno existe.
+  const onlyPhone = ordersVisibleTo(req);
+  if (onlyPhone != null && String(row.customer_phone).replace(/\D/g, '') !== String(onlyPhone).replace(/\D/g, '')) {
+    return res.status(404).json({ error: 'not_found' });
+  }
   res.json(rowToOrder(row));
 });
 
@@ -460,12 +487,77 @@ router.post('/:id/confirm-payment', [authMiddleware, requireRole('admin')], (req
   }
 });
 
+/**
+ * Devuelve al inventario las unidades de un pedido que se borra o cancela.
+ *
+ * El descuento (POST /api/orders) suma a `release_items.units_sold` y resta a
+ * `combos.units_available`. Ninguna ruta hacia el camino contrario: al borrar
+ * un pedido de prueba o cancelar uno malDigitado, esas unidades quedaban
+ * quemadas para siempre. Verificado 2026-10-21: vender 2 y borrar el pedido
+ * dejaba el stock en 8/10, no en 10/10. Como es acumulativo y silencioso, tras
+ * varios ciclos la app dice "agotado" con producto en la cocina.
+ *
+ * Se ejecuta DENTRO de la misma transaccion que el DELETE/PATCH: si el stock no
+ * vuelve, tampoco se borra el pedido, o se pierde la trazabilidad del pago.
+ *
+ * `window_id` se recupera de la release_window que matchea `pickup_day`, que es
+ * la misma logica que usa el descuento (validateScheduled lo resuelve asi).
+ */
+function restoreStockForOrder(orderRow) {
+  if (!orderRow) return { flavors: 0, combos: 0 };
+  if (orderRow.delivery_mode && orderRow.delivery_mode !== 'scheduled') {
+    return { flavors: 0, combos: 0 };
+  }
+
+  let flavors = 0;
+  let combos = 0;
+
+  // Sabores: la ventana se busca por fecha, igual que al descontar.
+  const window = db.prepare(
+    "SELECT id FROM release_windows WHERE release_date = ? AND status = 'open' ORDER BY id LIMIT 1"
+  ).get(orderRow.pickup_day);
+
+  const items = safeParse(orderRow.items_json, {});
+  const itemsStmt = window
+    ? db.prepare('UPDATE release_items SET units_sold = MAX(0, units_sold - ?) WHERE window_id = ? AND flavor_id = ?')
+    : null;
+
+  for (const [flavorId, qtyRaw] of Object.entries(items || {})) {
+    const qty = Number(qtyRaw);
+    if (!(qty > 0) || !itemsStmt || !window) continue;
+    itemsStmt.run(qty, window.id, String(flavorId));
+    flavors += qty;
+  }
+
+  // Combos: `units_available` es -1 = ilimitado. Al restituir, -1 se queda -1
+  // (no se resta de un contador que no existe).
+  const comboStmt = db.prepare(
+    'UPDATE combos SET units_sold = MAX(0, units_sold - ?), units_available = CASE WHEN units_available < 0 THEN -1 ELSE units_available + ? END WHERE id = ?'
+  );
+  for (const c of (safeParse(orderRow.combos_json, []) || [])) {
+    const qty = Number(c?.qty ?? c?.units ?? 0);
+    const comboId = Number(c?.id ?? c?.combo_id);
+    if (!(qty > 0) || !comboId) continue;
+    comboStmt.run(qty, qty, comboId);
+    combos += qty;
+  }
+
+  return { flavors, combos };
+}
+
+/** JSON.parse que no revienta la transaccion si la columna esta corrupta. */
+function safeParse(raw, fallback) {
+  if (raw == null) return fallback;
+  if (typeof raw === 'object') return raw;
+  try { return JSON.parse(raw); } catch { return fallback; }
+}
+
 // requireRole('admin'): /api/auth/register es PUBLICO y emite un token con
 // role:'customer'. Con solo authMiddleware cualquier visitante registrado
 // podia marcar pedidos ajenos como pagados, cambiar su estado o BORRARLOS
 // (verificado: 200 OK en los tres casos con un token de customer).
 router.patch('/:id', [authMiddleware, requireRole('admin')], (req, res) => {
-  const existing = db.prepare('SELECT id FROM orders WHERE id = ?').get(req.params.id);
+  const existing = db.prepare('SELECT * FROM orders WHERE id = ?').get(req.params.id);
   if (!existing) return res.status(404).json({ error: 'not_found' });
   const allowed = ['status', 'payment_status', 'payment_method', 'payment_method_id', 'notes', 'delivery_provider'];
   const updates = {};
@@ -480,15 +572,56 @@ router.patch('/:id', [authMiddleware, requireRole('admin')], (req, res) => {
     return res.status(400).json({ error: 'bad_request', message: `delivery_provider inválido` });
   }
   if (Object.keys(updates).length === 0) return res.status(400).json({ error: 'no_fields' });
+
+  // Cancelar devuelve el stock. Solo en la TRANSICION a cancelled: repetir el
+  // PATCH con el mismo status no debe restituir dos veces.
+  const wasCancelled = existing.status === 'cancelled';
+  const nowCancelled = updates.status === 'cancelled';
+
   const setSql = Object.keys(updates).map(k => `${k} = ?`).join(', ');
-  db.prepare(`UPDATE orders SET ${setSql} WHERE id = ?`).run(...Object.values(updates), req.params.id);
+  db.exec('BEGIN');
+  try {
+    db.prepare(`UPDATE orders SET ${setSql} WHERE id = ?`).run(...Object.values(updates), req.params.id);
+    let restored = null;
+    if (nowCancelled && !wasCancelled) {
+      restored = restoreStockForOrder(db.prepare('SELECT * FROM orders WHERE id = ?').get(req.params.id));
+    }
+    db.exec('COMMIT');
+    if (restored) {
+      res.json({ ...rowToOrder(db.prepare('SELECT * FROM orders WHERE id = ?').get(req.params.id)),
+                 stock_restored: restored });
+      return;
+    }
+  } catch (e) {
+    db.exec('ROLLBACK');
+    return res.status(500).json({ error: 'internal', message: e.message });
+  }
   res.json(rowToOrder(db.prepare('SELECT * FROM orders WHERE id = ?').get(req.params.id)));
 });
 
 router.delete('/:id', [authMiddleware, requireRole('admin')], (req, res) => {
-  const result = db.prepare('DELETE FROM orders WHERE id = ?').run(req.params.id);
-  if (result.changes === 0) return res.status(404).json({ error: 'not_found' });
-  res.json({ ok: true });
+  // Se lee la fila ANTES de borrar: es la que dice cuantas unidades devolver.
+  const row = db.prepare('SELECT * FROM orders WHERE id = ?').get(req.params.id);
+  if (!row) return res.status(404).json({ error: 'not_found' });
+
+  let restored = null;
+  db.exec('BEGIN');
+  try {
+    const result = db.prepare('DELETE FROM orders WHERE id = ?').run(req.params.id);
+    if (result.changes === 0) {
+      db.exec('ROLLBACK');
+      return res.status(404).json({ error: 'not_found' });
+    }
+    // Un pedido ya cancelado devuelve su stock dos veces si se borra después.
+    restored = row.status === 'cancelled'
+      ? { flavors: 0, combos: 0 }
+      : restoreStockForOrder(row);
+    db.exec('COMMIT');
+  } catch (e) {
+    db.exec('ROLLBACK');
+    return res.status(500).json({ error: 'internal', message: e.message });
+  }
+  res.json({ ok: true, stock_restored: restored });
 });
 
 export default router;

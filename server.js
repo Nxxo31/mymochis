@@ -42,7 +42,29 @@ const CORS_ORIGIN = process.env.NEXOMOCHIS_CORS || '*';
 init();
 
 // Registrar adapters de pagos (Spec §22.9)
-registerAdapter(new MockAdapter());
+//
+// El MockAdapter tiene el secreto de firma 'mock-secret' como default (esta
+// literal en el repo). Con el adapter registrado, cualquiera que firmara un
+// "pago aprobado" con esa palabra pasaria la verificacion y marcaria un pedido
+// como pagado. Verificado 2026-10-21: POST /api/webhooks/mock firmado con
+// 'mock-secret' -> 200 y el evento se acepta.
+//
+// El mock es necesario en dev (los tests de pagos lo usan) y es un agujero en
+// produccion. Se decide por el secreto, no por NODE_ENV: que cada despliegue
+// decida explicitamente si el mock existe. Sin secreto en produccion, el
+// server NO ARRANCA, en vez de arrancar con un default que nunca falla.
+const PAYMENT_MOCK_SECRET = process.env.PAYMENT_MOCK_WEBHOOK_SECRET;
+const ALLOW_MOCK_PAYMENTS = Boolean(PAYMENT_MOCK_SECRET) || process.env.NODE_ENV !== 'production';
+
+if (ALLOW_MOCK_PAYMENTS) {
+  registerAdapter(new MockAdapter(PAYMENT_MOCK_SECRET ? { webhookSecret: PAYMENT_MOCK_SECRET } : {}));
+} else {
+  console.error(
+    '[server] produccion sin el MockAdapter: define PAYMENT_MOCK_WEBHOOK_SECRET si de verdad lo quieres ' +
+    '(firmar con "mock-secret" permitiria marcar pedidos como pagados sin mover dinero) o arranca con NODE_ENV != production'
+  );
+  process.exit(1);
+}
 registerAdapter(new NequiAdapter());
 
 // Registrar consumers del outbox (Spec §22.7). Sin esto el relay marcaba cada
