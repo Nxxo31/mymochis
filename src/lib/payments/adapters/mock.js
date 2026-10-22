@@ -37,12 +37,22 @@ export class MockAdapter {
       );
     }
     this.name = opts.name || 'mock';
+
+    // Estado real por referencia, en memoria. Es lo que hace que
+    // getPaymentStatus() responda algo distinto de "siempre cobrado": sin esto
+    // el reconciler promote cualquier pago simulado a SUCCEEDED.
+    // En memoria a proposito: si el proceso se reinicia, se pierde y
+    // getPaymentStatus devuelve UNRESOLVED, que es "no se" en vez de inventar.
+    this._statuses = new Map();
   }
 
   /** @param {CreateInput} input */
   async createPaymentIntent(input) {
     const ref = `MOCK-${randomUUID().slice(0, 8).toUpperCase()}`;
     const isPhonePresent = !!input.customerPhone;
+    // Un intent recien creado NUNCA esta cobrado. El unico camino a SUCCEEDED
+    // es que el proveedor (aqui, el mock) confirme que el dinero entro.
+    this._statuses.set(ref, 'PROCESSING');
     return {
       providerReference: ref,
       providerResponse: { ref, input, mode: this.name, createdAt: new Date().toISOString() },
@@ -57,18 +67,67 @@ export class MockAdapter {
 
   /** @param {string} providerRef */
   async getPaymentStatus(providerRef) {
-    return {
-      providerReference: providerRef,
-      state: 'SUCCEEDED',
-      raw: { providerRef, mode: this.name },
-    };
+    // Antes devolvia SIEMPRE 'SUCCEEDED', asi que el reconciler autopromovia
+    // cualquier pago simulado a cobrado sin que nadie pagara nada:
+    //   [reconciler] op pay_5c08...: PROCESSING -> SUCCEEDED
+    // El reconciler pregunta al proveedor "como va este pago?" y un proveedor
+    // que siempre responde "cobrado" no es un proveedor: es una mentira que
+    // escribe en el ledger.
+    //
+    // Ahora refleja el estado REAL que el mock lleva en su propia memoria:
+    // createPaymentIntent registra PROCESSING y approvePayment lo pasa a
+    // SUCCEEDED. Si el proceso se reinicio, la memoria se perdio y no hay forma
+    // de saber: se devuelve UNRESOLVED, que el reconciler trata como "no se"
+    // en vez de inventar un resultado.
+    const ref = String(providerRef);
+    const st = this._statuses?.get(ref);
+    if (!st) {
+      return {
+        providerReference: ref,
+        state: 'UNRESOLVED',
+        raw: { providerRef, mode: this.name, note: 'sin estado en memoria: no se puede afirmar nada' },
+      };
+    }
+    return { providerReference: ref, state: st, raw: { providerRef, mode: this.name } };
   }
 
   /** @param {string} providerRef */
+  /**
+   * Confirma que el dinero entro. Es el unico camino a SUCCEEDED.
+   *
+   * Lo invoca el consumidor del webhook cuando el proveedor confirma el pago.
+   * Sin este metodo el mock no tendria forma de pasar de PROCESSING a cobrado,
+   * y getPaymentStatus se quedaria en PROCESSING para siempre.
+   */
+  async markPaid(providerRef) {
+    const ref = String(providerRef);
+    const prev = this._statuses.get(ref);
+    if (prev && prev === 'SUCCEEDED') {
+      return { providerReference: ref, state: 'SUCCEEDED', alreadyPaid: true };
+    }
+    this._statuses.set(ref, 'SUCCEEDED');
+    return { providerReference: ref, state: 'SUCCEEDED', alreadyPaid: false };
+  }
+
+  /** Marca el pago como fallido/vencido (webhook de rechazo, expiracion). */
+  async markFailed(providerRef, state = 'FAILED') {
+    const ref = String(providerRef);
+    this._statuses.set(ref, state);
+    return { providerReference: ref, state };
+  }
+
   async refund(providerRef, amountMinor) {
+    const ref = String(providerRef);
+    // Refund no resucita el pago: tras un refund el estado del pago sigue
+    // siendo SUCCEEDED (el dinero SI entro y se devolvio). Marcarlo como otro
+    // estado perderia el hecho de que hubo un cobro, que es justo lo que el
+    // ledger tiene que seguir reflejando.
+    this._statuses.set(ref, 'SUCCEEDED');
     return {
       providerRefundReference: `REFUND-${randomUUID().slice(0, 8).toUpperCase()}`,
       state: 'SUCCEEDED',
+      providerReference: ref,
+      amountMinor: amountMinor ?? null,
     };
   }
 

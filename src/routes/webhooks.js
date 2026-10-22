@@ -4,11 +4,12 @@
 import { Router } from 'express';
 import { randomUUID } from 'node:crypto';
 import { db } from '../db.js';
+import { transitionState } from '../lib/payments/index.js';
 import { getAdapter } from '../lib/payments/adapter.js';
 
 const router = Router();
 
-router.post('/:provider', (req, res) => {
+router.post('/:provider', async (req, res) => {
   const provider = req.params.provider;
   let adapter;
   try {
@@ -62,8 +63,41 @@ router.post('/:provider', (req, res) => {
     return res.status(500).json({ error: 'inbox_failed' });
   }
 
-  // 4. Ack inmediato
-  res.status(200).json({ ok: true, event_id: eventId });
+  // 4. Aplicar el evento al pago.
+  //
+  // Antes el webhook solo guardaba el evento en el inbox y devolvia 200: el
+  // pago NUNCA cambiaba de estado. Un "aprobado" del proveedor no cobraba nada.
+  // Por eso el reconciler era el unico que movia estados, y como el mock
+  // respondia SIEMPRE SUCCEEDED, acababa cobrando pagos que nadie habia pago.
+  //
+  // Aqui se aplica la transicion real, y transitionState la valida contra el
+  // grafo: si el pago ya estaba SUCCEEDED, un segundo webhook contradictorio
+  // se rechaza con illegal_transition en vez de deshacer el cobro.
+  const providerRef = payload.provider_reference || payload.providerReference || null;
+  const paymentId = payload.payment_id || payload.paymentId || null;
+  const eventType = String(payload.type || payload.event || '').toLowerCase();
+
+  let applied = null;
+  if (paymentId && providerRef && adapter.markPaid) {
+    const payment = db.prepare('SELECT payment_id, state FROM payments WHERE payment_id = ?').get(String(paymentId));
+    if (payment) {
+      if (/approved|succeeded|paid|confirmed/.test(eventType)) {
+        await adapter.markPaid(providerRef);
+        applied = transitionState(String(paymentId), payment.state, 'SUCCEEDED', { source: 'webhook', event: eventType });
+      } else if (/rejected|failed|declined/.test(eventType)) {
+        await adapter.markFailed(providerRef);
+        applied = transitionState(String(paymentId), payment.state, 'FAILED', { source: 'webhook', event: eventType });
+      }
+    }
+  }
+
+  // 5. Ack inmediato. Un evento duplicado o ya aplicado responde 200 igual: el
+  // proveedor debe poder reintentar sin romper. La diferencia va en el body.
+  res.status(200).json({
+    ok: true,
+    event_id: eventId,
+    applied: applied ? (applied.ok ? applied.next_state || 'SUCCEEDED' : `rechazado:${applied.reason}`) : 'no_op',
+  });
 });
 
 export default router;

@@ -18,6 +18,48 @@ const STATE = {
 
 const VALID_STATES = new Set(Object.values(STATE));
 
+/**
+ * Grafo de transiciones permitidas.
+ *
+ * Antes solo se validaba que el estado destino existiera en VALID_STATES, asi
+ * que cualquier estado podia pasar a cualquier otro. Eso permitia que un
+ * webhook REJECTED posterior deshiciera un pago ya cobrado: el pedido volvia a
+ * "por cobrar" despues de que el dinero habia entrado, y el operador cobraba
+ * dos veces o lo perdia.
+ *
+ * REGLA: SUCCEEDED es un punto de no retorno desde el punto de vista del
+ * estado del pago. Lo unico que sale de ahi es EXPIRED por reconciliacion, y
+ * solo si el proveedor lo dice (no por una transicion suelta). Devolver dinero
+ * se hace con el flujo de refund, no revirtiendo el pago.
+ */
+const ALLOWED_TRANSITIONS = {
+  [STATE.INITIATED]:      [STATE.REQUIRES_ACTION, STATE.PROCESSING, STATE.SUCCEEDED, STATE.FAILED, STATE.EXPIRED],
+  [STATE.REQUIRES_ACTION]: [STATE.PROCESSING, STATE.SUCCEEDED, STATE.FAILED, STATE.EXPIRED, STATE.INITIATED],
+  [STATE.PROCESSING]:     [STATE.SUCCEEDED, STATE.FAILED, STATE.EXPIRED, STATE.UNRESOLVED],
+  [STATE.UNRESOLVED]:     [STATE.PROCESSING, STATE.SUCCEEDED, STATE.FAILED, STATE.EXPIRED],
+  // Un pago cobrado NO vuelve a "pendiente" por un webhook suelto — eso
+  // deshacia cobros reales (bug del grafo abierto). La UNICA salida es
+  // SUCCEEDED -> UNRESOLVED, y la usa exclusivamente revertManualPayment:
+  // la reversa del operador (POST /api/payments/:id/refund) que exige razon y
+  // postea las entradas contrarias en el ledger. No es una transicion que un
+  // proveedor pueda disparar: el webhook nunca pide UNRESOLVED.
+  [STATE.SUCCEEDED]:      [STATE.UNRESOLVED],
+  [STATE.FAILED]:         [STATE.INITIATED, STATE.PROCESSING, STATE.EXPIRED, STATE.UNRESOLVED],
+  [STATE.EXPIRED]:        [],
+};
+
+/** Un estado desde el que no se sale es terminal. */
+export function isTerminalState(state) {
+  return Array.isArray(ALLOWED_TRANSITIONS[state]) && ALLOWED_TRANSITIONS[state].length === 0;
+}
+
+/** ¿Se permite pasar de `from` a `to`? */
+export function canTransition(from, to) {
+  const allowed = ALLOWED_TRANSITIONS[from];
+  if (!allowed) return false;   // estado desconocido: no se permite
+  return allowed.includes(to);
+}
+
 // Cache de totales de pedido: order_id -> total en pesos. Populado por
 // indexOrderTotals() al boot y refrescado en cada createPaymentIntent().
 // Se usa para validar que el monto del pago cuadre con el pedido (bug #2).
@@ -185,6 +227,13 @@ export function getPayment(paymentId) {
 export function transitionState(paymentId, expectedState, nextState, meta = {}) {
   if (!VALID_STATES.has(nextState)) {
     throw new Error(`Invalid next state: ${nextState}`);
+  }
+  // Grafo de transiciones: no basta con que el destino exista. Un pago ya
+  // cobrado (SUCCEEDED) no puede volver a FAILED/EXPIRED por una transicion
+  // suelta: eso deshacia un cobro real y dejaba el pedido "por cobrar" con el
+  // dinero ya dentro. Verificado 2026-10-21 con dos webhooks contradictorios.
+  if (!canTransition(expectedState, nextState)) {
+    return { ok: false, reason: 'illegal_transition', from: expectedState, to: nextState };
   }
   const res = db.prepare(`
     UPDATE payments
