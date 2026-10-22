@@ -1014,6 +1014,15 @@ tbody tr:hover { background: var(--clay-canvas); }
         <div class="kpi mint"><div class="label">Ventanas abiertas</div><div class="value" id="kpi-open-windows">—</div><div class="hint" id="kpi-open-windows-hint">días de recogida</div></div>
       </div>
 
+      <!-- Stock retenido: pedidos hechos que nadie ha pagado. Las unidades NO se
+           liberan solas (decisión del operador 2026-10-21): hay que cancelar el
+           pedido. Sin este aviso el operador produce para pedidos fantasma. -->
+      <div class="kpi warn" id="kpi-held-card" style="margin-top:12px;display:none">
+        <div class="label">Stock retenido por pedidos sin pagar</div>
+        <div class="value" id="kpi-held-units">—</div>
+        <div class="hint" id="kpi-held-hint">—</div>
+      </div>
+
       <!-- KPIs principales -->
       <div class="grid grid-4" id="kpi-grid" style="margin-top:20px">
         <div class="kpi"><div class="label">Pedidos hoy</div><div class="value" id="kpi-today-count">—</div><div class="hint" id="kpi-today-gross">$0</div></div>
@@ -1556,6 +1565,23 @@ const render = {
     const openWindows = (_openWindows || []).length;
     document.getElementById('kpi-open-windows').textContent = openWindows;
     document.getElementById('kpi-open-windows-hint').textContent = openWindows > 0 ? `${openWindows} días de recogida` : 'sin recogidas abiertas';
+
+    // Stock retenido por pedidos sin confirmar el pago. Solo se muestra si hay
+    // algo retenido: en el dia a dia es ruido, pero cuando aparece es la
+    // diferencia entre saber por que el stock no cuadra y produzir a ciegas.
+    const held = m.held_stock;
+    const heldCard = document.getElementById('kpi-held-card');
+    if (held && held.units > 0) {
+      heldCard.style.display = '';
+      document.getElementById('kpi-held-units').textContent = held.units;
+      const dias = Object.entries(held.by_pickup_day || {})
+        .sort((a, b) => a[0].localeCompare(b[0]))
+        .map(([d, n]) => `${d.slice(5)} (${n})`);
+      document.getElementById('kpi-held-hint').textContent =
+        `${held.orders} pedido${held.orders === 1 ? '' : 's'} · ${dias.join(', ') || 'sin día asignado'} · no se liberan solas`;
+    } else {
+      heldCard.style.display = 'none';
+    }
 
     // Chart.js: daily sales (bar)
     if (typeof Chart === 'undefined') return;

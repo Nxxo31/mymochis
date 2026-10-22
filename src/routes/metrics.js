@@ -51,18 +51,48 @@ router.get('/', [authMiddleware, requireRole('admin')], (req, res) => {
 
   const series = Object.entries(dailySeries).sort().slice(-14).map(([date, total]) => ({ date, total }));
 
-  res.json({
-    totals: { count, gross, paid, pending: gross - paid, avg_ticket: avgTicket },
-    today: { count: todayCount, gross: todayGross },
-    last_7_days: { count: last7, gross: last7Gross },
-    by_status: byStatus,
-    by_payment: byPayment,
-    by_pickup_day: byDay,
-    by_created_weekday: dayTotals,
-    top_flavors: topFlavors,
-    daily_series: series
+    // === Stock retenido por pedidos sin pagar ===
+    //
+    // La reserva NO expira sola (decision del operador): si el cliente pide y no
+    // paga, las unidades quedan retenidas hasta que el operador cancele el
+    // pedido. Eso hace imprescindible poder VERlas, o el operador produce para
+    // pedidos que nadie pago y no sabe por que el stock no cuadra.
+    //
+    // Se cuenta lo que esta retenido AHORA por pedidos vivos: status distinto de
+    // cancelled y payment_status distinto de paid.
+    const heldOrders = all.filter(o => o.status !== 'cancelled' && o.payment_status !== 'paid');
+    let heldFlavors = 0, heldCombos = 0;
+    const heldByDay = {};
+    for (const o of heldOrders) {
+      let items = {};
+      try { items = JSON.parse(o.items_json || '{}'); } catch {}
+      for (const qty of Object.values(items)) heldFlavors += Number(qty) || 0;
+      let combos = [];
+      try { combos = JSON.parse(o.combos_json || '[]'); } catch {}
+      for (const c of combos) heldCombos += Number(c?.qty ?? c?.units ?? 0) || 0;
+      heldByDay[o.pickup_day] = (heldByDay[o.pickup_day] || 0) + 1;
+    }
+
+    res.json({
+      totals: { count, gross, paid, pending: gross - paid, avg_ticket: avgTicket },
+      today: { count: todayCount, gross: todayGross },
+      last_7_days: { count: last7, gross: last7Gross },
+      by_status: byStatus,
+      by_payment: byPayment,
+      by_pickup_day: byDay,
+      by_created_weekday: dayTotals,
+      top_flavors: topFlavors,
+      daily_series: series,
+      held_stock: {
+        orders: heldOrders.length,
+        units: heldFlavors + heldCombos,
+        flavor_units: heldFlavors,
+        combo_units: heldCombos,
+        by_pickup_day: heldByDay,
+        note: 'Unidades retenidas por pedidos sin confirmar el pago. No se liberan solas: cancela el pedido para devolverlas.'
+      }
+    });
   });
-});
 
 export default router;
 
