@@ -22,13 +22,26 @@ const VAULT_KEY = 'a'.repeat(64);
 
 let child, tmpDir, adminToken;
 
-async function waitReady(timeoutMs = 15000) {
+async function waitReady(timeoutMs = 60000) {
+  // Deadline generoso: node:test corre los archivos en paralelo y cada before()
+  // spawnea su propio server. La noche 2026-10-22 los 10 boots simultáneos
+  // tardaron >15s bajo la carga del cron nocturno y 71/84 tests volaron por
+  // este deadline (vault pasó con 16.7s por los pelos). Si el child muere,
+  // el polling corta de inmediato en vez de quemar el deadline entero.
   const deadline = Date.now() + timeoutMs;
   while (Date.now() < deadline) {
-    try { const r = await fetch(`${BASE}/api/health`); if (r.ok) return; } catch {}
+    if (child && (child.exitCode !== null || child.signalCode !== null)) break;
+    try {
+      const r = await fetch(`${BASE}/api/health`, { signal: AbortSignal.timeout(2000) });
+      if (r.ok) return;
+    } catch {}
     await new Promise(r => setTimeout(r, 300));
   }
-  throw new Error('server did not start');
+  const estado = !child ? 'sin child'
+    : (child.exitCode !== null || child.signalCode !== null)
+      ? `child muerto (exit=${child.exitCode}, signal=${child.signalCode})`
+      : `child vivo tras ${timeoutMs}ms pero /api/health nunca respondió`;
+  throw new Error(`server did not start — ${estado}`);
 }
 
 async function api(method, path, { token, body, headers = {} } = {}) {
@@ -241,9 +254,9 @@ test('RISGO 3 — sin NEXOMOCHIS_VAULT_KEY el vault falla cerrado (503, no guard
     stdio: ['ignore', 'pipe', 'pipe'],
   });
   try {
-    const deadline = Date.now() + 15000;
+    const deadline = Date.now() + 60000;
     while (Date.now() < deadline) {
-      try { if ((await fetch(`http://127.0.0.1:${port2}/api/health`)).ok) break; } catch {}
+      try { if ((await fetch(`http://127.0.0.1:${port2}/api/health`, { signal: AbortSignal.timeout(2000) })).ok) break; } catch {}
       await new Promise(r => setTimeout(r, 300));
     }
     const login = await fetch(`http://127.0.0.1:${port2}/api/auth/login`, {

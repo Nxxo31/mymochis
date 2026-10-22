@@ -34,13 +34,26 @@ const ADMIN_PASSWORD = 'SecAuditTest123!';
 
 let child, tmpDir, token, windowDate, comboId, dbPath;
 
-async function waitReady(timeoutMs = 15000) {
+async function waitReady(timeoutMs = 60000) {
+  // Deadline generoso: node:test corre los archivos en paralelo y cada before()
+  // spawnea su propio server. La noche 2026-10-22 los 10 boots simultáneos
+  // tardaron >15s bajo la carga del cron nocturno y 71/84 tests volaron por
+  // este deadline (vault pasó con 16.7s por los pelos). Si el child muere,
+  // el polling corta de inmediato en vez de quemar el deadline entero.
   const deadline = Date.now() + timeoutMs;
   while (Date.now() < deadline) {
-    try { const r = await fetch(`${BASE}/api/health`); if (r.ok) return; } catch {}
+    if (child && (child.exitCode !== null || child.signalCode !== null)) break;
+    try {
+      const r = await fetch(`${BASE}/api/health`, { signal: AbortSignal.timeout(2000) });
+      if (r.ok) return;
+    } catch {}
     await new Promise(r => setTimeout(r, 300));
   }
-  throw new Error('server did not start');
+  const estado = !child ? 'sin child'
+    : (child.exitCode !== null || child.signalCode !== null)
+      ? `child muerto (exit=${child.exitCode}, signal=${child.signalCode})`
+      : `child vivo tras ${timeoutMs}ms pero /api/health nunca respondió`;
+  throw new Error(`server did not start — ${estado}`);
 }
 
 async function api(method, path, { token: t, body, headers = {} } = {}) {
