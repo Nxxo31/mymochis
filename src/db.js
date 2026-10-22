@@ -400,6 +400,104 @@ function ensureColumn(table, column, definition) {
   }
 }
 
+/**
+ * Rellena orders.release_window_id a partir de pickup_day.
+ *
+ * Es idempotente: solo toca las filas que siguen en NULL. Un pedido con
+ * pickup_day que no matchea ninguna ventana se queda en NULL a proposito — es
+ * un huerfano y dejarlo explicito es mejor que apuntarlo a una ventana
+ * equivocada. La columna es nullable justamente para que esos casos se puedan
+ * listar y revisar en vez de fallar en silencio.
+ *
+ * Si hay varias ventanas con la misma fecha (no deberia, pero el schema lo
+ * permite), se toma la `open` mas antigua: es la que el POST de orders habria
+ * usado, asi que es la que reconstruye el descuento real.
+ */
+function ensureBackfillOrderWindows() {
+  const huerfanos = db.prepare(
+    'SELECT COUNT(*) AS n FROM orders o WHERE o.release_window_id IS NULL'
+  ).get().n;
+  if (huerfanos === 0) return;
+
+  db.exec(`
+    UPDATE orders
+    SET release_window_id = (
+      SELECT rw.id FROM release_windows rw
+      WHERE rw.release_date = orders.pickup_day
+      ORDER BY (rw.status = 'open') DESC, rw.id ASC
+      LIMIT 1
+    )
+    WHERE release_window_id IS NULL
+      AND pickup_day IN (SELECT release_date FROM release_windows)
+  `);
+
+  const quedan = db.prepare(
+    'SELECT COUNT(*) AS n FROM orders WHERE release_window_id IS NULL'
+  ).get().n;
+  if (quedan > 0) {
+    console.warn(
+      `[db] ${quedan} pedido(s) con pickup_day sin ventana correspondiente; quedan con ` +
+      `release_window_id NULL a proposito (huerfanos, revisarlos).`
+    );
+  }
+}
+
+/**
+ * Reconstruye `orders` para poder declarar la FK de release_window_id.
+ *
+ * SQLite no permite anadir una FK con ALTER TABLE ADD COLUMN. El procedimiento
+ * estandar es crear la tabla nueva con el esquema deseado, copiar, borrar la
+ * vieja y renombrar. Se hace UNA sola vez (idempotente: si la FK ya existe en
+ * el esquema actual, no toca nada).
+ *
+ * `PRAGMA foreign_keys` se desactiva alrededor: sin eso, el DROP de la tabla
+ * vieja podria disparar acciones referenciales de otras tablas que apuntan a
+ * orders (payments.order_id es FK a orders.id).
+ */
+function ensureOrdersWindowForeignKey() {
+  const rows = db.prepare('PRAGMA foreign_key_list(orders)').all();
+  const yaLaTiene = rows.some(f => f.table === 'release_windows' && f.from === 'release_window_id');
+  if (yaLaTiene) return;
+
+  const current = db.prepare("SELECT sql FROM sqlite_master WHERE type='table' AND name='orders'").get();
+  if (!current) return;
+  if (!/release_window_id/.test(current.sql)) return; // columna sin anadir todavia
+  if (/FOREIGN KEY\s*\(\s*release_window_id/.test(current.sql)) return;
+
+  // NO se reconstruye la tabla copiando PRAGMA table_info: eso pierde los
+  // PRIMARY KEY, los UNIQUE y las CHECK del esquema original (la PK se queda
+  // como un DEFAULT suelto), y los defaults con funcion como
+  // `DEFAULT datetime('now')` se reescriben mal y rompen el CREATE.
+  //
+  // Se parte del SQL real que SQLite ya tiene guardado y se le anade la FK
+  // antes del cierre del parentesis. Es la unica via que preserva el esquema.
+  const original = current.sql.trim();
+  const cierre = original.lastIndexOf(')');
+  if (cierre === -1) return;
+
+  const conFk = original.slice(0, cierre).trimEnd().replace(
+    /,\s*$/, ''
+  ) + `,
+    FOREIGN KEY (release_window_id) REFERENCES release_windows(id) ON DELETE SET NULL
+${original.slice(cierre)}`;
+
+  console.log('[db] declarando la FK orders.release_window_id (una vez)');
+  db.exec('PRAGMA foreign_keys = OFF');
+  try {
+    db.exec(`
+      CREATE TABLE orders__migrate ${conFk.slice(conFk.indexOf('('))};
+      INSERT INTO orders__migrate SELECT * FROM orders;
+      DROP TABLE orders;
+      ALTER TABLE orders__migrate RENAME TO orders;
+    `);
+  } catch (e) {
+    console.error('[db] no se pudo declarar la FK orders.release_window_id:', e.message);
+    throw e;
+  } finally {
+    db.exec('PRAGMA foreign_keys = ON');
+  }
+}
+
 export function init() {
   db.exec(SCHEMA);
 
@@ -490,6 +588,19 @@ export function init() {
   // columna el JWT no puede llevar el telefono y el filtro no tiene con que
   // comparar (2026-10-21, bug de PII).
   ensureColumn('users', 'phone', 'TEXT');
+
+  // El pedido debe guardar a QUE ventana consumio stock, no solo la fecha.
+  // `pickup_day` es un TEXT libre: si el formato cambia o hay typo, la
+  // contabilidad de stock se rompe en silencio y no hay forma de detectar que
+  // pedido+zona se Discountaron de mas. Con la FK, esa reconciliacion es una
+  // query y el motor rechaza el pedido huerfano.
+  //
+  // SQLite no puede agregar una FK con ALTER TABLE ADD COLUMN (solo columnas),
+  // asi que se reconstruye la tabla conservando los datos. Es la razon por la
+  // que el backfill va aqui y no en un simple ensureColumn.
+  ensureColumn('orders', 'release_window_id', 'INTEGER');
+  ensureBackfillOrderWindows();
+  ensureOrdersWindowForeignKey();
 
   const catCount = db.prepare('SELECT COUNT(*) as n FROM categories').get().n;
   if (catCount === 0) {

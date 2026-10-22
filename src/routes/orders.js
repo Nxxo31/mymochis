@@ -45,7 +45,8 @@ function rowToOrder(r) {
     delivery_distance_km: r.delivery_distance_km,
     delivery_fee_cents: r.delivery_fee_cents,
     payment_id: r.payment_id,
-    payment_state: r.payment_state
+    payment_state: r.payment_state,
+    release_window_id: r.release_window_id
   };
 }
 
@@ -338,8 +339,8 @@ router.post('/', async (req, res) => {
       items_json, combos_json, total, notes, source,
       delivery_mode, delivery_provider, delivery_address,
       delivery_lat, delivery_lng, delivery_distance_km, delivery_fee_cents,
-      payment_method_id
-    ) VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?)
+      payment_method_id, release_window_id
+    ) VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?)
   `);
   const updStockStmt = db.prepare(`
     UPDATE release_items
@@ -363,7 +364,11 @@ router.post('/', async (req, res) => {
       authoritativeTotal, notes || null, source || 'web',
       delivery_mode, delivery_provider, delivery_address || null,
       finalLat, finalLng, computedDistanceKm, computedDeliveryFee,
-      payment_method_id || null
+      payment_method_id || null,
+      // La ventana de la que salio el stock. validateScheduled ya la resolvio
+      // (window_id); sin guardarla el pedido solo conservaba la fecha como
+      // texto y no habia forma de reconciliar pedido -> ventana -> stock.
+      validated.window_id ?? null
     );
 
     if (delivery_mode === 'scheduled' && validated.requestedFlavors) {
