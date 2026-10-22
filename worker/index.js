@@ -106,10 +106,14 @@ export default {
         return await env.ASSETS.fetch(request);
       }
 
-      // Trailing-slash redirect for /api/* (router uses ^/api/foo/$ which doesn't match /api/foo)
-      if (/^\/api\/[a-z-]+$/.test(path)) {
-        return Response.redirect(new URL(path + '/', request.url).toString(), 301);
-      }
+      // NO hay redirect de barra final. El router ya la normaliza en
+      // Router._add() (`full.replace(/\/$/, '')`), asi que /api/orders compila a
+      // `^/api/orders$` y matchea sin barra.
+      //
+      // El redirect que habia aqui (301 hacia /api/orders/) era activamente
+      // danoso: en un redirect permanente el cliente puede replayar el POST
+      // como GET, y ahi cae en router.get('/') de orders, que exige
+      // authMiddleware -> 401. El pedido se perdia entero.
 
       await ensureInit(env);
 
