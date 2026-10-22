@@ -120,7 +120,7 @@ function validateScheduled(opts) {
 
   const windows = db.prepare(`
     SELECT rw.id, rw.release_date, rw.status, rw.cutoff_at,
-           ri.id AS item_id, ri.flavor_id, ri.units_sold, ri.units_available
+           ri.id AS item_id, ri.flavor_id, ri.units_sold, ri.units_available, ri.units_reserved
     FROM release_windows rw
     LEFT JOIN release_items ri ON ri.window_id = rw.id
     WHERE rw.release_date = ?
@@ -155,7 +155,9 @@ function validateScheduled(opts) {
     if (!w) {
       return { ok: false, code: 'flavor_not_in_window', message: `El sabor ${req.flavor_id} no está disponible para ${pickup_day}` };
     }
-    const remaining = w.units_available - w.units_sold;
+    // El saldo que se puede prometer descuenta tambien lo reservado por pedidos
+    // sin pagar: si no, el cliente ve disponible algo que otro ya tiene retenido.
+    const remaining = w.units_available - (w.units_sold || 0) - (w.units_reserved || 0);
     if (req.qty > remaining) {
       return {
         ok: false, code: 'insufficient_stock',
@@ -342,18 +344,28 @@ router.post('/', async (req, res) => {
       payment_method_id, release_window_id
     ) VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?)
   `);
-  const updStockStmt = db.prepare(`
+  // === Reserva (no venta) ===
+  //
+  // Al crear el pedido se RESERVA, no se vende: la venta ocurre al confirmar el
+  // pago (commitReservedStock). Con el modelo anterior units_sold subia aqui,
+  // asi que un pedido que el cliente nunca pagaba bloqueaba stock igual que uno
+  // pagado y el operador producia para pedidos fantasma.
+  //
+  // El WHERE hace la operacion atomica: si dos pedidos compiten por la ultima
+  // unidad, solo uno gana (el otro recibe changes=0 y la transaccion revierte).
+  const resvItemStmt = db.prepare(`
     UPDATE release_items
-    SET units_sold = units_sold + ?
+    SET units_reserved = units_reserved + ?
     WHERE window_id = ? AND flavor_id = ?
+      AND (units_available - units_reserved - units_sold) >= ?
   `);
-  // units_available = -1 significa stock ilimitado (el default). Se descuenta
-  // solo cuando hay un limite explicito, y el WHERE con `>=` hace la operacion
-  // atomica: si dos pedidos compiten por la ultima unidad, uno solo gana.
-  const decComboStmt = db.prepare(`
+  // units_available = -1 significa stock ilimitado (el default). El WHERE con
+  // el saldo disponible hace la comprobacion y la reserva en una sola sentencia.
+  const resvComboStmt = db.prepare(`
     UPDATE combos
-    SET units_sold = units_sold + ?, units_available = units_available - ?
-    WHERE id = ? AND (units_available < 0 OR units_available >= ?)
+    SET units_reserved = units_reserved + ?
+    WHERE id = ?
+      AND (units_available < 0 OR (units_available - units_reserved - units_sold) >= ?)
   `);
 
   db.exec('BEGIN');
@@ -373,9 +385,18 @@ router.post('/', async (req, res) => {
 
     if (delivery_mode === 'scheduled' && validated.requestedFlavors) {
       for (const req of validated.requestedFlavors) {
-        const res = updStockStmt.run(req.qty, validated.window_id, req.flavor_id);
+        const res = resvItemStmt.run(req.qty, validated.window_id, req.flavor_id, req.qty);
         if (res.changes !== 1) {
-          throw new Error(`No se pudo actualizar stock de ${req.flavor_id}`);
+          const falta = db.prepare(
+            'SELECT units_available, units_reserved, units_sold FROM release_items WHERE window_id = ? AND flavor_id = ?'
+          ).get(validated.window_id, req.flavor_id);
+          const detalle = falta
+            ? ` (disponible ${falta.units_available - falta.units_reserved - falta.units_sold})`
+            : '';
+          throw Object.assign(
+            new Error(`No hay stock de ${req.flavor_id}${detalle}`),
+            { code: 'flavor_out_of_stock' }
+          );
         }
       }
     }
@@ -384,7 +405,7 @@ router.post('/', async (req, res) => {
     // contador, no un booleano: se descuenta y si no alcanza se revierte todo.
     if (delivery_mode === 'scheduled' && validated.requestedCombos) {
       for (const req of validated.requestedCombos) {
-        const r = decComboStmt.run(req.qty, req.qty, Number(req.id), req.qty);
+        const r = resvComboStmt.run(req.qty, Number(req.id), req.qty);
         if (r.changes !== 1) {
           const def = db.prepare('SELECT name FROM combos WHERE id = ?').get(Number(req.id));
           throw Object.assign(
@@ -469,6 +490,20 @@ router.post('/:id/confirm-payment', [authMiddleware, requireRole('admin')], (req
       note: note ? String(note).trim() : null,
       amount: amount != null && amount !== '' ? Number(amount) : null,
     });
+
+    // Confirmar el pago es el momento en que la RESERVA pasa a ser VENTA.
+    // Hasta aqui las unidades estaban retenidas (units_reserved) para este
+    // pedido pero no contaban como vendidas. Solo cuando el dinero entra se
+    // mueven a units_sold: antes, un pedido que nunca se pagaba bloqueaba
+    // stock real y el operador producia para pedidos fantasma.
+    //
+    // No se hace si ya estaba confirmado: confirmManualPayment es idempotente y
+    // en ese caso ya se comprovisiono en su primera llamada.
+    let committed = null;
+    if (!out.already_confirmed) {
+      committed = commitReservedStock(db.prepare('SELECT * FROM orders WHERE id = ?').get(req.params.id));
+    }
+
     res.status(out.already_confirmed ? 200 : 201).json({
       ok: true,
       already_confirmed: out.already_confirmed,
@@ -476,6 +511,7 @@ router.post('/:id/confirm-payment', [authMiddleware, requireRole('admin')], (req
       state: out.payment.state,
       amount: out.payment.amount_minor,
       order_id: out.payment.order_id,
+      stock_committed: committed,
       message: out.already_confirmed
         ? 'Este pedido ya tenía un pago confirmado'
         : 'Pago confirmado y registrado en el ledger',
@@ -493,61 +529,97 @@ router.post('/:id/confirm-payment', [authMiddleware, requireRole('admin')], (req
 });
 
 /**
- * Devuelve al inventario las unidades de un pedido que se borra o cancela.
+ * Convierte la RESERVA de un pedido en VENTA.
  *
- * El descuento (POST /api/orders) suma a `release_items.units_sold` y resta a
- * `combos.units_available`. Ninguna ruta hacia el camino contrario: al borrar
- * un pedido de prueba o cancelar uno malDigitado, esas unidades quedaban
- * quemadas para siempre. Verificado 2026-10-21: vender 2 y borrar el pedido
- * dejaba el stock en 8/10, no en 10/10. Como es acumulativo y silencioso, tras
- * varios ciclos la app dice "agotado" con producto en la cocina.
+ * Se llama cuando el pago queda confirmado. Ese es el unico momento en que las
+ * unidades pasan de `reserved` a `sold`: antes de confirmar no sabemos si el
+ * cliente va a pagar, y despues ya no hay duda.
  *
- * Se ejecuta DENTRO de la misma transaccion que el DELETE/PATCH: si el stock no
- * vuelve, tampoco se borra el pedido, o se pierde la trazabilidad del pago.
- *
- * `window_id` se recupera de la release_window que matchea `pickup_day`, que es
- * la misma logica que usa el descuento (validateScheduled lo resuelve asi).
+ * Idempotente por diseno: si el pedido no tiene reserva (p.ej. uno antiguo,
+ * creado antes de este modelo), no toca nada en vez de descontar stock que
+ * nunca se reservo.
  */
-function restoreStockForOrder(orderRow) {
-  if (!orderRow) return { flavors: 0, combos: 0 };
-  if (orderRow.delivery_mode && orderRow.delivery_mode !== 'scheduled') {
-    return { flavors: 0, combos: 0 };
-  }
+export function commitReservedStock(orderRow) {
+  const result = { flavors: 0, combos: 0 };
+  if (!orderRow) return result;
+  if (orderRow.release_window_id == null) return result;
 
-  let flavors = 0;
-  let combos = 0;
-
-  // Sabores: la ventana se busca por fecha, igual que al descontar.
-  const window = db.prepare(
-    "SELECT id FROM release_windows WHERE release_date = ? AND status = 'open' ORDER BY id LIMIT 1"
-  ).get(orderRow.pickup_day);
-
-  const items = safeParse(orderRow.items_json, {});
-  const itemsStmt = window
-    ? db.prepare('UPDATE release_items SET units_sold = MAX(0, units_sold - ?) WHERE window_id = ? AND flavor_id = ?')
-    : null;
-
-  for (const [flavorId, qtyRaw] of Object.entries(items || {})) {
+  const flavors = safeParse(orderRow.items_json, {});
+  const commitItem = db.prepare(`
+    UPDATE release_items
+    SET units_reserved = MAX(0, units_reserved - ?), units_sold = units_sold + ?
+    WHERE window_id = ? AND flavor_id = ? AND units_reserved >= ?
+  `);
+  for (const [flavorId, qtyRaw] of Object.entries(flavors || {})) {
     const qty = Number(qtyRaw);
-    if (!(qty > 0) || !itemsStmt || !window) continue;
-    itemsStmt.run(qty, window.id, String(flavorId));
-    flavors += qty;
+    if (!(qty > 0)) continue;
+    const r = commitItem.run(qty, qty, orderRow.release_window_id, String(flavorId), qty);
+    if (r.changes === 1) result.flavors += qty;
   }
 
-  // Combos: `units_available` es -1 = ilimitado. Al restituir, -1 se queda -1
-  // (no se resta de un contador que no existe).
-  const comboStmt = db.prepare(
-    'UPDATE combos SET units_sold = MAX(0, units_sold - ?), units_available = CASE WHEN units_available < 0 THEN -1 ELSE units_available + ? END WHERE id = ?'
-  );
+  const commitCombo = db.prepare(`
+    UPDATE combos
+    SET units_reserved = MAX(0, units_reserved - ?), units_sold = units_sold + ?
+    WHERE id = ? AND units_reserved >= ?
+  `);
   for (const c of (safeParse(orderRow.combos_json, []) || [])) {
     const qty = Number(c?.qty ?? c?.units ?? 0);
     const comboId = Number(c?.id ?? c?.combo_id);
     if (!(qty > 0) || !comboId) continue;
-    comboStmt.run(qty, qty, comboId);
-    combos += qty;
+    const r = commitCombo.run(qty, qty, comboId, qty);
+    if (r.changes === 1) result.combos += qty;
+  }
+  return result;
+}
+
+/**
+ * LIBERA la reserva de un pedido que se borra o cancela sin haberse pagado.
+ *
+ * Con el modelo de reserva, cancelar NO devuelve unidades: libera unidades
+ * que nunca se vendieron. Solo el camino reservado→vendido mueve `units_sold`.
+ *
+ * Es idempotente por construccion: cada sentencia lleva `units_reserved >= ?`,
+ * asi que liberar dos veces no puede sobre-devolver. Y si el pedido ya estaba
+ * pagado (units_reserved = 0 porque ya se convirtio en venta), no toca
+ * `units_sold`: esa unidad ya se vendio de verdad.
+ *
+ * Esto reemplaza la logica previa que sumaba/resta `units_sold`, que era
+ * correcta con dos contadores y equivocada con tres.
+ */
+export function releaseReservedStock(orderRow) {
+  const result = { flavors: 0, combos: 0 };
+  if (!orderRow) return result;
+  if (orderRow.release_window_id == null && !orderRow.items_json) return result;
+
+  const flavors = safeParse(orderRow.items_json, {});
+  const releaseItem = orderRow.release_window_id != null
+    ? db.prepare(`
+        UPDATE release_items
+        SET units_reserved = MAX(0, units_reserved - ?)
+        WHERE window_id = ? AND flavor_id = ? AND units_reserved >= ?
+      `)
+    : null;
+
+  for (const [flavorId, qtyRaw] of Object.entries(flavors || {})) {
+    const qty = Number(qtyRaw);
+    if (!(qty > 0) || !releaseItem || orderRow.release_window_id == null) continue;
+    const r = releaseItem.run(qty, orderRow.release_window_id, String(flavorId), qty);
+    if (r.changes === 1) result.flavors += qty;
   }
 
-  return { flavors, combos };
+  const releaseCombo = db.prepare(`
+    UPDATE combos
+    SET units_reserved = MAX(0, units_reserved - ?)
+    WHERE id = ? AND units_reserved >= ?
+  `);
+  for (const c of (safeParse(orderRow.combos_json, []) || [])) {
+    const qty = Number(c?.qty ?? c?.units ?? 0);
+    const comboId = Number(c?.id ?? c?.combo_id);
+    if (!(qty > 0) || !comboId) continue;
+    const r = releaseCombo.run(qty, comboId, qty);
+    if (r.changes === 1) result.combos += qty;
+  }
+  return result;
 }
 
 /** JSON.parse que no revienta la transaccion si la columna esta corrupta. */
@@ -589,7 +661,7 @@ router.patch('/:id', [authMiddleware, requireRole('admin')], (req, res) => {
     db.prepare(`UPDATE orders SET ${setSql} WHERE id = ?`).run(...Object.values(updates), req.params.id);
     let restored = null;
     if (nowCancelled && !wasCancelled) {
-      restored = restoreStockForOrder(db.prepare('SELECT * FROM orders WHERE id = ?').get(req.params.id));
+      restored = releaseReservedStock(db.prepare('SELECT * FROM orders WHERE id = ?').get(req.params.id));
     }
     db.exec('COMMIT');
     if (restored) {
@@ -620,7 +692,7 @@ router.delete('/:id', [authMiddleware, requireRole('admin')], (req, res) => {
     // Un pedido ya cancelado devuelve su stock dos veces si se borra después.
     restored = row.status === 'cancelled'
       ? { flavors: 0, combos: 0 }
-      : restoreStockForOrder(row);
+      : releaseReservedStock(row);
     db.exec('COMMIT');
   } catch (e) {
     db.exec('ROLLBACK');

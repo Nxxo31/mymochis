@@ -64,6 +64,7 @@ router.get('/', (req, res) => {
   const releaseWindows = db.prepare(`
     SELECT rw.id, rw.release_date, rw.cutoff_at, rw.status, rw.notes,
            ri.id AS item_id, ri.flavor_id, ri.units_available, ri.units_sold,
+           ri.units_reserved,
            f.name AS flavor_name, f.price AS flavor_price, f.color AS flavor_color
     FROM release_windows rw
     LEFT JOIN release_items ri ON ri.window_id = rw.id
@@ -103,8 +104,14 @@ router.get('/', (req, res) => {
       releaseWindowsById[r.id].items.push({
         id: r.item_id, flavor_id: r.flavor_id, flavor_name: r.flavor_name,
         flavor_price: r.flavor_price, flavor_color: r.flavor_color,
-        units_available: r.units_available, units_sold: r.units_sold,
-        units_remaining: Math.max(0, r.units_available - r.units_sold)
+        units_available: r.units_available,
+        units_sold: r.units_sold,
+        units_reserved: r.units_reserved,
+        // Lo que de verdad se puede prometer: lo disponible menos lo ya
+        // reservado por pedidos sin pagar y lo ya vendido. Con el modelo
+        // anterior (available - sold) una reserva invisible contaba como
+        // disponible y el cliente podia pedir algo que ya no habia.
+        units_remaining: Math.max(0, r.units_available - (r.units_sold || 0) - (r.units_reserved || 0))
       });
     }
   }

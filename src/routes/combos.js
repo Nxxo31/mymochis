@@ -9,14 +9,21 @@ import { authMiddleware, requireRole } from '../auth.js';
 
 const router = Router();
 
-const COLS = 'id, name, units, price, description, compare_at_price, available, featured, image_url, sort_order, units_available, units_sold';
+const COLS = 'id, name, units, price, description, compare_at_price, available, featured, image_url, sort_order, units_available, units_sold, units_reserved';
 
 function shape(r) {
   return {
     ...r,
     available: !!r.available,
     featured: !!r.featured,
-    stock_remaining: r.units_available < 0 ? null : Math.max(0, r.units_available),
+    // Saldo real = capacidad - reservado - vendido. Con el modelo de dos
+    // contadores (available - sold) una reserva por un pedido sin pagar no
+    // contaba como consumida y el panel ofrecaba stock que ya no habia.
+    stock_remaining: r.units_available < 0
+      ? null
+      : Math.max(0, r.units_available - (r.units_sold || 0) - (r.units_reserved || 0)),
+    units_reserved: r.units_reserved || 0,
+    units_sold: r.units_sold || 0,
     unlimited: r.units_available < 0,
   };
 }

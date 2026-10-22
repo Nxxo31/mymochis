@@ -61,7 +61,11 @@ async function comboStock() {
   const lista = Array.isArray(r.json) ? r.json : (r.json?.combos || []);
   const c = lista.find(x => Number(x.id) === Number(comboId));
   assert.ok(c, `no se encontro el combo ${comboId} en GET /api/combos`);
-  return { units_available: c.units_available, units_sold: c.units_sold ?? 0 };
+  return {
+    units_available: c.units_available,
+    units_sold: c.units_sold ?? 0,
+    units_reserved: c.units_reserved ?? 0,
+  };
 }
 
 before(async () => {
@@ -171,7 +175,11 @@ test('PII — el admin sigue viendo todos los pedidos', async () => {
 // 2. Stock — borrar o cancelar devuelve las unidades
 // =============================================================================
 
-test('stock — DELETE devuelve las unidades al inventario', async () => {
+test('stock — DELETE libera la reserva (no hay venta que devolver)', async () => {
+  // Con el modelo de tres pools (2026-10-21) un pedido sin pagar RESERVA, no
+  // vende. Borrarlo no "devuelve" unidades: LIBERA la reserva. Lo que hay que
+  // comprobar es que el saldo prometible vuelva al inicial y que no se toque
+  // units_sold, que es lo que solo mueve el pago confirmado.
   const before = await comboStock();
   const r = await api('POST', '/api/orders', {
     token,
@@ -182,16 +190,17 @@ test('stock — DELETE devuelve las unidades al inventario', async () => {
   assert.equal(r.status, 201, `alta fallo: ${JSON.stringify(r.json)}`);
 
   const durante = await comboStock();
-  assert.ok(durante.units_sold > before.units_sold, 'el pedido debe descontar stock');
+  assert.equal(durante.units_reserved, (before.units_reserved || 0) + 1,
+    'el pedido debe RESERVAR el combo');
 
   const del = await api('DELETE', '/api/orders/SEC-STOCK-DEL', { token });
   assert.equal(del.status, 200);
 
   const despues = await comboStock();
-  assert.equal(despues.units_sold, before.units_sold,
-    `borrar el pedido debe devolver units_sold a ${before.units_sold}, quedo en ${despues.units_sold}`);
-  assert.equal(despues.units_available, before.units_available,
-    `borrar el pedido debe devolver units_available a ${before.units_available}, quedo en ${despues.units_available}`);
+  assert.equal(despues.units_reserved, before.units_reserved || 0,
+    `borrar debe liberar la reserva (${before.units_reserved || 0}), quedo en ${despues.units_reserved}`);
+  assert.equal(despues.units_sold, before.units_sold || 0,
+    'no se debe tocar units_sold: no hubo venta');
 });
 
 test('stock — cancelar devuelve las unidades al inventario', async () => {
@@ -206,8 +215,10 @@ test('stock — cancelar devuelve las unidades al inventario', async () => {
   assert.equal(r.status, 200);
 
   const despues = await comboStock();
-  assert.equal(despues.units_sold, before.units_sold,
-    `cancelar debe devolver units_sold a ${before.units_sold}, quedo en ${despues.units_sold}`);
+  assert.equal(despues.units_reserved, before.units_reserved || 0,
+    `cancelar debe liberar la reserva, quedo en ${despues.units_reserved}`);
+  assert.equal(despues.units_sold, before.units_sold || 0,
+    'cancelar un pedido sin pagar no toca units_sold');
 });
 
 test('stock — cancelar dos veces NO restituye doble', async () => {
@@ -224,9 +235,9 @@ test('stock — cancelar dos veces NO restituye doble', async () => {
   await api('PATCH', '/api/orders/SEC-STOCK-DUP', { token, body: { status: 'cancelled' } });
   const fin = await comboStock();
 
-  assert.equal(fin.units_sold, medio.units_sold,
-    `el segundo cancel no debe volver a sumar unidades (${medio.units_sold} -> ${fin.units_sold})`);
-  assert.equal(fin.units_sold, before.units_sold, 'y el total sigue siendo el inicial');
+  assert.equal(fin.units_reserved, medio.units_reserved,
+    `el segundo cancel no debe volver a liberar (${medio.units_reserved} -> ${fin.units_reserved})`);
+  assert.equal(fin.units_reserved, before.units_reserved || 0, 'y el saldo vuelve al inicial');
 });
 
 test('stock — borrar un pedido YA cancelado no restituye otra vez', async () => {
@@ -241,9 +252,9 @@ test('stock — borrar un pedido YA cancelado no restituye otra vez', async () =
   const medio = await comboStock();
   await api('DELETE', '/api/orders/SEC-STOCK-BOTH', { token });
   const fin = await comboStock();
-  assert.equal(fin.units_available, medio.units_available,
-    `borrar un pedido ya cancelado no debe devolver unidades otra vez (${medio.units_available} -> ${fin.units_available})`);
-  assert.equal(fin.units_available, before.units_available);
+  assert.equal(fin.units_reserved, medio.units_reserved,
+    `borrar un pedido ya cancelado no debe liberar otra vez (${medio.units_reserved} -> ${fin.units_reserved})`);
+  assert.equal(fin.units_reserved, before.units_reserved || 0);
 });
 
 // =============================================================================

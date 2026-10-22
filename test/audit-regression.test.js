@@ -173,12 +173,22 @@ test('bug#6 — se puede comprar un combo sin sabores (antes: 400 no_items)', as
   assert.equal(r.json.pricing.lines[0].type, 'combo');
 });
 
-test('bug#6 — comprar un combo descuenta su stock', async () => {
-  const before = (await api('GET', '/api/combos', { token })).json.find(c => c.id === comboId)?.stock_remaining;
+test('bug#6 — comprar un combo RESERVA su stock (se vendera al confirmar el pago)', async () => {
+  // El modelo paso a tres pools (disponible/reservado/vendido) el 2026-10-21:
+  // pedir RESERVA, vender es confirmar el pago. El saldo que ve el cliente
+  // baja igual, pero por reserva, no por venta — que es justo el punto: un
+  // pedido que nunca se paga no debe consumir unidades vendidas.
+  const before = (await api('GET', '/api/combos', { token })).json.find(c => c.id === comboId);
   const r = await order({ items: {}, combos: [{ id: comboId, qty: 2 }], total: 50000 });
   assert.equal(r.status, 201, JSON.stringify(r.json));
-  const after = (await api('GET', '/api/combos', { token })).json.find(c => c.id === comboId)?.stock_remaining;
-  assert.equal(after, before - 2, `stock de combo no descontado: ${before} -> ${after}`);
+  const after = (await api('GET', '/api/combos', { token })).json.find(c => c.id === comboId);
+
+  assert.equal(after.stock_remaining, before.stock_remaining - 2,
+    `el saldo prometible debe bajar 2: ${before.stock_remaining} -> ${after.stock_remaining}`);
+  assert.equal(after.units_reserved, (before.units_reserved || 0) + 2,
+    'las unidades deben quedar RESERVADAS, no vendidas');
+  assert.equal(after.units_sold, before.units_sold || 0,
+    'un pedido sin pagar NO debe contar como vendido');
 });
 
 test('bug#6 — pedir mas combos de los disponibles revierte todo (409, sin pedido huerfano)', async () => {

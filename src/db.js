@@ -602,6 +602,27 @@ export function init() {
   ensureBackfillOrderWindows();
   ensureOrdersWindowForeignKey();
 
+  // === Tres pools de stock (disponible / reservado / vendido) ===
+  //
+  // El negocio cobra por transferencia manual: entre que el cliente pide y que
+  // el operador confirma el pago hay horas. Con el modelo de dos contadores
+  // (units_available vs units_sold) un pedido que NUNCA se paga bloqueaba
+  // stock igual de un pedido pagado: el operador terminaba produciendo para
+  // pedidos fantasma y la app decia "agotado" con producto en la cocina.
+  //
+  // Ahora hay una RESERVA explicita:
+  //   reserved  = pedido creado, pago pendiente
+  //   sold      = pago confirmado
+  // Lo que se puede prometer es available - reserved - sold.
+  //
+  // Decidido con el operador (2026-10-21): la reserva NO expira sola. Si el
+  // cliente no paga, el stock queda retenido hasta que el operador lo libere
+  // cancelando el pedido. Es lo contrario de un TTL de carrito, y tiene
+  // sentido aqui: el "checkout" es una transferencia que puede llegar a las
+  // 11pm por un pedido de las 3pm.
+  ensureColumn('release_items', 'units_reserved', 'INTEGER NOT NULL DEFAULT 0');
+  ensureColumn('combos', 'units_reserved', 'INTEGER NOT NULL DEFAULT 0');
+
   const catCount = db.prepare('SELECT COUNT(*) as n FROM categories').get().n;
   if (catCount === 0) {
     const stmt = db.prepare('INSERT INTO categories (name, slug, sort_order) VALUES (?, ?, ?)');
