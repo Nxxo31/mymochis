@@ -485,6 +485,12 @@ export function init() {
   ensureColumn('orders', 'payment_id',    'TEXT REFERENCES payments(payment_id)');
   ensureColumn('orders', 'payment_state', 'TEXT');
 
+  // El telefono del cliente es la llave con la que se filtra SU propio pedido:
+  // `GET /api/orders` solo le muestra lo suyo, no el libro completo. Sin esta
+  // columna el JWT no puede llevar el telefono y el filtro no tiene con que
+  // comparar (2026-10-21, bug de PII).
+  ensureColumn('users', 'phone', 'TEXT');
+
   const catCount = db.prepare('SELECT COUNT(*) as n FROM categories').get().n;
   if (catCount === 0) {
     const stmt = db.prepare('INSERT INTO categories (name, slug, sort_order) VALUES (?, ?, ?)');

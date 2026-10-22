@@ -32,7 +32,7 @@ function clearFails(ip) {
 }
 
 router.post('/register', async (req, res) => {
-  const { email, password, name } = req.body || {};
+  const { email, password, name, phone } = req.body || {};
   if (!email || !password) return res.status(400).json({ error: 'bad_request', message: 'email y password son obligatorios' });
   if (typeof email !== 'string' || email.length > 254) return res.status(400).json({ error: 'bad_request', message: 'email invalido' });
   if (typeof password !== 'string' || password.length < 8) return res.status(400).json({ error: 'bad_request', message: 'password debe tener al menos 8 caracteres' });
@@ -47,11 +47,11 @@ router.post('/register', async (req, res) => {
 
   const { salt, hash } = await hashPassword(password, req.env);
   const result = await req.db.prepare(
-    "INSERT INTO users (email, password_hash, password_salt, name, role) VALUES (?, ?, ?, ?, 'customer')"
-  ).run(emailLower, hash, salt, name || null);
+    "INSERT INTO users (email, password_hash, password_salt, name, role, phone) VALUES (?, ?, ?, ?, 'customer', ?)"
+  ).run(emailLower, hash, salt, name || null, phoneDigits);
 
   const userId = result.lastInsertRowid;
-  const token = await signJwt({ sub: userId, email: emailLower, role: 'customer' }, req.env);
+  const token = await signJwt({ sub: userId, email: emailLower, role: 'customer', phone: phoneDigits || null }, req.env);
   res.status(201).json({ token, user: { id: userId, email: emailLower, name: name || null, role: 'customer' } });
 });
 
@@ -68,7 +68,7 @@ router.post('/login', async (req, res) => {
   if (!email || !password) return res.status(400).json({ error: 'bad_request', message: 'email y password son obligatorios' });
   if (typeof email !== 'string' || typeof password !== 'string') return res.status(400).json({ error: 'bad_request', message: 'tipos invalidos' });
 
-  const user = await req.db.prepare('SELECT id, email, password_hash, password_salt, name, role FROM users WHERE email = ?').get(email.toLowerCase().trim());
+  const user = await req.db.prepare('SELECT id, email, password_hash, password_salt, name, role, phone FROM users WHERE email = ?').get(email.toLowerCase().trim());
 
   const fakeHash = `pbkdf2$${pbkdf2Iterations(req.env)}$` + '0'.repeat(64);
   const storedHash = user?.password_hash || fakeHash;
@@ -91,7 +91,7 @@ router.post('/login', async (req, res) => {
   }
 
   clearFails(ip);
-  const token = await signJwt({ sub: user.id, email: user.email, role: user.role }, req.env);
+  const token = await signJwt({ sub: user.id, email: user.email, role: user.role, phone: user.phone || null }, req.env);
   res.json({ token, user: { id: user.id, email: user.email, name: user.name, role: user.role } });
 });
 

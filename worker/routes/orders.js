@@ -142,10 +142,24 @@ function validateImmediate({ total, delivery_address, delivery_lat, delivery_lng
   return { ok: true };
 }
 
+// Solo admin ve el libro completo de pedidos (PII). Mismo fix que
+// src/routes/orders.js — un customer solo ve los suyos, por telefono. Si solo se
+// arregla el runtime de Node, el Worker reintroduce la fuga.
+function ordersVisibleTo(req) {
+  return req.user?.role === 'admin' ? null : req.user?.phone || null;
+}
+
 router.get('/', authMiddleware, async (req, res) => {
   const { status, day, week, q, limit = 100 } = req.query;
   const wheres = [];
   const params = [];
+
+  const onlyPhone = ordersVisibleTo(req);
+  if (onlyPhone != null) {
+    wheres.push('customer_phone = ?');
+    params.push(String(onlyPhone).replace(/\D/g, ''));
+  }
+
   if (status) { wheres.push('status = ?'); params.push(status); }
   if (day) { wheres.push('pickup_day = ?'); params.push(day); }
   if (q) { wheres.push('(customer_name LIKE ? OR customer_phone LIKE ?)'); params.push(`%${q}%`, `%${q}%`); }
@@ -165,6 +179,11 @@ router.get('/', authMiddleware, async (req, res) => {
 router.get('/:id', authMiddleware, async (req, res) => {
   const row = await req.db.prepare('SELECT * FROM orders WHERE id = ?').get(req.params.id);
   if (!row) return res.status(404).json({ error: 'not_found' });
+  // Customer: 404 en pedidos ajenos, para no confirmar que existen.
+  const onlyPhone = ordersVisibleTo(req);
+  if (onlyPhone != null && String(row.customer_phone).replace(/\D/g, '') !== String(onlyPhone).replace(/\D/g, '')) {
+    return res.status(404).json({ error: 'not_found' });
+  }
   res.json(rowToOrder(row));
 });
 

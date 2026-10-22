@@ -45,12 +45,23 @@ function safeEqualHex(a, b) {
 }
 
 router.post('/register', (req, res) => {
-  const { email, password, name } = req.body || {};
+  const { email, password, name, phone } = req.body || {};
   if (!email || !password) return res.status(400).json({ error: 'bad_request', message: 'email y password son obligatorios' });
   if (typeof email !== 'string' || email.length > 254) return res.status(400).json({ error: 'bad_request', message: 'email inválido' });
   if (typeof password !== 'string' || password.length < 8) return res.status(400).json({ error: 'bad_request', message: 'password debe tener al menos 8 caracteres' });
   if (password.length > 200) return res.status(400).json({ error: 'bad_request', message: 'password demasiado largo' });
   if (name && (typeof name !== 'string' || name.length > 120)) return res.status(400).json({ error: 'bad_request', message: 'name inválido' });
+  // Telefono: es la llave con la que `GET /api/orders` filtra los pedidos del
+  // propio cliente (bug de PII del 2026-10-21). Se normaliza a digitos para que
+  // la comparacion con orders.customer_phone no dependa de como lo escribio.
+  let phoneDigits = null;
+  if (phone) {
+    if (typeof phone !== 'string') return res.status(400).json({ error: 'bad_request', message: 'phone inválido' });
+    phoneDigits = phone.replace(/\D/g, '');
+    if (phoneDigits.length < 8 || phoneDigits.length > 15) {
+      return res.status(400).json({ error: 'bad_request', message: 'phone debe tener entre 8 y 15 dígitos' });
+    }
+  }
 
   const emailLower = email.toLowerCase().trim();
   if (!/^[^\s@]+@[^\s@]+\.[^\s@]+$/.test(emailLower)) return res.status(400).json({ error: 'bad_request', message: 'formato de email inválido' });
@@ -60,12 +71,12 @@ router.post('/register', (req, res) => {
 
   const { salt, hash } = hashPassword(password);
   const result = db.prepare(
-    "INSERT INTO users (email, password_hash, password_salt, name, role) VALUES (?, ?, ?, ?, 'customer')"
-  ).run(emailLower, hash, salt, name || null);
+    "INSERT INTO users (email, password_hash, password_salt, name, role, phone) VALUES (?, ?, ?, ?, 'customer', ?)"
+  ).run(emailLower, hash, salt, name || null, phoneDigits);
 
   const userId = result.lastInsertRowid;
-  const token = signJwt({ sub: userId, email: emailLower, role: 'customer' });
-  res.status(201).json({ token, user: { id: userId, email: emailLower, name: name || null, role: 'customer' } });
+  const token = signJwt({ sub: userId, email: emailLower, role: 'customer', phone: phoneDigits });
+  res.status(201).json({ token, user: { id: userId, email: emailLower, name: name || null, role: 'customer', phone: phoneDigits } });
 });
 
 router.post('/login', (req, res) => {
@@ -81,7 +92,7 @@ router.post('/login', (req, res) => {
   if (!email || !password) return res.status(400).json({ error: 'bad_request', message: 'email y password son obligatorios' });
   if (typeof email !== 'string' || typeof password !== 'string') return res.status(400).json({ error: 'bad_request', message: 'tipos inválidos' });
 
-  const user = db.prepare('SELECT id, email, password_hash, password_salt, name, role FROM users WHERE email = ?').get(email.toLowerCase().trim());
+  const user = db.prepare('SELECT id, email, password_hash, password_salt, name, role, phone FROM users WHERE email = ?').get(email.toLowerCase().trim());
 
   const fakeHash = '0'.repeat(64);
   const storedHash = user?.password_hash || fakeHash;
@@ -104,8 +115,8 @@ router.post('/login', (req, res) => {
   }
 
   clearFails(ip);
-  const token = signJwt({ sub: user.id, email: user.email, role: user.role });
-  res.json({ token, user: { id: user.id, email: user.email, name: user.name, role: user.role } });
+  const token = signJwt({ sub: user.id, email: user.email, role: user.role, phone: user.phone || null });
+  res.json({ token, user: { id: user.id, email: user.email, name: user.name, role: user.role, phone: user.phone || null } });
 });
 
 export default router;
