@@ -26,6 +26,23 @@ router.post('/', authMiddleware, async (req, res) => {
   if (!idempotencyKey) {
     return res.status(400).json({ error: 'idempotency_key_required' });
   }
+
+  // Un customer solo puede crear pagos para SU pedido. Antes no se validaba,
+  // asi que cualquiera con el order_id de otro (que ya se puede obtener, ver el
+  // fix de PII en orders.js) le adjuntaba su propio intent de pago y le
+  // ensuciaba el ciclo de vida y el panel de cobros al operador.
+  // Mismo criterio que GET /:id usa abajo: el telefono del JWT contra el del
+  // pedido.
+  const targetOrder = db.prepare('SELECT customer_phone FROM orders WHERE id = ?')
+    .get(String(req.body?.order_id || ''));
+  if (req.user?.role !== 'admin' && targetOrder) {
+    const pedido = String(targetOrder.customer_phone || '').replace(/\D/g, '');
+    const cliente = String(req.user?.phone || '').replace(/\D/g, '');
+    if (!cliente || pedido !== cliente) {
+      return res.status(404).json({ error: 'not_found' });
+    }
+  }
+
   try {
     const out = await createPaymentIntent({ idempotencyKey, request: req.body });
     res.status(out.status).json(out.body);

@@ -1,6 +1,6 @@
 ﻿import { Router } from 'express';
 import { db } from '../db.js';
-import { authMiddleware, requireRole } from '../auth.js';
+import { authMiddleware, requireRole , verifyJwt } from '../auth.js';
 
 const router = Router();
 
@@ -17,7 +17,21 @@ function validate(body) {
   return null;
 }
 
-router.get('/', (req, res) => {
+// Middleware OPCIONAL: puebla req.user si hay un Bearer valido y, si no, deja
+// pasar la request sin el. Es lo que necesitan los GET publicos que ofrecen un
+// extra al admin (include_inactive=1) sin cerrar la lectura al visitante.
+// NO usar authMiddleware: ese devuelve 401 sin token y dejaria la tienda sin
+// catalogo. Mismo fix que release-windows (2026-10-21): sin este middleware
+// req.user nunca se pobla y `include_inactive === '1' && req.user` es siempre
+// falso — el admin no puede ver ni reactivar lo que el mismo desactivo.
+function optionalAuth(req, res, next) {
+  const auth = req.headers.authorization || '';
+  const token = auth.startsWith('Bearer ') ? auth.slice(7) : null;
+  req.user = token ? (verifyJwt(token) || null) : null;
+  next();
+}
+
+router.get('/', optionalAuth, (req, res) => {
   const includeInactive = req.query.include_inactive === '1' && req.user;
   const sql = includeInactive
     ? 'SELECT * FROM delivery_schedule ORDER BY day_of_week, sort_order, start_time'
