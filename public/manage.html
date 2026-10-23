@@ -988,6 +988,11 @@ tbody tr:hover { background: var(--clay-canvas); }
       Producción
     </div>
 
+    <div class="nav-item" data-section="galeria">
+      <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><rect x="3" y="3" width="7" height="7"/><rect x="14" y="3" width="7" height="7"/><rect x="3" y="14" width="7" height="7"/><rect x="14" y="14" width="7" height="7"/></svg>
+      Fotos
+    </div>
+
     <div class="nav-section">Catálogo</div>
     <div class="nav-item" data-section="flavors">
       <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><circle cx="12" cy="12" r="10"/><path d="M12 2a10 10 0 010 20"/></svg>
@@ -1392,6 +1397,28 @@ tbody tr:hover { background: var(--clay-canvas); }
       </div>
     </section>
 
+    <!-- ============== GALERIA (fotos para hero y marketplace) ============== -->
+    <section id="section-galeria" class="section">
+      <div class="page-head">
+        <div>
+          <h1>Fotos del marketplace</h1>
+          <div class="sub">Subi fotos de tus mochis. Elegí una como imagen del hero de la landing; las demás se muestran en el marketplace.</div>
+        </div>
+        <div class="actions">
+          <label class="upload-drop" id="galeria-drop" style="display:inline-flex;align-items:center;gap:10px;padding:10px 16px;border:2px dashed var(--clay-ink-soft);border-radius:12px;background:var(--clay-canvas);cursor:pointer">
+            <svg viewBox="0 0 24 24" width="18" height="18" fill="none" stroke="currentColor" stroke-width="2"><path d="M21 15v4a2 2 0 01-2 2H5a2 2 0 01-2-2v-4"/><polyline points="7 10 12 15 17 10"/><line x1="12" y1="15" x2="12" y2="3"/></svg>
+            Subí fotos
+            <input type="file" id="galeria-file" multiple accept="image/*" style="display:none">
+          </label>
+          <button class="btn btn-primary" onclick="refreshGaleria()">Actualizar</button>
+        </div>
+      </div>
+
+      <div class="galeria-grid" id="galeria-grid" style="display:grid;grid-template-columns:repeat(auto-fill,minmax(150px,1fr));gap:12px;margin-top:12px">
+      </div>
+      <div id="galeria-hint" class="sub" style="margin-top:8px"></div>
+    </section>
+
     <!-- ============== USUARIOS (multi-admin) ============== -->
     <section id="section-users" class="section">
       <div class="page-head">
@@ -1651,6 +1678,7 @@ function showSection(name) {
   render[name]?.();
   if (name === 'flavors' || name === 'combos') renderUploadGallery();
   if (name === 'produccion') render.produccion();
+  if (name === 'galeria') render.galeria();
 }
 
 // ============ RENDER ============
@@ -3271,6 +3299,70 @@ render.produccion = async function () {
     ? `Costo por unidad ${fmt(unitCost)} · margen ${margin}% sobre ${fmt(sale)}`
     : 'Agregá insumos para ver el desglose de costos y margen.';
 };
+
+render.galeria = async function () {
+  const grid = document.getElementById('galeria-grid');
+  const hint = document.getElementById('galeria-hint');
+  if (!grid) return;
+  try {
+    const res = await fetch(API + '/uploads?category=marketplace', { headers: { Authorization: 'Bearer ' + _token } });
+    const data = await res.json();
+    const files = data.files || [];
+    if (!files.length) {
+      grid.innerHTML = '<div class="sub">Aun no hay fotos del marketplace. Subi tu primera foto.</div>';
+      hint.textContent = '';
+      return;
+    }
+    const currentHero = (_config && _config.hero_image_url) || '';
+    grid.innerHTML = files.map(f => {
+      const isHero = f.url === currentHero;
+      return `<div class="galeria-item" style="border:1px solid var(--line);border-radius:12px;padding:8px;background:var(--clay-canvas);text-align:center">
+        <img src="${escapeHtml(f.url)}" alt="" style="width:100%;height:120px;object-fit:cover;border-radius:8px;margin-bottom:8px">
+        <div style="font-size:12px;color:var(--clay-ink-soft);margin-bottom:6px">${escapeHtml(f.originalname)}</div>
+        <button class="btn btn-sm ${isHero ? 'btn-imediato' : ''}" onclick="setHero('${String(f.url).replace(/'/g, "\\'")}')">${isHero ? 'Hero actual' : 'Usar como hero'}</button>
+      </div>`;
+    }).join('');
+    hint.textContent = files.length + ' foto(s) del marketplace';
+  } catch (e) {
+    grid.innerHTML = '<div class="sub">Error cargando la galería.</div>';
+    hint.textContent = '';
+  }
+};
+
+window.setHero = async function (url) {
+  try {
+    await fetch(API + '/config', {
+      method: 'PUT',
+      headers: { 'Content-Type': 'application/json', Authorization: 'Bearer ' + _token },
+      body: JSON.stringify({ hero_image_url: url })
+    });
+    toast('Hero actualizado', 'success');
+    render.galeria();
+  } catch (e) { toast('Error: ' + e.message, 'error'); }
+};
+
+async function uploadGaleriaFiles(fileList) {
+  const files = Array.from(fileList).slice(0, 8);
+  const fd = new FormData();
+  for (const f of files) fd.append('files', f);
+  fd.append('category', 'marketplace');
+  try {
+    const xhr = new XMLHttpRequest();
+    await new Promise((resolve, reject) => {
+      xhr.open('POST', API + '/uploads');
+      xhr.setRequestHeader('Authorization', 'Bearer ' + _token);
+      xhr.onload = () => xhr.status >= 200 && xhr.status < 300 ? resolve(JSON.parse(xhr.responseText)) : reject(new Error(`HTTP ${xhr.status}`));
+      xhr.onerror = () => reject(new Error('network error'));
+      xhr.send(fd);
+    });
+    toast(files.length + ' foto(s) subida(s)', 'success');
+    render.galeria();
+  } catch (err) { toast('Error subiendo: ' + err.message, 'error'); }
+}
+
+document.getElementById('galeria-file')?.addEventListener('change', (e) => {
+  if (e.target.files?.length) uploadGaleriaFiles(e.target.files);
+});
 
 async function openProductionModal() {
   const nombre = prompt('Nombre del insumo (ej: harina, leche condensada, colorante):');
