@@ -47,10 +47,15 @@ function dayOfWeek(yyyyMmDd) {
   return new Date(Date.UTC(y, m - 1, d)).getUTCDay();
 }
 
+// Offset horario del negocio (UTC-5, America/Bogota, sin DST). Ver la nota
+// completa en src/routes/orders.js — paridad worker/ (bug t_f6d7dd48).
+const BUSINESS_TZ_OFFSET_MINUTES = -300;
+
 function combineDateAndTime(dateStr, hhmm) {
   const [y, m, d] = dateStr.split('-').map(Number);
   const [hh, mm] = hhmm.split(':').map(Number);
-  return new Date(Date.UTC(y, m - 1, d, hh, mm, 0)).getTime();
+  return new Date(Date.UTC(y, m - 1, d, hh, mm, 0)).getTime()
+    - BUSINESS_TZ_OFFSET_MINUTES * 60 * 1000;
 }
 
 async function getConfig(db) {

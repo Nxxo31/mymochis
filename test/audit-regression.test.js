@@ -243,3 +243,76 @@ test('bug#11 — el panel de entregas no dice "centavos COP" para valores en pes
   assert.ok(!/centavos COP/.test(html),
     'el hint "5000 = $50 COP" miente: el valor esta en pesos (5000 = $5.000)');
 });
+
+// =============================================================================
+// Bug #12 — cutoff de pickup en hora LOCAL de Colombia, no UTC (t_f6d7dd48)
+//
+// El horario sembrado en seed() usa start_time '15:00' con cutoff_offset 0
+// para windowDate. "15:00" es 15:00 America/Bogota (UTC-5) = 20:00Z.
+// Con el bug (Date.UTC crudo) el cutoff_computed_at publicaba 15:00Z — 5 horas
+// mas temprano de lo que el negocio cree, cerrando pedidos a las 02:00 local.
+// El instante publicado es determinista: no depende de la hora de la corrida.
+// =============================================================================
+
+test('bug#12 — cutoff_computed_at respeta America/Bogota (UTC-5), no UTC', async () => {
+  const r = await api('GET', '/api/public');
+  assert.equal(r.status, 200, 'GET /api/public debe responder 200');
+  const entry = (r.json.release_windows || []).find(w => w.release_date === windowDate);
+  assert.ok(entry, `la ventana sembrada para ${windowDate} debe salir en /api/public`);
+  // La fila que gobierna es la del seed de boot de src/db.js (Mon-Vie 15:00
+  // offset 8h, Sab 12:00 offset 12h; Domingo no tiene fila de boot y gobierna
+  // la fila del seed() del test: 15:00 offset 0). Instante esperado en UTC
+  // para el MISMO dia local: hora Bogota + 5h, menos el offset.
+  // Ejemplo de la card t_f6d7dd48: pickup Lunes 15:00, cutoff 8h antes =
+  // 07:00 Bogota = 12:00Z. Con el bug UTC era 07:00Z = 02:00 local.
+  const dow = new Date(`${windowDate}T12:00:00Z`).getUTCDay();
+  const expectedByDow = {
+    0: `${windowDate}T20:00:00.000Z`, // domingo: fila del seed() 15:00 offset 0
+    1: `${windowDate}T12:00:00.000Z`, // lun-vie: 15:00 Bogota (20:00Z) - 8h
+    2: `${windowDate}T12:00:00.000Z`,
+    3: `${windowDate}T12:00:00.000Z`,
+    4: `${windowDate}T12:00:00.000Z`,
+    5: `${windowDate}T12:00:00.000Z`,
+    6: `${windowDate}T05:00:00.000Z`,  // sabado: 12:00 Bogota (17:00Z) - 12h
+  };
+  assert.equal(
+    entry.cutoff_computed_at,
+    expectedByDow[dow],
+    `cutoff de ${windowDate} (dow ${dow}) debe ser hora-local Bogota - offset. ` +
+    `Con el bug UTC seria 5h mas temprano (la card: pedidos cerrando 02:00 local). ` +
+    `Recibido: ${entry.cutoff_computed_at}`
+  );
+});
+
+test('bug#12b — un pickup de HOY con inicio en 1h sigue orderable (no 5h antes)', async () => {
+  // Discriminador end-to-end del mismo bug via POST /api/orders: siembra una
+  // ventana para HOY con inicio 1h en el futuro (hora local Bogota) y cutoff
+  // 0h. Con el fix el pedido entra (cutoff = ahora+1h); con el bug UTC el
+  // cutoff quedaba 4h en el pasado y respondia 400 past_cutoff.
+  const nowBogota = new Date(Date.now() - (-300) * 60 * 1000); // now en UTC-5
+  const start = new Date(nowBogota.getTime() + 60 * 60 * 1000);
+  const pad = (x) => String(x).padStart(2, '0');
+  const today = `${nowBogota.getUTCFullYear()}-${pad(nowBogota.getUTCMonth() + 1)}-${pad(nowBogota.getUTCDate())}`;
+  const hhmm = `${pad(start.getUTCHours())}:${pad(start.getUTCMinutes())}`;
+  const dow = new Date(Date.UTC(nowBogota.getUTCFullYear(), nowBogota.getUTCMonth(), nowBogota.getUTCDate())).getUTCDay();
+  // Si ya son las 23:xx local, el inicio 1h futuro cae mañana: en ese caso el
+  // discriminador no aplica (el cutoff viejo tambien quedaria en el futuro)
+  // y el test se salta sin mentir.
+  if (Number(hhmm.slice(0, 2)) < Number(pad(nowBogota.getUTCHours()))) {
+    console.log('skip: inicio 1h cruza medianoche, discriminador no aplica a esta hora');
+    return;
+  }
+  const w = await api('POST', '/api/release-windows', {
+    token,
+    body: { release_date: today, cutoff_at: `${today}T09:00:00`, status: 'open',
+           items: [{ flavor_id: 'aud-fresa', units_available: 500 }] },
+  });
+  assert.ok([200, 201].includes(w.status), `release window de hoy: ${JSON.stringify(w.json)}`);
+  await api('POST', '/api/delivery-schedule', {
+    token,
+    body: { day_of_week: dow, mode: 'both', start_time: hhmm, end_time: '23:00', cutoff_offset_hours: 0, active: 1 },
+  });
+  const o = await order({ pickup_day: today });
+  assert.notEqual(o.status, 400, `pedido para hoy con inicio ${hhmm} local no debe rechazarse: ${JSON.stringify(o.json)}`);
+  assert.ok([200, 201].includes(o.status), `estado inesperado: ${o.status} ${JSON.stringify(o.json)}`);
+});

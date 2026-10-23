@@ -55,10 +55,27 @@ function dayOfWeek(yyyyMmDd) {
   return new Date(Date.UTC(y, m - 1, d)).getUTCDay();
 }
 
+/**
+ * Offset horario del negocio, convención getTimezoneOffset(): America/Bogota
+ * es UTC-5 fijo (sin DST desde 1992). Las horas que el dueño ingresa
+ * ("15:00" de pickup) son horas LOCALES de Colombia, no horas UTC.
+ * Bug 2026-10-21 (kanban t_f6d7dd48): interpretarlas como UTC adelantaba el
+ * cutoff 5 horas — un pickup de 15:00 con cutoff de 8h cerraba los pedidos a
+ * las 02:00 local en vez de 07:00. Constante extruida a propósito: si el
+ * negocio algún día opera en otra zona, es EL único punto de cambio.
+ */
+const BUSINESS_TZ_OFFSET_MINUTES = -300; // UTC-5, America/Bogota
+
 function combineDateAndTime(dateStr, hhmm) {
   const [y, m, d] = dateStr.split('-').map(Number);
   const [hh, mm] = hhmm.split(':').map(Number);
-  return new Date(Date.UTC(y, m - 1, d, hh, mm, 0)).getTime();
+  // Date.UTC interpreta los componentes como si fueran UTC; restamos el
+  // offset (negativo) para obtener el epoch del MISMO instante en Colombia:
+  // "15:00" local == 20:00Z. Nota: rw.cutoff_at (release_windows) es solo
+  // informativo — el cutoff que ENFORZA pedidos es este cálculo desde
+  // delivery_schedule (decisión t_f6d7dd48, 2026-10-22).
+  return new Date(Date.UTC(y, m - 1, d, hh, mm, 0)).getTime()
+    - BUSINESS_TZ_OFFSET_MINUTES * 60 * 1000;
 }
 
 function getConfig() {
