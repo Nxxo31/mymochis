@@ -1,3 +1,15 @@
+FROM node:24-alpine AS webbuild
+WORKDIR /app
+
+# Las islas React (hero shader + motion) se compilan con Vite: public/build/
+# esta gitignored, asi que el bundle SOLO existe si se construye aqui.
+# Spec: PROJECT.md §21.11 Ola 2.
+COPY package.json package-lock.json ./
+RUN npm ci
+COPY web ./web
+COPY vite.config.ts tsconfig.json ./
+RUN npm run build:web
+
 FROM node:24-alpine
 
 WORKDIR /app
@@ -8,6 +20,7 @@ RUN npm ci --omit=dev
 COPY server.js ./
 COPY src ./src
 COPY public ./public
+COPY --from=webbuild /app/public/build ./public/build
 
 RUN mkdir -p /var/data/uploads && chown -R node:node /var/data
 
