@@ -10,6 +10,7 @@
 import { randomUUID } from 'node:crypto';
 import { db } from '../../db.js';
 import { registerConsumer } from './outbox.js';
+import { commitReservedStock } from '../stock.js';
 
 /**
  * Cuando un pago llega a SUCCEEDED, marca el pedido como pagado y notifica al
@@ -38,6 +39,23 @@ function onPaymentSucceeded(payload) {
   if (order_id) {
     db.prepare(`UPDATE orders SET payment_status = 'paid', payment_state = 'SUCCEEDED' WHERE id = ?`)
       .run(order_id);
+
+    // Confirmar el pago es el momento en que la RESERVA pasa a ser VENTA: las
+    // unidades salen de units_reserved y entran en units_sold. Sin esto, un
+    // pedido pagado por webhook dejaba las unidades retenidas para siempre y el
+    // operador no producia para un pedido que ya le pagaron.
+    //
+    // Antes solo lo hacia el confirm manual (POST /api/orders/:id/confirm-payment),
+    // o sea que el camino automatico —el unico que usa el cliente cuando paga
+    // con Nequi— nunca movia el stock.
+    //
+    // Idempotente: commitReservedStock lleva la guarda `units_reserved >= ?` y
+    // solo cuenta el cambio si `changes === 1`, asi que un replay del relay no
+    // puede vender dos veces las mismas unidades.
+    const committed = commitReservedStock(
+      db.prepare('SELECT * FROM orders WHERE id = ?').get(order_id)
+    );
+    console.log(`[payments] stock comprometido ${order_id}`, JSON.stringify(committed));
   }
 
   console.log(`[payments] pago confirmado ${payment_id}${order_id ? ` · pedido ${order_id}` : ''}`);
