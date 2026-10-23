@@ -11,6 +11,7 @@ import { randomUUID } from 'node:crypto';
 import { db } from '../../db.js';
 import { registerConsumer } from './outbox.js';
 import { commitReservedStock } from '../stock.js';
+import { notifyOrderConfirmed } from './order-notify.js';
 
 /**
  * Cuando un pago llega a SUCCEEDED, marca el pedido como pagado y notifica al
@@ -56,6 +57,11 @@ function onPaymentSucceeded(payload) {
       db.prepare('SELECT * FROM orders WHERE id = ?').get(order_id)
     );
     console.log(`[payments] stock comprometido ${order_id}`, JSON.stringify(committed));
+
+    // Notificar al admin por WSP que el pedido quedó pagado, con la info del usuario.
+    notifyOrderConfirmed(order_id).catch((e) =>
+      console.error(`[payments] wsp notify failed ${order_id}:`, e?.message || e)
+    );
   }
 
   console.log(`[payments] pago confirmado ${payment_id}${order_id ? ` · pedido ${order_id}` : ''}`);

@@ -9,6 +9,7 @@ import { authMiddleware, requireRole } from '../auth.js';
 import { geocode, haversineKm } from '../lib/geocode.js';
 import { buildDispatch } from '../lib/whatsapp.js';
 import { commitReservedStock, releaseReservedStock } from '../lib/stock.js';
+import { notifyOrderConfirmed } from '../lib/payments/order-notify.js';
 
 const router = Router();
 
@@ -521,6 +522,11 @@ router.post('/:id/confirm-payment', [authMiddleware, requireRole('admin')], (req
     if (!out.already_confirmed) {
       committed = commitReservedStock(db.prepare('SELECT * FROM orders WHERE id = ?').get(req.params.id));
     }
+
+    // Notificar al admin por WSP que el pedido quedó pagado, con la info del usuario.
+    notifyOrderConfirmed(req.params.id).catch((e) =>
+      console.error(`[orders] wsp notify failed ${req.params.id}:`, e?.message || e)
+    );
 
     res.status(out.already_confirmed ? 200 : 201).json({
       ok: true,
