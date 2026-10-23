@@ -425,6 +425,29 @@ main { max-width: 1320px; margin: 0 auto; padding: 32px 24px 80px; }
 .cart-line .remove { background: transparent; border: 0; color: #b00020; font-weight: 800; font-size: 20px; cursor: pointer; padding: 4px 8px; border-radius: 8px; opacity: 0.7; }
 .cart-line .remove:hover { background: rgba(176,0,32,0.1); opacity: 1; }
 
+/* ============ MODO DE ENTREGA (recoger vs domicilio) + PAGO ============ */
+.mode-toggle { display: flex; gap: 8px; }
+.mode-pill {
+  flex: 1; padding: 10px 12px; border: 1px solid var(--line); border-radius: 12px;
+  background: var(--clay-surface); font-family: 'Quicksand', sans-serif;
+  font-weight: 700; font-size: 13px; color: var(--clay-ink); cursor: pointer;
+  box-shadow: var(--clay-shadow-xs), inset 1px -1px 2px rgba(255,255,255,0.7);
+  transition: all 0.2s;
+}
+.mode-pill.active { background: var(--mochi-fresa); color: var(--mochi-fresa-d); border-color: transparent; }
+.mode-pill:disabled { opacity: 0.5; cursor: not-allowed; }
+.quote-btn {
+  margin-top: 8px; width: 100%; padding: 10px; border: 0; border-radius: 12px;
+  background: var(--mochi-cyan); color: var(--cyan-ink, #0F5A6E); font-weight: 700; font-size: 13px;
+  cursor: pointer; font-family: 'Quicksand', sans-serif;
+  box-shadow: var(--clay-shadow-xs), inset 1px -1px 2px rgba(255,255,255,0.7);
+}
+.quote-btn:disabled { opacity: 0.6; cursor: wait; }
+.quote-result { margin-top: 8px; padding: 10px 12px; border-radius: 10px; font-size: 13px; font-weight: 600; }
+.quote-result.ok { background: #E8F7EE; color: #1B6B3A; }
+.quote-result.error { background: #FDECEA; color: #8C2F23; }
+.quote-result.loading { background: var(--clay-canvas-2); color: var(--clay-ink-soft); }
+
 .cart-empty {
   text-align: center;
   padding: 32px 8px;
@@ -718,6 +741,13 @@ footer {
         <div class="hint">Te escribimos para confirmar disponibilidad.</div>
       </div>
       <div class="form-block">
+        <label>Cómo lo recibís</label>
+        <div class="mode-toggle" id="modeToggle">
+          <button type="button" class="mode-pill active" data-mode="recoger">🏪 Recoger en la cocina</button>
+          <button type="button" class="mode-pill" data-mode="domicilio">🛵 Domicilio</button>
+        </div>
+      </div>
+      <div class="form-block" id="pickupBlock">
         <label for="pickupDay">Día de recogida</label>
         <!-- Antes era un <input type="date"> libre de +1 a +14 días que solo
              validaba el día de la SEMANA. El backend exige además una
@@ -728,6 +758,17 @@ footer {
              claro. -->
         <select id="pickupDay" required></select>
         <div class="hint" id="pickupHint">Elegí un día con horario disponible (mar–sáb).</div>
+      </div>
+      <div class="form-block" id="deliveryBlock" style="display:none">
+        <label for="deliveryAddress">Dirección de entrega</label>
+        <input type="text" id="deliveryAddress" maxlength="140" placeholder="Barrio + calle o referencia (ej: Cándido, cra 12 #34-56)">
+        <button type="button" class="quote-btn" id="quoteBtn">Cotizar domicilio 🛵</button>
+        <div class="quote-result" id="quoteResult" style="display:none"></div>
+      </div>
+      <div class="form-block">
+        <label for="payMethod">Cómo querés pagar</label>
+        <select id="payMethod"></select>
+        <div class="hint" id="payMethodHint">El negocio te confirma el pago por WhatsApp.</div>
       </div>
       <div class="form-block">
         <label for="orderNotes">Notas (opcional)</label>
@@ -775,6 +816,12 @@ footer {
   const STORAGE_KEY = 'mymochis_cart_v1';
   let catalog = null;
   let cart = loadCart();
+
+  // G2 — checkout: modo de entrega, cotización de domicilio y forma de pago.
+  let _deliveryMode = 'recoger';
+  let lastQuote = null;
+  let PAYMENT_METHODS = [];
+  let DELIVERY_CFG = null;
 
   function loadCart() {
     try {
@@ -1026,9 +1073,8 @@ footer {
       itemsBox.appendChild(line);
     }
 
-    $('#cartTotalVal').textContent = fmtPrice(cartTotalCents());
+    updateCartTotalDisplay();
     submitBtn.disabled = false;
-    submitLabel.textContent = `Enviar pedido · ${fmtPrice(cartTotalCents())}`;
   }
 
   function syncQtyDisplays() {
@@ -1079,6 +1125,13 @@ footer {
       else if (act === 'rmcombo') { cart.combos = cart.combos.filter(x => String(x.id) !== String(id)); saveCart(); afterCartChange(); }
     });
 
+    document.querySelectorAll('#modeToggle .mode-pill').forEach(b => {
+      b.addEventListener('click', () => setDeliveryMode(b.dataset.mode));
+    });
+    $('#quoteBtn').addEventListener('click', quoteDelivery);
+    $('#deliveryAddress').addEventListener('keydown', (e) => {
+      if (e.key === 'Enter') { e.preventDefault(); quoteDelivery(); }
+    });
     $('#submitBtn').addEventListener('click', submitOrder);
     $('#cartTopBtn').addEventListener('click', openSheet);
     $('#cartBar').addEventListener('click', openSheet);
@@ -1186,6 +1239,91 @@ footer {
       : 'Día disponible para recogida.';
   }
 
+  // ========== CHECKOUT: ENTREGA, DOMICILIO Y PAGO ==========
+  function renderPayMethods() {
+    PAYMENT_METHODS = (catalog.payment_methods || []).filter(m => m.active !== 0);
+    const sel = $('#payMethod');
+    const hint = $('#payMethodHint');
+    if (!sel) return;
+    let html = '<option value="">💵 Efectivo (al recoger o al recibir)</option>';
+    for (const m of PAYMENT_METHODS) {
+      html += `<option value="${m.id}">${escapeHtml(m.label)}</option>`;
+    }
+    sel.innerHTML = html;
+    sel.onchange = () => {
+      const m = PAYMENT_METHODS.find(x => String(x.id) === sel.value);
+      hint.textContent = m && m.instructions ? m.instructions : 'El negocio te confirma el pago por WhatsApp.';
+    };
+  }
+
+  function configureDeliveryMode() {
+    DELIVERY_CFG = catalog.delivery_config || {};
+    const domBtn = document.querySelector('#modeToggle [data-mode="domicilio"]');
+    if (domBtn && !DELIVERY_CFG.delivery_immediate_enabled) {
+      domBtn.disabled = true;
+      domBtn.title = 'El domicilio no está disponible ahora';
+    }
+  }
+
+  function setDeliveryMode(mode) {
+    _deliveryMode = mode;
+    document.querySelectorAll('#modeToggle .mode-pill').forEach(b => b.classList.toggle('active', b.dataset.mode === mode));
+    $('#deliveryBlock').style.display = mode === 'domicilio' ? '' : 'none';
+    $('#pickupBlock').style.display = mode === 'recoger' ? '' : 'none';
+    lastQuote = null;
+    $('#quoteResult').style.display = 'none';
+    updateCartTotalDisplay();
+  }
+
+  async function quoteDelivery() {
+    const address = ($('#deliveryAddress').value || '').trim();
+    const out = $('#quoteResult');
+    if (!address || address.length < 5) {
+      out.style.display = 'block';
+      out.className = 'quote-result error';
+      out.textContent = '⚠️ Escribí la dirección completa primero.';
+      return;
+    }
+    out.style.display = 'block';
+    out.className = 'quote-result loading';
+    out.textContent = 'Buscando tu dirección…';
+    const btn = $('#quoteBtn');
+    btn.disabled = true;
+    try {
+      const r = await fetch('/api/delivery/quote', {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({ address })
+      });
+      const data = await r.json().catch(() => ({}));
+      if (r.ok && data.ok) {
+        lastQuote = { ...data, address_input: address };
+        out.className = 'quote-result ok';
+        out.textContent = `🛵 $${Number(data.fee_cents).toLocaleString('es-CO')} · ${data.distance_km} km · llega en ~${data.eta_minutes} min`;
+      } else {
+        lastQuote = null;
+        out.className = 'quote-result error';
+        out.textContent = '⚠️ ' + (data.message || 'No pudimos cotizar esa dirección.');
+      }
+    } catch (e) {
+      lastQuote = null;
+      out.className = 'quote-result error';
+      out.textContent = '⚠️ No pudimos cotizar. Revisá tu conexión.';
+    } finally {
+      btn.disabled = false;
+      updateCartTotalDisplay();
+    }
+  }
+
+  function updateCartTotalDisplay() {
+    const base = cartTotalCents();
+    const fee = _deliveryMode === 'domicilio' && lastQuote && lastQuote.ok ? Number(lastQuote.fee_cents) || 0 : 0;
+    const total = base + fee;
+    $('#cartTotalVal').textContent = fmtPrice(total);
+    const label = $('#submitBtnLabel');
+    if (label) label.textContent = 'Enviar pedido · ' + fmtPrice(total);
+  }
+
   // ========== SUBMIT ORDER ==========
   async function submitOrder() {
     const err = $('#errorBanner');
@@ -1193,16 +1331,13 @@ footer {
 
     const name = ($('#customerName').value || '').trim();
     const phoneRaw = ($('#customerPhone').value || '').trim();
-    const pickup = $('#pickupDay').value;
     const notes = ($('#orderNotes').value || '').trim();
 
     if (cartIsEmpty()) return showErr('Tu carrito está vacío.');
     if (!name || name.length < 2) return showErr('Decinos tu nombre para confirmar.');
     if (!/^[\d\s\-+()]{7,20}$/.test(phoneRaw)) return showErr('Ingresá un WhatsApp válido.');
-    if (!/^\d{4}-\d{2}-\d{2}$/.test(pickup)) return showErr('Elegí un día de recogida.');
 
     const phone = phoneRaw.replace(/[^\d]/g, '');
-    const total = cartTotalCents();
     const items = {};
     for (const [id, qty] of Object.entries(cart.items)) {
       const n = Number(qty);
@@ -1211,6 +1346,32 @@ footer {
     const combos = cart.combos
       .map(c => ({ id: Number(c.id), qty: Number(c.qty), name: c.name || nameOf('combo', c.id) }))
       .filter(c => c.qty > 0);
+
+    let delivery_mode = 'scheduled';
+    let delivery_address;
+    let delivery_lat;
+    let delivery_lng;
+    let pickup = $('#pickupDay').value;
+    let total = cartTotalCents();
+
+    if (_deliveryMode === 'domicilio') {
+      const address = ($('#deliveryAddress').value || '').trim();
+      if (!address || address.length < 5) return showErr('Escribí tu dirección completa para el domicilio.');
+      if (!lastQuote || !lastQuote.ok || lastQuote.address_input !== address) {
+        return showErr('Cotizá el domicilio con el botón antes de enviar.');
+      }
+      delivery_mode = 'immediate';
+      delivery_address = address;
+      delivery_lat = lastQuote.lat;
+      delivery_lng = lastQuote.lng;
+      pickup = new Date().toISOString().slice(0, 10);
+      total += Number(lastQuote.fee_cents) || 0;
+    } else {
+      if (!/^\d{4}-\d{2}-\d{2}$/.test(pickup)) return showErr('Elegí un día de recogida.');
+    }
+
+    const paySel = $('#payMethod');
+    const payment_method_id = paySel && paySel.value ? Number(paySel.value) : null;
 
     const payload = {
       id: uuid(),
@@ -1221,7 +1382,11 @@ footer {
       total,
       notes: notes || undefined,
       source: 'marketplace',
-      delivery_mode: 'scheduled'
+      delivery_mode,
+      delivery_address,
+      delivery_lat,
+      delivery_lng,
+      payment_method_id
     };
 
     const btn = $('#submitBtn');
@@ -1246,7 +1411,8 @@ footer {
       saveCart();
       showSuccess(data);
       afterCartChange();
-      ['customerName', 'customerPhone', 'orderNotes'].forEach(id => { $('#' + id).value = ''; });
+      ['customerName', 'customerPhone', 'orderNotes', 'deliveryAddress'].forEach(id => { $('#' + id).value = ''; });
+      setDeliveryMode('recoger');
     } catch (e) {
       showErr('No pudimos enviar el pedido. Probá de nuevo.');
     } finally {
@@ -1331,6 +1497,8 @@ footer {
     // el control queda permanentemente deshabilitado con el mensaje de
     // "sin días abiertos" aunque haya ventanas abiertas de verdad.
     configureDateInput();
+    renderPayMethods();
+    configureDeliveryMode();
   }
 
   if (document.readyState === 'loading') {

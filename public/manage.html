@@ -2394,6 +2394,11 @@ render.entregasInmediato = async function() {
             <div class="form-group"><label>Pedido mínimo (COP)</label><input type="number" id="dc-min" value="${cfg.delivery_immediate_min_order_cents || 0}" min="0" step="500"><div class="hint">Pedidos menores serán rechazados</div></div>
           </div>
           <div class="modal-row">
+            <div class="form-group"><label>Tarifa base por distancia (COP)</label><input type="number" id="dc-base" value="${cfg.delivery_immediate_base_fare_cents || 0}" min="0" step="500"><div class="hint">Ej DiDi Neiva: 3500 = $3.500</div></div>
+            <div class="form-group"><label>Precio por kilómetro (COP)</label><input type="number" id="dc-perkm" value="${cfg.delivery_immediate_price_per_km_cents || 0}" min="0" step="100"><div class="hint">Ej: 1600 = $1.600/km. En 0 se usa la tarifa plana de arriba.</div></div>
+          </div>
+          <div class="hint" style="margin-bottom:6px">Con precio por km activo, el domicilio cobra <strong>tarifa base + precio por km × distancia</strong> (redondeado a $50), como DiDi o Rappi. El cliente lo ve cotizado en el carrito antes de pedir.</div>
+          <div class="modal-row">
             <div class="form-group"><label>Radio (km)</label><input type="number" id="dc-radius" value="${cfg.delivery_immediate_radius_km || 5}" step="0.5" min="0"></div>
             <div class="form-group"><label>ETA (minutos)</label><input type="number" id="dc-eta" value="${cfg.delivery_immediate_eta_minutes || 45}" min="0"></div>
           </div>
@@ -2416,6 +2421,8 @@ render.entregasInmediato = async function() {
       const body = {
         delivery_immediate_enabled: document.getElementById('dc-enabled').checked ? 1 : 0,
         delivery_immediate_fee_cents: Number(document.getElementById('dc-fee').value),
+        delivery_immediate_base_fare_cents: Number(document.getElementById('dc-base').value),
+        delivery_immediate_price_per_km_cents: Number(document.getElementById('dc-perkm').value),
         delivery_immediate_min_order_cents: Number(document.getElementById('dc-min').value),
         delivery_immediate_radius_km: Number(document.getElementById('dc-radius').value),
         delivery_immediate_eta_minutes: Number(document.getElementById('dc-eta').value),

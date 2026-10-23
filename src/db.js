@@ -557,6 +557,12 @@ export function init() {
 
   ensureColumn('config',  'delivery_immediate_enabled',        'INTEGER NOT NULL DEFAULT 0');
   ensureColumn('config',  'delivery_immediate_fee_cents',      'INTEGER NOT NULL DEFAULT 5000');
+  // Tarifa por distancia estilo DiDi/Rappi (pesos COP, como todos los *_cents):
+  //   domicilio = base_fare + price_per_km × km (redondeado a $50).
+  // Defaults en 0 = tarifa plana histórica hasta que el admin las configure
+  // en Entregas → Inmediato. Referencia Neiva: base $3.500, $1.600/km.
+  ensureColumn('config',  'delivery_immediate_base_fare_cents',   'INTEGER NOT NULL DEFAULT 0');
+  ensureColumn('config',  'delivery_immediate_price_per_km_cents', 'INTEGER NOT NULL DEFAULT 0');
   ensureColumn('config',  'delivery_immediate_radius_km',      'INTEGER NOT NULL DEFAULT 5');
   ensureColumn('config',  'delivery_immediate_min_order_cents','INTEGER NOT NULL DEFAULT 20000');
   ensureColumn('config',  'delivery_immediate_eta_minutes',    'INTEGER NOT NULL DEFAULT 45');

@@ -7,6 +7,7 @@ import { rememberOrderTotal } from '../lib/payments/index.js';
 import { confirmManualPayment, ManualPaymentError } from '../lib/payments/manual.js';
 import { authMiddleware, requireRole } from '../auth.js';
 import { geocode, haversineKm } from '../lib/geocode.js';
+import { computeDeliveryFeeCents } from '../lib/delivery-fee.js';
 import { buildDispatch } from '../lib/whatsapp.js';
 import { commitReservedStock, releaseReservedStock } from '../lib/stock.js';
 import { notifyOrderConfirmed } from '../lib/payments/order-notify.js';
@@ -316,7 +317,10 @@ router.post('/', async (req, res) => {
     if (lat != null && lng != null && config.delivery_zone_center_lat != null && config.delivery_zone_center_lng != null) {
       distanceKm = haversineKm(config.delivery_zone_center_lat, config.delivery_zone_center_lng, lat, lng);
     }
-    const feeCents = Number(config.delivery_immediate_fee_cents) || 0;
+    // Tarifa por distancia (estilo DiDi/Rappi): la MISMA fórmula que usa la
+    // cotización del carrito (POST /api/delivery/quote) — vive en
+    // lib/delivery-fee.js para que las dos no puedan divergir.
+    const feeCents = computeDeliveryFeeCents(config, distanceKm);
     const r = validateImmediate({
       total: Number(total) + feeCents,
       delivery_address,

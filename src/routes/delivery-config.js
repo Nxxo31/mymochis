@@ -7,6 +7,8 @@ const router = Router();
 const VALID_FIELDS = [
   'delivery_immediate_enabled',
   'delivery_immediate_fee_cents',
+  'delivery_immediate_base_fare_cents',
+  'delivery_immediate_price_per_km_cents',
   'delivery_immediate_radius_km',
   'delivery_immediate_min_order_cents',
   'delivery_immediate_eta_minutes',
