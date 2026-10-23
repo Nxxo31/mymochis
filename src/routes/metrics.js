@@ -22,19 +22,34 @@ router.get('/', [authMiddleware, requireRole('admin')], (req, res) => {
   const tickets = [];
 
   for (const o of all) {
-    gross += o.total;
-    count++;
-    tickets.push(o.total);
+    // gross solo suma pedidos que NO estan cancelados. El KPI del panel se
+    // llama "Total acumulado" con hint "N pedidos": sumar ahi los cancelados
+    // infla la lectura de ventas con pedidos que nunca se cobraron (el mismo
+    // pedido anulado vuelve a contar). Los cancelados se reportan aparte en
+    // by_status para no perder el dato de cancelacion.
+    const cuenta = o.status !== 'cancelled';
+    if (cuenta) {
+      gross += o.total;
+      count++;
+      tickets.push(o.total);
+    }
     if (o.payment_status === 'paid') paid += o.total;
     byStatus[o.status] = (byStatus[o.status] || 0) + 1;
     byPayment[o.payment_status] = (byPayment[o.payment_status] || 0) + 1;
     byDay[o.pickup_day] = (byDay[o.pickup_day] || 0) + 1;
 
-    if (o.created_at.slice(0, 10) === today) { todayCount++; todayGross += o.total; }
-    if (o.created_at >= sevenDaysAgo) { last7++; last7Gross += o.total; }
+    // today y last_7: mismos criterio que gross, solo pedidos vivos.
+    if (cuenta) {
+      if (o.created_at.slice(0, 10) === today) { todayCount++; todayGross += o.total; }
+      if (o.created_at >= sevenDaysAgo) { last7++; last7Gross += o.total; }
+    }
 
-    const dayKey = o.created_at.slice(0, 10);
-    dailySeries[dayKey] = (dailySeries[dayKey] || 0) + o.total;
+    // La serie diaria es de ventas reales: un pedido cancelado no debe
+    // aparecer como un pico de facturacion de un dia que no existio.
+    if (cuenta) {
+      const dayKey = o.created_at.slice(0, 10);
+      dailySeries[dayKey] = (dailySeries[dayKey] || 0) + o.total;
+    }
 
     let items = {};
     try { items = JSON.parse(o.items_json || '{}'); } catch {}
