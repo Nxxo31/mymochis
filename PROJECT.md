@@ -569,8 +569,10 @@ número. Paridad completa en `worker/` (D1): tabla, ruta, dispatch y users.
 
 ## 21. Sistema visual v3 — Color + Motion + Shaders
 
-Fecha: 2026-10-19. Estado: **spec aprobada, pendiente implementación** (sesión de
-reconstrucción 2026-10-19). Refs: context7 motion@^12, R3F@^8, drei@^9, three@^0.169.
+Fecha: 2026-10-19. Estado: **implementado (2026-10-23) — ver §25**: build Vite +
+isla React con shader aurora WebGL nativo (sin three/R3F: el chunk pesaba 817 kB
+para un plano de 40 líneas; el contexto WebGL directo lo hace en <6 kB) y motion
+para la entrada del contenido. R3F quedó descartado por peso. Refs: context7 motion@^12.
 
 ### 21.1 Contexto y decisiones arquitectónicas
 
@@ -1875,3 +1877,31 @@ adapter fail-closed; requiere sandbox + aprobación), (2) que la tienda llame
 `POST /api/payments` — hoy ninguna pantalla lo invoca, el cliente sigue pagando
 por transferencia y el operador confirma a mano, (3) deploy (§18 sigue siendo el
 runbook vigente).
+
+## 25. Frente visual — onda del 2026-10-23 (spec_id=26)
+
+Estado: **implementado**. Commits b0d4b4b..e5aebe8. Suite 88/88.
+
+| Cambio | Dónde | Commit |
+|---|---|---|
+| WSP al admin al confirmar pago (auto + manual) | `src/lib/payments/order-notify.js` | b0d4b4b |
+| Logo footer 72px, redes 32px, NX-Studio, privacidad, sin Marketing | `index.html` + `manage.html` | 6f155e7 |
+| Sección **Producción** (insumos, costo/lote, unitario, margen; localStorage a la espera de API propia) | `manage.html` | ddef815 |
+| Checkboxes clay + botón entrega inmediata fresa | `manage.html` | ddef815 |
+| Sección **Fotos**: subir a categoría marketplace + "Usar como hero" (`PUT /api/config`) | `manage.html` | 240bab0 |
+| Hero de la landing usa `config.hero_image_url` (foto del admin) | `index.html` | 0eea9fc |
+| Promos como popout flotante | `index.html` | a58229b |
+| Carrito: líneas clay + qty +/− | `tienda.html` | a0730a1 |
+| **Shader aurora ambiental** fijo detrás de toda la página, paleta v5 (cielo→sakura→mist) | `web/` + `index.html` | 0eea9fc |
+| Doble footer eliminado (isla de contenido montada al final del body) | `index.html` | 0eea9fc |
+| Meta CSP sin `frame-ancestors` (console limpia; helmet manda el header) | `index.html` | 0eea9fc |
+| Dockerfile multi-stage: `npm run build:web` antes de empaquetar (public/build es gitignored) | `Dockerfile` | e5aebe8 |
+
+**Lección:** el bundle de las islas (§21) nunca se había compilado — `/build/landing.js`
+y `islands.css` daban 404 y la isla de contenido quedó montada al final del body,
+viéndose como "un segundo footer con shaders". Una isla sin build verificado no
+está implementada.
+
+**Pendiente de esta onda:** producción aún persiste en localStorage (migrar a
+tabla + endpoints cuando el operador quiera historial real); sección Cobros del
+panel se puede retirar cuando el checkout UI (§24.2) exista.
