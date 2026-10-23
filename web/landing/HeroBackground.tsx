@@ -79,7 +79,8 @@ void main() {
   float n2 = fbm(p * 3.4 - vec2(t * 0.5, t) + m * 0.5);
   float n = 0.62 * n1 + 0.38 * n2;
 
-  // rampa de 3 paradas: indigo -> durazno -> lavanda (identidad v4)
+  // rampa de 3 paradas: cielo -> sakura -> mist (identidad v5 "Sakura & Cielo",
+  // litertalmente los crudos del logo: theme.css --sky --sakura --sky-soft)
   float k = smoothstep(-0.45, 0.45, n);
   vec3 col = k < 0.5
     ? mix(uColorA, uColorB, k * 2.0)
@@ -131,9 +132,9 @@ export interface HeroBackgroundProps {
 }
 
 export function HeroBackground({
-  colorA = '#5B34B4',
-  colorB = '#FF7A45',
-  colorC = '#C5B0E8',
+  colorA = '#62D3EC',
+  colorB = '#FFC2D4',
+  colorC = '#D8ECFF',
   intensity = 1,
 }: HeroBackgroundProps = {}) {
   const canvasRef = useRef<HTMLCanvasElement | null>(null);

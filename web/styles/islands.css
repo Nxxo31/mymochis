@@ -1,9 +1,16 @@
 /* ============================================================================
  * MyMochis · Islands — estilos solo de los React islands
- * Consume los tokens de /theme.css (identidad v4 "Ube & Durazno").
- * Antes este archivo usaba los tokens del §21 (--bg-tint, --brand-blue-600,
- * --space-8...) que ya no existen: todas caían a sin definir.
+ * Consume los tokens de /theme.css (identidad v5 "Sakura & Cielo").
  * ========================================================================== */
+
+/* ---- Shader ambiental de pagina completa (data-island="hero-bg") ---- */
+.page-shader {
+  position: fixed;
+  inset: 0;
+  z-index: -1;
+  pointer-events: none;
+  overflow: hidden;
+}
 
 /* ---- Hero island ---- */
 .hero-island {

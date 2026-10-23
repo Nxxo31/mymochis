@@ -47,4 +47,32 @@ if (typeof document !== 'undefined') {
       console.warn('[mymochis/hero-island] mount failed', e);
     }
   });
+
+  // Variante solo-fondo: el shader de aurora como ambiente de TODA la pagina,
+  // detras del contenido (position: fixed via .page-shader en islands.css).
+  // Es el reemplazo del hero-island de contenido que se montaba al final del
+  // body y aparecia como un segundo footer con shaders.
+  interface HeroBgProps {
+    colorA?: string;
+    colorB?: string;
+    colorC?: string;
+    intensity?: number;
+  }
+  function IslandBg(props: HeroBgProps) {
+    return (
+      <StrictMode>
+        <Suspense fallback={null}>
+          <HeroBackground {...props} />
+        </Suspense>
+      </StrictMode>
+    );
+  }
+  document.querySelectorAll<HTMLElement>('[data-island="hero-bg"]').forEach((el) => {
+    try {
+      const props: HeroBgProps = JSON.parse(el.dataset.props || '{}');
+      createRoot(el).render(<IslandBg {...props} />);
+    } catch (e) {
+      console.warn('[mymochis/hero-bg] mount failed', e);
+    }
+  });
 }

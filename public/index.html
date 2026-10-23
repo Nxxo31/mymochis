@@ -14,7 +14,7 @@
 <meta name="mobile-web-app-capable" content="yes">
 <meta name="format-detection" content="telephone=no">
 
-<meta http-equiv="Content-Security-Policy" content="default-src 'self'; script-src 'self' 'unsafe-inline' https://fonts.googleapis.com; style-src 'self' 'unsafe-inline' https://fonts.googleapis.com; font-src 'self' https://fonts.gstatic.com data:; img-src 'self' data: blob: https:; connect-src 'self'; frame-ancestors 'none'; base-uri 'self'; form-action 'self'">
+<meta http-equiv="Content-Security-Policy" content="default-src 'self'; script-src 'self' 'unsafe-inline' https://fonts.googleapis.com; style-src 'self' 'unsafe-inline' https://fonts.googleapis.com; font-src 'self' https://fonts.gstatic.com data:; img-src 'self' data: blob: https:; connect-src 'self'; base-uri 'self'; form-action 'self'">
 <meta http-equiv="X-Content-Type-Options" content="nosniff">
 <meta http-equiv="Referrer-Policy" content="strict-origin-when-cross-origin">
 <meta http-equiv="Permissions-Policy" content="geolocation=(), microphone=(), camera=()">
@@ -1257,7 +1257,7 @@ footer .privacy-note {
   </div>
   <div class="hero-visual-wrap">
     <div class="hero-visual">
-      <img src="img/instagram/mochi-06.jpg" alt="Mochis artesanales MyMochis — foto real de @my.mochiss" loading="eager">
+      <img id="hero-photo" src="img/instagram/mochi-06.jpg" alt="Mochis artesanales MyMochis — foto real de @my.mochiss" loading="eager">
     </div>
     <div class="hero-badge"><span class="dot-live"></span> Pedidos abiertos esta semana</div>
     <div class="hero-sparkle hero-sparkle-1" aria-hidden="true"></div>
@@ -1554,6 +1554,10 @@ async function loadConfig() {
     if (res.ok) {
       const data = await res.json();
       APP_CONFIG = data.config;
+      // F2-04: el admin elige la foto del hero desde el panel (seccion Fotos,
+      // config.hero_image_url). Sin esa config la landing mantiene la foto local.
+      const heroPhoto = document.getElementById('hero-photo');
+      if (heroPhoto && APP_CONFIG?.hero_image_url) heroPhoto.src = APP_CONFIG.hero_image_url;
       if (data.flavors?.length) FLAVORS.length = 0, FLAVORS.push(...data.flavors.filter(f => f.available !== 0).map(f => ({ id: f.id, name: f.name, price: f.price, description: f.description || '', image_url: f.image_url || null, category_id: f.category_id, category_slug: f.category_slug || null })));
             if (data.combos?.length) COMBOS.length = 0, COMBOS.push(...data.combos.filter(c => c.available !== 0));
             CATEGORIES = data.categories || [];
@@ -2162,13 +2166,13 @@ document.addEventListener('click', (ev) => {
   <span class="badge" id="wspFabBadge" hidden></span>
 </a>
 
-<!-- === React island v3: hero con Motion + R3F shader (degradacion graciosa si falla) === -->
-<div
-  id="hero-island"
-  class="hero-island"
-  data-island="hero"
-  data-props='{"status":"Hechos hoy en Neiva","titleHtml":"Mochi&#39;s <em>Land</em> &mdash; arte en cada mordisco","subtitle":"Mochis artesanales, hechos a mano cada manana en Neiva. Pide por la web y paga como prefieras.","ctaLabel":"Armar mi pedido","ctaHref":"/tienda.html"}'
-  aria-label="Hero animado"></div>
+<!-- === React island: shader aurora ambiental de pagina completa (identidad v5) ===
+     Antes aqui se montaba el hero-island de CONTENIDO al final del body: aparecia
+     como un segundo footer con shaders debajo del footer real. Ahora solo queda
+     el fondo WebGL fijo (z-index -1) detras de toda la pagina; el hero textual
+     es el de arriba, con la foto que el admin elige. Degracion graciosa: sin
+     WebGL o si el bundle falla, la pagina queda identica (el fondo son halos CSS). -->
+<div class="page-shader" data-island="hero-bg" data-props='{"intensity":0.85}' aria-hidden="true"></div>
 
 <script type="module" src="/build/landing.js" defer></script>
 
