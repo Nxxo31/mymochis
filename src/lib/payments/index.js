@@ -175,7 +175,7 @@ export async function createPaymentIntent({ idempotencyKey, request }) {
       transitionState(paymentId, 'INITIATED', nextState, { provider: adapter.providerId, ref: out.providerReference });
 
       // Update orders.payment_id + payment_state (denormalized for fast queries)
-      updateOrderPaymentLink(request.order_id, paymentId, mapStateToPaymentStatus(nextState));
+      updateOrderPaymentLink(request.order_id, paymentId, nextState);
 
       // Outbox event
       enqueueOutbox({
@@ -246,7 +246,7 @@ export function transitionState(paymentId, expectedState, nextState, meta = {}) 
   // Update denormalized order payment_state
   const orderId = db.prepare(`SELECT order_id FROM payments WHERE payment_id = ?`).get(paymentId)?.order_id;
   if (orderId) {
-    updateOrderPaymentLink(orderId, paymentId, mapStateToPaymentStatus(nextState));
+    updateOrderPaymentLink(orderId, paymentId, nextState);
   }
   // Ledger entry: balanced double-entry
   if (nextState === 'SUCCEEDED') {
@@ -279,9 +279,22 @@ function postLedgerForSuccess(paymentId) {
     .run(e2, paymentId, 'merchant_receivable', -p.amount_minor, p.currency, `payment ${paymentId} credit merchant`);
 }
 
-function updateOrderPaymentLink(orderId, paymentId, paymentState) {
+/**
+ * Denormaliza el pago sobre el pedido.
+ *
+ * `payment_state` guarda el estado REAL del pago (SUCCEEDED, PROCESSING,
+ * FAILED...) y `payment_status` guarda el dominio que entiende el resto del
+ * sistema (pending | paid, ver VALID_PAYMENT_STATUS en src/routes/orders.js).
+ *
+ * Antes esta funcion recibia el valor de dominio y lo escribia en LAS DOS
+ * columnas, asi que `payment_state` terminaba con 'paid'/'pending'. El consumer
+ * de payment.succeeded lo sobreescribia despues con 'SUCCEEDED', y como el
+ * relay es asincrono, el valor final dependia de si el relay habia corrido: con
+ * el relay caido, la columna queda con 'paid', que no es un estado del grafo.
+ */
+function updateOrderPaymentLink(orderId, paymentId, realState) {
   db.prepare(`UPDATE orders SET payment_id = ?, payment_state = ?, payment_status = ? WHERE id = ?`)
-    .run(paymentId, paymentState, paymentState, orderId);
+    .run(paymentId, realState, mapStateToPaymentStatus(realState), orderId);
 }
 
 // Dominio REAL de orders.payment_status: 'pending' | 'paid' (ver VALID_PAYMENT_STATUS
