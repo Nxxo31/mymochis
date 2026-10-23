@@ -49,16 +49,41 @@ export class NequiAdapter {
   webhookEventIdHeader = 'x-nequi-event-id';
   webhookSignatureHeader = 'x-nequi-signature';
 
-  /** Si no hay creds, cae a un mock que firma con Nequi (para dev) */
+  /**
+   * Sin credenciales, el adapter NO puede fallsilencioso a un mock.
+   *
+   * Antes: `this.real = !!apiKey()` y todo intention se delegaba a un
+   * MockAdapter con prefijo NEQ-FB-. El mock responde SUCCEEDED, o sea que un
+   * despliegue sin NEQUI_API_KEY cobraba pedidos sin mover un peso — y nada en
+   * la UI lo delataba, porque el flujo se veía igual.
+   *
+   * Ahora el fallback a mock existe solo con un opt-in explicito
+   * (NEXOMOCHIS_ALLOW_PROVIDER_FALLBACK=1), para que el caso "quiero probar el
+   * checkout sin credenciales" sea una decision del despliegue y no un default.
+   */
   constructor() {
     this.real = !!apiKey();
+    this.allowFallback = process.env.NEXOMOCHIS_ALLOW_PROVIDER_FALLBACK === '1';
+    if (!this.real && !this.allowFallback) {
+      this.fallback = null;
+      return;
+    }
     this.fallback = new MockAdapter({ name: 'nequi-fallback', webhookSecret: webhookSecret() || 'nequi-dev' });
+  }
+
+  /** Lanza si este adapter no puede cobrar de verdad. */
+  #assertUsable(op) {
+    if (this.real || this.allowFallback) return;
+    throw new Error(
+      `Nequi sin credenciales: no se puede ${op}. Defini NEQUI_API_KEY (o la credencial 'nequi/api_key' en el vault), ` +
+      'o poné NEXOMOCHIS_ALLOW_PROVIDER_FALLBACK=1 solo en desarrollo para probar contra el mock.'
+    );
   }
 
   /** @param {CreateInput} input */
   async createPaymentIntent(input) {
     if (!this.real) {
-      // Dev/fallback: delega al mock con el naming de Nequi
+      this.#assertUsable('crear un pago');
       const out = await this.fallback.createPaymentIntent(input);
       return { ...out, providerReference: `NEQ-FB-${out.providerReference}` };
     }
@@ -105,6 +130,7 @@ export class NequiAdapter {
   /** @param {string} providerRef */
   async getPaymentStatus(providerRef) {
     if (!this.real) {
+      this.#assertUsable('consultar el estado de un pago');
       const st = await this.fallback.getPaymentStatus(providerRef);
       return { ...st, providerReference: providerRef };
     }
@@ -123,8 +149,8 @@ export class NequiAdapter {
   /** @param {string} providerRef @param {number} amountMinor */
   async refund(providerRef, amountMinor) {
     if (!this.real) {
-      const r = await this.fallback.refund(providerRef, amountMinor);
-      return r;
+      this.#assertUsable('revertir un pago');
+      return await this.fallback.refund(providerRef, amountMinor);
     }
     // Nequi no expone refund unificado en push; depende de contrato.
     // Implementar cuando el operador confirme el endpoint específico.
