@@ -216,6 +216,21 @@ CREATE TABLE IF NOT EXISTS geocoded_addresses (
 );
 
 -- ============================================================================
+-- production (spec_id=30 G3) — insumos y costeo por lote.
+-- Modelo de los software de costeo food: insumo × cantidad por lote → costo
+-- del lote → costo por unidad (lote / unidades por lote). Con el margen
+-- objetivo se sugiere precio de venta. Unidad: pesos COP como toda la app.
+-- ============================================================================
+CREATE TABLE IF NOT EXISTS production_items (
+  id INTEGER PRIMARY KEY AUTOINCREMENT,
+  name TEXT NOT NULL,
+  unit TEXT,
+  unit_cost_cents INTEGER NOT NULL DEFAULT 0,
+  qty_per_batch REAL NOT NULL DEFAULT 0,
+  created_at TEXT NOT NULL DEFAULT (datetime('now'))
+);
+
+-- ============================================================================
 -- 0002_payments (Spec §22.5) — backend de pagos digitales
 -- ============================================================================
 CREATE TABLE IF NOT EXISTS payments (
@@ -570,6 +585,8 @@ export function init() {
   ensureColumn('config',  'delivery_zone_center_lat',          'REAL');
   ensureColumn('config',  'delivery_zone_center_lng',          'REAL');
   ensureColumn('config',  'delivery_default_cutoff_hours',     'INTEGER NOT NULL DEFAULT 8');
+  ensureColumn('config',  'production_units_per_batch',        'INTEGER NOT NULL DEFAULT 50');
+  ensureColumn('config',  'production_target_margin_pct',       'INTEGER NOT NULL DEFAULT 70');
 
   ensureColumn('orders',  'delivery_mode',         "TEXT CHECK(delivery_mode IN ('scheduled','immediate')) DEFAULT 'scheduled'");
   ensureColumn('orders',  'delivery_provider',     "TEXT NOT NULL DEFAULT 'own'");
