@@ -1905,3 +1905,31 @@ está implementada.
 **Pendiente de esta onda:** producción aún persiste en localStorage (migrar a
 tabla + endpoints cuando el operador quiera historial real); sección Cobros del
 panel se puede retirar cuando el checkout UI (§24.2) exista.
+
+## 26. Onda spec_id=30 — checkout, panel sin redundancia y UI en español
+
+Estado al 2026-10-23: **en curso**. Commits 87c3f07 + a44a3ad. Suite 93/93.
+
+**Panel sin redundancia (87c3f07):** fuera Cobros/Fotos/Métodos de pago del
+sidebar (Cobros accesible desde Pedidos; portada dentro de Productos; métodos
+en Entregas→pagos). "Sabores" → "Productos" (portafolio ampliable). "Dashboard"
+→ "Panel". UI entendible sin saber programar ni inglés: estados en español
+(vía `STATUS_ES` — los valores que viajan al server siguen siendo los ingleses),
+chips traducidos, login sin endpoints. FIX: `render.dashboard` crasheaba en
+`by-status` (elemento huérfano) — el panel llevaba tiempo a media render;
+cazado con Playwright, bloque muerto eliminado.
+
+**Checkout con domicilio por distancia (a44a3ad):** el carrito elige recoger
+vs domicilio; en domicilio, `POST /api/delivery/quote` geocodifica (Nominatim
+con caché), mide haversine al centro de la zona y cotiza **tarifa base +
+precio por km redondeada a $50** (estilo DiDi/Rappi). La fórmula vive en
+`src/lib/delivery-fee.js` — fuente única compartida con POST /api/orders.
+Config nueva `delivery_immediate_base_fare_cents` / `_price_per_km_cents`
+(defaults 0 = tarifa plana, backward compatible). El carrito también elige
+forma de pago (efectivo o los `payment_methods` del admin → `payment_method_id`).
+Domicilio desactivado = pill deshabilitada con explicación.
+
+**Pendiente del spec_id=30:** G3 producción persistente + analíticas de unit
+economics, G4-01 captura de Instagram (requiere conectar la cuenta del negocio),
+G2-03 pasada responsiva multi-dispositivo, G5-01 shaders visibles en secciones
+de fondo opaco.
