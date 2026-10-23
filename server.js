@@ -219,7 +219,7 @@ app.listen(PORT, () => {
   console.log(`[mymochis] payments: ${consumerCount} consumers registrados, ${indexedOrders} pedidos indexados`);
   if (process.env.MYMOCHIS_NO_WORKERS !== '1') {
     const workers = [
-      ['outbox-relay', () => import('./worker/payments/outbox-relay.mjs').then(m => m.startOutboxRelay())],
+      ['outbox-relay', () => import('./worker/payments/outbox-relay.mjs').then(m => m.startOutboxRelay({ intervalMs: Number(process.env.MYMOCHIS_OUTBOX_RELAY_INTERVAL_MS || 30000) }))],
       ['event-processor', () => import('./worker/payments/process-events.mjs').then(m => m.startEventProcessor())],
       ['reconciler', () => import('./worker/payments/reconciler.mjs').then(m => m.startReconciler())],
     ];
