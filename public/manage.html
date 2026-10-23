@@ -834,6 +834,69 @@ tbody tr:hover { background: var(--clay-canvas); }
   box-shadow: var(--clay-shadow-sm), inset 1px -1px 2px rgba(255,255,255,0.3);
 }
 
+/* ============ CHECKBOXES ESTÉTICAS (clay) ============ */
+.form-group input[type="checkbox"] {
+  width: 0; height: 0; opacity: 0; position: absolute;
+}
+.form-group label {
+  display: inline-flex; align-items: center; gap: 8px;
+  cursor: pointer;
+}
+.form-group label::before {
+  content: ''; display: inline-block; width: 20px; height: 20px;
+  border-radius: 6px; border: 2px solid var(--clay-ink-soft);
+  background: var(--clay-canvas);
+  box-shadow: var(--clay-shadow-xs), inset 1px -1px 2px rgba(255,255,255,0.7);
+  transition: all 0.18s;
+  flex-shrink: 0;
+}
+.form-group input[type="checkbox"]:checked + span.check-text::before {
+  background: var(--mochi-fresa);
+  border-color: var(--mochi-fresa-d);
+  box-shadow: var(--clay-shadow-sm), inset 1px -1px 2px rgba(255,255,255,0.6);
+}
+.form-group input[type="checkbox"]:checked + span.check-text::after {
+  content: '✔'; color: #fff; font-size: 12px; font-weight: 700;
+  position: absolute; left: 50%; top: 50%; transform: translate(-50%, -50%);
+}
+
+/* envuelve el texto del label en span para aplicar el check */
+.form-group label > span.check-text {
+  position: relative; z-index: 2; display: inline-flex; align-items: center;
+  width: 20px; height: 20px; border-radius: 6px; border: 2px solid var(--clay-ink-soft);
+  background: var(--clay-canvas);
+  box-shadow: var(--clay-shadow-xs), inset 1px -1px 2px rgba(255,255,255,0.7);
+  transition: all 0.18s; margin-right: 8px; flex-shrink: 0;
+}
+.form-group label > span.check-text::before { display: none; }
+.form-group input[type="checkbox"]:checked + span.check-text {
+  background: var(--mochi-fresa);
+  border-color: var(--mochi-fresa-d);
+  box-shadow: var(--clay-shadow-sm), inset 1px -1px 2px rgba(255,255,255,0.6);
+}
+
+/* ============ BOTÓN ENTREGA INMEDIATA ============ */
+.btn-imediato {
+  background: linear-gradient(135deg, var(--mochi-fresa), var(--mochi-fresa-d));
+  color: #fff;
+  box-shadow: var(--clay-shadow-md), inset 2px -2px 4px rgba(255,255,255,0.5);
+}
+.btn-imediato:hover { box-shadow: var(--clay-shadow-lg); transform: translateY(-1px); }
+.btn-imediato:active { transform: scale(0.97); box-shadow: var(--clay-inset-sm); }
+
+/* ============ SECCIÓN PRODUCCIÓN ============ */
+.prod-card { background: var(--clay-surface); border-radius: 20px; padding: 16px; box-shadow: var(--clay-shadow); }
+.prod-summary { display: flex; gap: 12px; align-items: flex-end; }
+.prod-summary .big { font-size: 28px; font-weight: 700; color: var(--mochi-fresa-d); font-variant-numeric: tabular-nums; }
+.prod-hint { font-size: 13px; color: var(--clay-ink-soft); margin-top: 8px; }
+.prod-card h3 { margin: 0 0 10px 0; font-size: 15px; color: var(--clay-ink); }
+.prod-card table { width: 100%; border-collapse: collapse; font-size: 13px; }
+.prod-card th { text-align: left; color: var(--clay-ink-soft); font-size: 11px; text-transform: uppercase; letter-spacing: 1px; padding: 8px 6px; }
+.prod-card td { padding: 8px 6px; color: var(--clay-ink); border-bottom: 1px solid var(--line); }
+.btn-sm { padding: 6px 10px; font-size: 12px; border-radius: 8px; }
+.btn-danger { background: var(--clay-canvas); color: #b00020; box-shadow: var(--clay-shadow-xs), inset 1px -1px 2px rgba(255,255,255,0.7); }
+.btn-danger:hover { background: #fdecea; box-shadow: var(--clay-shadow-sm); }
+
 </style>
 </head>
 <body>
@@ -917,6 +980,12 @@ tbody tr:hover { background: var(--clay-canvas); }
     <div class="nav-item" data-section="cobros">
       <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><line x1="12" y1="1" x2="12" y2="23"/><path d="M17 5H9.5a3.5 3.5 0 000 7h5a3.5 3.5 0 010 7H6"/></svg>
       Cobros
+    </div>
+
+    <div class="nav-section">Operación</div>
+    <div class="nav-item" data-section="produccion">
+      <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><rect x="2" y="3" width="20" height="7"/><rect x="2" y="12" width="8" height="7"/><rect x="14" y="12" width="8" height="7"/><line x1="6" y1="19" x2="6" y2="23"/><line x1="18" y1="19" x2="18" y2="23"/></svg>
+      Producción
     </div>
 
     <div class="nav-section">Catálogo</div>
@@ -1276,6 +1345,53 @@ tbody tr:hover { background: var(--clay-canvas); }
       </div>
     </section>
 
+    <!-- ============== PRODUCCIÓN (costo de producción y contabilidad) ============== -->
+    <section id="section-produccion" class="section">
+      <div class="page-head">
+        <div>
+          <h1>Producción</h1>
+          <div class="sub">Costo de producir tus mochis, ingredientes y contabilidad de la inversión. Saber cuánto gastas en cada lote para fijar precios con márgenes claros.</div>
+        </div>
+        <div class="actions"><button class="btn btn-primary" onclick="openProductionModal()">+ Nuevo insumo / costo</button></div>
+      </div>
+
+      <div class="prod-grid" style="display:grid;grid-template-columns:repeat(auto-fit,minmax(260px,1fr));gap:16px;margin-top:12px">
+        <div class="card prod-card" style="grid-column:1 / -1">
+          <div class="prod-summary">
+            <div>
+              <div class="big" id="prod-total-cost">$0</div>
+              <div class="sub" style="margin-top:4px">Costo total por lote estimado</div>
+            </div>
+            <div>
+              <div class="big" id="prod-unit-cost">$0</div>
+              <div class="sub" style="margin-top:4px">Costo unitario promedio por mochi</div>
+            </div>
+            <div>
+              <div class="big" id="prod-margin">—%</div>
+              <div class="sub" style="margin-top:4px">Margen promedio sobre precio de venta</div>
+            </div>
+          </div>
+        </div>
+
+        <div class="card">
+          <h3>Insumos y materias primas</h3>
+          <div class="table-wrap" style="max-height:340px;overflow:auto">
+            <table>
+              <thead><tr><th>Insumo</th><th>Unidad</th><th>Costo unidad</th><th>Usado por lote</th><th>Costo lote</th><th></th></tr></thead>
+              <tbody id="production-table-body"></tbody>
+            </table>
+          </div>
+        </div>
+
+        <div class="card">
+          <h3>Resumen de inversión</h3>
+          <div class="form-group" style="margin-bottom:10px"><label>Precio promedio de venta (COP)</label><input type="number" id="prod-sale-price" value="8000" min="0" step="500"></div>
+          <div class="form-group" style="margin-bottom:10px"><label>Unidades por lote</label><input type="number" id="prod-units" value="50" min="1" step="1"></div>
+          <div class="prod-hint" id="prod-hint">Agregá insumos para ver el desglose de costos y margen.</div>
+        </div>
+      </div>
+    </section>
+
     <!-- ============== USUARIOS (multi-admin) ============== -->
     <section id="section-users" class="section">
       <div class="page-head">
@@ -1534,6 +1650,7 @@ function showSection(name) {
   document.getElementById('section-' + name).classList.add('active');
   render[name]?.();
   if (name === 'flavors' || name === 'combos') renderUploadGallery();
+  if (name === 'produccion') render.produccion();
 }
 
 // ============ RENDER ============
@@ -2082,8 +2199,8 @@ function openComboModal(combo) {
         <div class="form-group"><label>Orden</label><input type="number" id="c-sort_order" value="${combo?.sort_order || 0}"></div>
       </div>
       <div class="form-group"><label>Imagen URL</label><div style="display:flex;gap:8px"><input type="text" id="c-image_url" value="${escapeHtml(combo?.image_url || '')}" placeholder="/uploads/xxx.jpg" style="flex:1"><button type="button" class="btn btn-ghost btn-sm" onclick="pickUploadFor('combo','c-image_url')">📤 Elegir</button></div>${combo?.image_url ? `<div id="c-image_preview" style="margin-top:6px"><img src="${escapeHtml(combo.image_url)}" alt="" style="max-height:80px;border-radius:8px;border:1px solid var(--line)"></div>` : ''}</div>
-      <div class="form-group"><label style="display:flex;align-items:center;gap:8px;text-transform:none;letter-spacing:0;font-size:14px;color:var(--ink)"><input type="checkbox" id="c-featured" ${combo?.featured ? 'checked' : ''}> Destacado (aparece primero)</label></div>
-      <div class="form-group"><label style="display:flex;align-items:center;gap:8px;text-transform:none;letter-spacing:0;font-size:14px;color:var(--ink)"><input type="checkbox" id="c-available" ${combo?.available !== false ? 'checked' : ''}> Disponible</label></div>
+      <div class="form-group"><label style="display:flex;align-items:center;gap:8px;text-transform:none;letter-spacing:0;font-size:14px;color:var(--ink)"><input type="checkbox" id="c-featured" ${combo?.featured ? 'checked' : ''}><span class="check-text">Destacado (aparece primero)</span></label></div>
+      <div class="form-group"><label style="display:flex;align-items:center;gap:8px;text-transform:none;letter-spacing:0;font-size:14px;color:var(--ink)"><input type="checkbox" id="c-available" ${combo?.available !== false ? 'checked' : ''}><span class="check-text">Disponible</span></label></div>
       <div class="modal-actions">
         <button type="button" class="btn btn-ghost" onclick="closeModal()">Cancelar</button>
         <button type="submit" class="btn btn-primary">Guardar</button>
@@ -2141,7 +2258,7 @@ function openPromoModal(promo) {
         <div class="form-group"><label>Valor</label><input type="number" id="p-value" value="${promo?.value || 10}" required></div>
         <div class="form-group"><label>Compra mínima</label><input type="number" id="p-min_purchase" value="${promo?.min_purchase || ''}"></div>
       </div>
-      <div class="form-group"><label style="display:flex;align-items:center;gap:8px;text-transform:none;letter-spacing:0;font-size:14px;color:var(--ink)"><input type="checkbox" id="p-active" ${promo?.active !== false ? 'checked' : ''}> Activa</label></div>
+      <div class="form-group"><label style="display:flex;align-items:center;gap:8px;text-transform:none;letter-spacing:0;font-size:14px;color:var(--ink)"><input type="checkbox" id="p-active" ${promo?.active !== false ? 'checked' : ''}><span class="check-text">Activa</span></label></div>
       <div class="modal-actions">
         <button type="button" class="btn btn-ghost" onclick="closeModal()">Cancelar</button>
         <button type="submit" class="btn btn-primary">Guardar</button>
@@ -2269,7 +2386,7 @@ render.entregasInmediato = async function() {
       <form id="delivery-config-form">
         <div class="cfg-group">
           <h3>Estado del servicio</h3>
-          <div class="form-group"><label style="display:flex;align-items:center;gap:8px;text-transform:none;letter-spacing:0;font-size:14px;color:var(--ink)"><input type="checkbox" id="dc-enabled" ${cfg.delivery_immediate_enabled ? 'checked' : ''}> Habilitar entrega inmediata</label></div>
+          <div class="form-group"><label style="display:flex;align-items:center;gap:8px;text-transform:none;letter-spacing:0;font-size:14px;color:var(--ink)"><input type="checkbox" id="dc-enabled" ${cfg.delivery_immediate_enabled ? 'checked' : ''}><span class="check-text">Habilitar entrega inmediata</span></label></div>
         </div>
         <div class="cfg-group">
           <h3>Costos y zona</h3>
@@ -2291,8 +2408,8 @@ render.entregasInmediato = async function() {
           </div>
           <div class="form-group"><label>Cutoff por defecto (horas)</label><input type="number" id="dc-cutoff" value="${cfg.delivery_default_cutoff_hours || 8}" min="0" max="168"><div class="hint">Horas antes del cierre para hacer pedidos programados</div></div>
         </div>
-        <div class="modal-actions">
-          <button type="submit" class="btn btn-primary">Guardar cambios</button>
+          <div class="modal-actions">
+          <button type="submit" class="btn btn-imediato">Guardar cambios</button>
         </div>
       </form>`;
     document.getElementById('delivery-config-form').onsubmit = async (e) => {
@@ -2361,7 +2478,7 @@ window.openScheduleModal = function(s) {
         <div class="form-group"><label>Cutoff (h antes)</label><input type="number" id="s-cutoff" value="${s?.cutoff_offset_hours ?? 8}" min="0" max="168"></div>
         <div class="form-group"><label>Orden</label><input type="number" id="s-sort" value="${s?.sort_order ?? 0}"></div>
       </div>
-      <div class="form-group"><label style="display:flex;align-items:center;gap:8px;text-transform:none;letter-spacing:0;font-size:14px;color:var(--ink)"><input type="checkbox" id="s-active" ${!s || s.active !== 0 ? 'checked' : ''}> Activo</label></div>
+      <div class="form-group"><label style="display:flex;align-items:center;gap:8px;text-transform:none;letter-spacing:0;font-size:14px;color:var(--ink)"><input type="checkbox" id="s-active" ${!s || s.active !== 0 ? 'checked' : ''}><span class="check-text">Activo</span></label></div>
       <div class="form-group"><label>Notas</label><input type="text" id="s-notes" value="${escapeHtml(s?.notes || '')}"></div>
       <div class="modal-actions">
         <button type="button" class="btn btn-ghost" onclick="closeModal()">Cancelar</button>
@@ -2932,7 +3049,7 @@ window.openPaymentModal = function(m) {
         <div class="form-group"><label>QR URL (opcional)</label><input type="text" id="pm-qr" value="${escapeHtml(m?.qr_url || '')}"></div>
         <div class="form-group"><label>Orden</label><input type="number" id="pm-sort" value="${m?.sort_order ?? 0}"></div>
       </div>
-      <div class="form-group"><label style="display:flex;align-items:center;gap:8px;text-transform:none;letter-spacing:0;font-size:14px;color:var(--ink)"><input type="checkbox" id="pm-active" ${!m || m.active !== 0 ? 'checked' : ''}> Activo</label></div>
+      <div class="form-group"><label style="display:flex;align-items:center;gap:8px;text-transform:none;letter-spacing:0;font-size:14px;color:var(--ink)"><input type="checkbox" id="pm-active" ${!m || m.active !== 0 ? 'checked' : ''}><span class="check-text">Activo</span></label></div>
       <div class="modal-actions">
         <button type="button" class="btn btn-ghost" onclick="closeModal()">Cancelar</button>
         <button type="submit" class="btn btn-primary">Guardar</button>
@@ -2975,7 +3092,7 @@ window.openPayoutModal = function(methodId, p) {
     <form id="entity-form">
       <div class="form-group"><label>Titular</label><input type="text" id="pa-holder" value="${escapeHtml(p?.holder_name || '')}" required></div>
       <div class="form-group"><label>Referencia (celular / número de cuenta)</label><input type="text" id="pa-ref" value="${escapeHtml(p?.account_ref || '')}" required></div>
-      <div class="form-group"><label style="display:flex;align-items:center;gap:8px;text-transform:none;letter-spacing:0;font-size:14px;color:var(--ink)"><input type="checkbox" id="pa-default" ${p?.is_default ? 'checked' : ''}> Predeterminada (las otras cuentas de este método se desactivarán)</label></div>
+      <div class="form-group"><label style="display:flex;align-items:center;gap:8px;text-transform:none;letter-spacing:0;font-size:14px;color:var(--ink)"><input type="checkbox" id="pa-default" ${p?.is_default ? 'checked' : ''}><span class="check-text">Predeterminada (las otras cuentas de este método se desactivarán)</span></label></div>
       <div class="modal-actions">
         <button type="button" class="btn btn-ghost" onclick="closeModal()">Cancelar</button>
         <button type="submit" class="btn btn-primary">Guardar</button>
@@ -3123,6 +3240,58 @@ render.users = function () {
       </td>
     </tr>
   `; }).join('') : '<tr><td colspan="5" style="opacity:.6">Sin usuarios.</td></tr>';
+};
+
+render.produccion = async function () {
+  const body = document.getElementById('production-table-body');
+  if (!body) return;
+  const insumos = JSON.parse(localStorage.getItem('prod_insumos') || '[]');
+  const sale = Number(document.getElementById('prod-sale-price')?.value || 8000);
+  const units = Number(document.getElementById('prod-units')?.value || 50);
+  let totalCost = 0;
+  body.innerHTML = insumos.map(ins => {
+    const loteCost = Number(ins.costo) * Number(ins.qty);
+    totalCost += loteCost;
+    return `<tr>
+      <td>${escapeHtml(ins.nombre)}</td>
+      <td>${escapeHtml(ins.unidad)}</td>
+      <td>${fmt(Number(ins.costo))}</td>
+      <td>${Number(ins.qty)}</td>
+      <td>${fmt(loteCost)}</td>
+      <td style="text-align:right"><button class="btn btn-sm btn-danger" onclick="removeInsumo(${ins.id})">−</button></td>
+    </tr>`;
+  }).join('') || '<tr><td colspan="6" style="opacity:.6">Sin insumos. Agregá tu primer insumo.</td></tr>';
+
+  const unitCost = units > 0 ? totalCost / units : 0;
+  const margin = sale > 0 ? Math.max(0, Math.round((1 - unitCost / sale) * 100)) : 0;
+  document.getElementById('prod-total-cost').textContent = fmt(totalCost);
+  document.getElementById('prod-unit-cost').textContent = fmt(unitCost);
+  document.getElementById('prod-margin').textContent = margin + '%';
+  document.getElementById('prod-hint').textContent = units > 0
+    ? `Costo por unidad ${fmt(unitCost)} · margen ${margin}% sobre ${fmt(sale)}`
+    : 'Agregá insumos para ver el desglose de costos y margen.';
+};
+
+async function openProductionModal() {
+  const nombre = prompt('Nombre del insumo (ej: harina, leche condensada, colorante):');
+  if (!nombre || !nombre.trim()) return;
+  const costo = Number(prompt('Costo por unidad (COP):'));
+  const unidad = prompt('Unidad (ej: kg, litro, unidad):') || 'unidad';
+  const qty = Number(prompt('Cantidad usada por lote:'));
+  if (!costo || !qty) return;
+  const insumo = { id: Date.now(), nombre: nombre.trim(), costo, unidad, qty: Number(qty) };
+  const insumos = JSON.parse(localStorage.getItem('prod_insumos') || '[]');
+  insumos.push(insumo);
+  localStorage.setItem('prod_insumos', JSON.stringify(insumos));
+  toast('Insumo agregado', 'success');
+  render.produccion();
+}
+
+window.removeInsumo = async function (id) {
+  const insumos = JSON.parse(localStorage.getItem('prod_insumos') || '[]').filter(i => i.id !== id);
+  localStorage.setItem('prod_insumos', JSON.stringify(insumos));
+  toast('Insumo eliminado', 'success');
+  render.produccion();
 };
 
 async function deleteUser(id) {
