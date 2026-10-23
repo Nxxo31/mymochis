@@ -313,11 +313,56 @@ section { padding: 80px 24px; position: relative; }
 .horario-card .time { font-weight: 700; font-size: 22px; color: var(--clay-ink); margin: 6px 0; }
 .horario-card .cutoff { color: var(--clay-ink-soft); font-size: 13px; }
 
-/* ============ PROMOS BAR · highlighted active promos ============ */
-.promos-bar { padding: 18px 20px 0; max-width: 1200px; margin: 0 auto; }
-.promos-bar .promo-pill { display: inline-flex; align-items: center; gap: 10px; padding: 10px 18px; margin: 4px 6px 0 0; border-radius: 999px; background: linear-gradient(135deg, var(--mochi-fresa) 0%, var(--mochi-durazno) 100%); color: #fff; font-weight: 700; font-size: 14px; box-shadow: var(--clay-shadow-sm); }
-.promos-bar .promo-pill .pct { background: rgba(255,255,255,0.25); padding: 2px 8px; border-radius: 999px; font-size: 12px; }
+/* ============ PROMOS BAR · popout flotante de descuentos activos ============ */
+.promos-bar {
+  position: fixed;
+  bottom: 26px;
+  left: 26px;
+  z-index: 60;
+  display: flex;
+  flex-direction: column;
+  gap: 8px;
+  max-width: 250px;
+  background: var(--clay-surface);
+  border: 1px solid var(--line);
+  border-radius: 16px;
+  padding: 11px 14px;
+  box-shadow: var(--clay-shadow-lg);
+  animation: popIn 0.5s cubic-bezier(.34,1.56,.64,1);
+}
+.promos-bar .promo-pill {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  padding: 8px 12px;
+  border-radius: 10px;
+  background: linear-gradient(135deg, var(--mochi-fresa) 0%, var(--mochi-durazno) 100%);
+  color: #fff;
+  font-weight: 700;
+  font-size: 13px;
+  box-shadow: var(--clay-shadow-sm);
+  width: 100%;
+}
+.promos-bar .promo-pill .pct {
+  background: rgba(255,255,255,0.25);
+  padding: 2px 8px;
+  border-radius: 999px;
+  font-size: 11px;
+  margin-right: 6px;
+}
 .promos-bar-empty { display: none; }
+@keyframes popIn {
+  from { opacity: 0; transform: translateY(18px) scale(0.95); }
+  to   { opacity: 1; transform: none; }
+}
+
+/* ============ DESCUENTOS · chip corto en tarjetas de producto ============ */
+.promo-chip {
+  display: inline-flex; align-items: center; gap: 6px;
+  padding: 4px 10px; border-radius: 999px; font-size: 12px; font-weight: 700;
+  background: color-mix(in srgb, var(--mochi-fresa) 12%, transparent);
+  color: var(--mochi-fresa-d); border: 1px solid color-mix(in srgb, var(--mochi-fresa) 45%, transparent);
+}
 
 /* ============ CATEGORY CHIPS · filter ============ */
 .category-chips { display: flex; flex-wrap: wrap; gap: 8px; justify-content: center; margin: 16px auto 24px; max-width: 720px; }
