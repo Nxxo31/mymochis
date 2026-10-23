@@ -1126,7 +1126,7 @@ también se puede revertir comentando el `<link>` de tokens.
 
 ## 22. Backend de pagos digitales v1 — spec
 
-Fecha: 2026-10-19. Estado: **spec aprobada, pendiente implementación**. Refs:
+Fecha: 2026-10-19. Estado: **implementado — el camino automático funciona end-to-end (ver §24); faltan credenciales Nequi reales y UI de checkout**. Refs:
 artículos de sistema de pagos (idempotency, webhooks, ledger, outbox, sagas,
 reconciliation), docs Nequi API, Daviplata botón, Bancolombia API Market,
 Mercado Pago, NIIO aggregator. Patrón canónico del dev.to / singhajit.
@@ -1845,3 +1845,33 @@ Decidir antes de tocarlo:
 Las 3 ventanas abiertas en la DB (2026-10-15, 10-20, 10-21) tienen su cutoff ya
 vencido, así que la tienda muestra correctamente "no abrimos por ahora". Para
 volver a vender hay que abrir ventanas futuras; no es un bug del código.
+
+## 24. Pagos: el camino automático funciona end-to-end — 2026-10-23
+
+Cierre de la ola P0 del backend de pagos (spec_id=25). La cadena completa
+**webhook → transitionState → outbox → relay → consumer → pedido pagado + stock
+comprometido** está implementada, testeada y commiteada (e261c03..477b1bc):
+
+| Pieza | Dónde | Nota |
+|---|---|---|
+| Reservas compartidas | `src/lib/stock.js` | commit/release salen de routes/orders.js; las necesita el consumer sin cerrar el ciclo de imports |
+| Relay del outbox | `src/lib/payments/relay.js` | drenaje compartido server/Worker; antes el server **nunca drenaba** y `payment.succeeded` moría en la cola |
+| Consumer de pago OK | `src/lib/payments/consumers.js` | `payment.succeeded` marca el pedido pagado **y convierte la reserva en venta** |
+| Estado real vs dominio | `src/lib/payments/index.js` | `orders.payment_state` lleva el estado del grafo (SUCCEEDED…); `payment_status` el dominio (pending\|paid) |
+| Nequi fail-closed | `src/lib/payments/adapters/nequi.js` | sin `NEQUI_API_KEY` lanza; el mock solo entra con `NEXOMOCHIS_ALLOW_PROVIDER_FALLBACK=1` |
+| KPIs limpios | `src/routes/metrics.js` | gross/hoy/last_7/serie diaria excluyen cancelados |
+
+**Regresión:** `test/payment-auto-flow.test.js` fija la cadena completa con
+workers activos (relay a 500ms via `MYMOCHIS_OUTBOX_RELAY_INTERVAL_MS`), el
+dedupe del inbox y que `SUCCEEDED` es punto de no retorno. Suite 88/88.
+
+**Lección de la sesión:** el webhook marca `payment_status='paid'` de forma
+*sincrónica* (transitionState) pero el stock llega *async* por el relay — el
+test debe esperar el efecto de negocio (reserva→0, sold→qty), no la
+denormalización intermedia, o es una carrera.
+
+**Pendiente para cerrar pagos del todo:** (1) credenciales Nequi reales (hoy el
+adapter fail-closed; requiere sandbox + aprobación), (2) que la tienda llame
+`POST /api/payments` — hoy ninguna pantalla lo invoca, el cliente sigue pagando
+por transferencia y el operador confirma a mano, (3) deploy (§18 sigue siendo el
+runbook vigente).
