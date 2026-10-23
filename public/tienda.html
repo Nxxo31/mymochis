@@ -406,6 +406,25 @@ main { max-width: 1320px; margin: 0 auto; padding: 32px 24px 80px; }
 /* Rows reuse existing styles */
 .cart-items { display: flex; flex-direction: column; gap: 10px; margin-bottom: 16px; padding-right: 4px; }
 
+.cart-line {
+  display: flex; align-items: center; justify-content: space-between;
+  padding: 10px 14px; border-radius: 14px; background: var(--clay-canvas);
+  border: 1px solid var(--line); box-shadow: var(--clay-shadow-xs), inset 1px -1px 2px rgba(255,255,255,0.7);
+  margin-bottom: 8px; animation: lineIn 0.25s cubic-bezier(.34,1.56,.64,1);
+}
+@keyframes lineIn {
+  from { opacity: 0; transform: translateY(8px); }
+  to   { opacity: 1; transform: none; }
+}
+.cart-line .name { font-weight: 700; color: var(--clay-ink); flex: 1; font-size: 14px; }
+.cart-line .price { font-family: 'Baloo 2', serif; font-weight: 700; color: var(--mochi-fresa-d); font-size: 15px; margin: 0 10px; }
+.cart-line .qty-controls { display: inline-flex; align-items: center; gap: 2px; border: 1px solid var(--line); border-radius: 10px; background: var(--clay-surface); padding: 2px; }
+.cart-line .qty-btn { background: transparent; border: 0; width: 28px; height: 28px; border-radius: 8px; font-weight: 800; color: var(--clay-ink); cursor: pointer; box-shadow: var(--clay-shadow-xs); line-height: 1; }
+.cart-line .qty-btn:hover { background: var(--clay-canvas-2); }
+.cart-line .qty-val { font-weight: 800; color: var(--clay-ink); min-width: 22px; text-align: center; font-size: 14px; }
+.cart-line .remove { background: transparent; border: 0; color: #b00020; font-weight: 800; font-size: 20px; cursor: pointer; padding: 4px 8px; border-radius: 8px; opacity: 0.7; }
+.cart-line .remove:hover { background: rgba(176,0,32,0.1); opacity: 1; }
+
 .cart-empty {
   text-align: center;
   padding: 32px 8px;
@@ -980,6 +999,11 @@ footer {
       line.className = 'cart-line';
       line.innerHTML = `
         <span class="name">${escapeHtml(nameOf('flavor', id))}</span>
+        <div class="qty-controls">
+          <button class="qty-btn" data-act="dec" data-kind="flavor" data-id="${id}">−</button>
+          <span class="qty-val">${qty}</span>
+          <button class="qty-btn" data-act="inc" data-kind="flavor" data-id="${id}">+</button>
+        </div>
         <span class="price">${fmtPrice(priceOf('flavor', id) * Number(qty))}</span>
         <button class="remove" data-act="rmflavor" data-id="${id}" type="button" aria-label="Quitar">×</button>
       `;
@@ -991,6 +1015,11 @@ footer {
       line.className = 'cart-line';
       line.innerHTML = `
         <span class="name">${escapeHtml(nameOf('combo', c.id))}</span>
+        <div class="qty-controls">
+          <button class="qty-btn" data-act="dec" data-kind="combo" data-id="${c.id}">−</button>
+          <span class="qty-val">${c.qty}</span>
+          <button class="qty-btn" data-act="inc" data-kind="combo" data-id="${c.id}">+</button>
+        </div>
         <span class="price">${fmtPrice(priceOf('combo', c.id) * Number(c.qty))}</span>
         <button class="remove" data-act="rmcombo" data-id="${c.id}" type="button" aria-label="Quitar">×</button>
       `;
