@@ -67,6 +67,12 @@ export const PROVIDERS = {
     fields: ['token', 'phone_id', 'webhook_verify_token'],
     docs: 'https://developers.facebook.com/docs/whatsapp/cloud-api',
   },
+  instagram: {
+    label: 'Instagram',
+    hint: 'Token de tu cuenta profesional de Instagram. Al conectarlo, la galería de la página se lene sola con lo que publiques (sincroniza cada 30 minutos).',
+    fields: ['access_token'],
+    docs: 'https://developers.facebook.com/docs/instagram-platform/instagram-graph-api',
+  },
 };
 
 /** Clave maestra derivada. Lanza si falta: el vault falla cerrado, nunca abierto. */

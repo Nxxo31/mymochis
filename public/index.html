@@ -313,6 +313,23 @@ section { padding: 80px 24px; position: relative; }
 .horario-card .time { font-weight: 700; font-size: 22px; color: var(--clay-ink); margin: 6px 0; }
 .horario-card .cutoff { color: var(--clay-ink-soft); font-size: 13px; }
 
+/* ============ MARQUEE de sabores (21st.dev style, sale del catálogo) ============ */
+.flavors-marquee {
+  overflow: hidden; padding: 10px 0 2px; max-width: 1200px; margin: 0 auto;
+  -webkit-mask-image: linear-gradient(90deg, transparent, #000 8%, #000 92%, transparent);
+  mask-image: linear-gradient(90deg, transparent, #000 8%, #000 92%, transparent);
+}
+.marquee-track { display: flex; gap: 12px; width: max-content; animation: marquee 30s linear infinite; }
+@keyframes marquee { from { transform: translateX(0); } to { transform: translateX(-50%); } }
+.marquee-pill {
+  display: inline-flex; align-items: center; gap: 8px; padding: 9px 18px;
+  border-radius: 999px; background: var(--clay-surface); font-weight: 700;
+  font-size: 14px; color: var(--clay-ink); white-space: nowrap;
+  box-shadow: var(--clay-shadow-xs), inset 1px -1px 2px rgba(255,255,255,0.7);
+}
+.marquee-pill .dotc { width: 10px; height: 10px; border-radius: 50%; flex: none; }
+@media (prefers-reduced-motion: reduce) { .marquee-track { animation: none; } }
+
 /* ============ PROMOS BAR · popout flotante de descuentos activos ============ */
 .promos-bar {
   position: fixed;
@@ -1274,6 +1291,9 @@ footer .privacy-note {
   </svg>
 </section>
 
+<!-- Marquee de sabores — sale del catálogo del admin, se mueve solo -->
+<div class="flavors-marquee" aria-hidden="true"><div class="marquee-track" id="marquee-track"></div></div>
+
 <!-- 2026-10-14 — promos bar (admin-managed via /api/public → data.promos) -->
 <div class="promos-bar" id="promos-bar"></div>
 
@@ -1393,7 +1413,7 @@ footer .privacy-note {
       <h2 class="section-title">Síguenos en Instagram</h2>
       <p class="section-sub">Cada semana un lote nuevo. Etiquétanos y te reposteamos.</p>
     </div>
-    <div class="gallery-grid">
+    <div class="gallery-grid" id="ig-gallery">
       <div class="gallery-item"><a href="https://www.instagram.com/p/DWkUd6PlH76/" target="_blank" rel="noopener" title="Ver publicación en Instagram"><img src="img/instagram/mochi-02.jpg" alt="Mochis — última publicación @my.mochiss" loading="lazy"></a></div>
       <div class="gallery-item"><a href="https://www.instagram.com/p/DDNptx7vnVL/" target="_blank" rel="noopener" title="Ver publicación en Instagram"><img src="img/instagram/mochi-06.jpg" alt="Mochis del día — @my.mochiss" loading="lazy"></a></div>
       <div class="gallery-item"><a href="https://www.instagram.com/p/DDNppCAvxrK/" target="_blank" rel="noopener" title="Ver publicación en Instagram"><img src="img/instagram/mochi-09.jpg" alt="Lote artesanal — @my.mochiss" loading="lazy"></a></div>
@@ -1558,6 +1578,26 @@ async function loadConfig() {
       // config.hero_image_url). Sin esa config la landing mantiene la foto local.
       const heroPhoto = document.getElementById('hero-photo');
       if (heroPhoto && APP_CONFIG?.hero_image_url) heroPhoto.src = APP_CONFIG.hero_image_url;
+
+      // G4-01: si el admin conectó Instagram, la galería se llena sola con
+      // lo que publica (sincronizado por el worker ig-sync del server).
+      const igPosts = data.ig_posts || [];
+      const igGrid = document.getElementById('ig-gallery');
+      if (igGrid && igPosts.length) {
+        igGrid.innerHTML = igPosts.map(p => {
+          const alt = String(p.caption || 'Mochis — publicación de @my.mochiss').replace(/["<>&]/g, '').slice(0, 90);
+          return `<div class="gallery-item"><a href="${p.permalink || '#'}" target="_blank" rel="noopener" title="Ver publicación en Instagram"><img src="${p.media_url}" alt="${alt}" loading="lazy"></a></div>`;
+        }).join('');
+      }
+
+      // Marquee de sabores: pills salen del catálogo real, duplicadas para el
+      // loop infinito (-50% del ancho).
+      const track = document.getElementById('marquee-track');
+      const marqueeFlavors = (data.flavors || []).filter(f => f.available !== 0);
+      if (track && marqueeFlavors.length) {
+        const pills = marqueeFlavors.map(f => `<span class="marquee-pill"><span class="dotc" style="background:${f.color || '#F9B8CE'}"></span>${f.name} · $${Number(f.price).toLocaleString('es-CO')}</span>`).join('');
+        track.innerHTML = pills + pills;
+      }
       if (data.flavors?.length) FLAVORS.length = 0, FLAVORS.push(...data.flavors.filter(f => f.available !== 0).map(f => ({ id: f.id, name: f.name, price: f.price, description: f.description || '', image_url: f.image_url || null, category_id: f.category_id, category_slug: f.category_slug || null })));
             if (data.combos?.length) COMBOS.length = 0, COMBOS.push(...data.combos.filter(c => c.available !== 0));
             CATEGORIES = data.categories || [];

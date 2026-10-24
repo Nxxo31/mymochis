@@ -897,6 +897,24 @@ tbody tr:hover { background: var(--clay-canvas); }
 .btn-danger { background: var(--clay-canvas); color: #b00020; box-shadow: var(--clay-shadow-xs), inset 1px -1px 2px rgba(255,255,255,0.7); }
 .btn-danger:hover { background: #fdecea; box-shadow: var(--clay-shadow-sm); }
 
+/* ============ TOUR DE BIENVENIDA ============ */
+.tour-blocker { position: fixed; inset: 0; z-index: 299; }
+.tour-spot {
+  position: fixed; z-index: 301; pointer-events: none; border-radius: 14px;
+  border: 2px solid var(--mochi-fresa);
+  box-shadow: 0 0 0 4000px rgba(32,48,74,0.55);
+  transition: all 0.35s cubic-bezier(.34,1.56,.64,1);
+}
+.tour-card {
+  position: fixed; z-index: 302; background: var(--clay-surface);
+  border-radius: 16px; padding: 16px 18px; max-width: 320px;
+  box-shadow: var(--clay-shadow); animation: cardIn 0.3s cubic-bezier(.34,1.56,.64,1);
+}
+.tour-card h3 { font-family: 'Fredoka', serif; margin: 0 0 6px; font-size: 17px; color: var(--clay-ink); }
+.tour-card p { font-size: 13.5px; color: var(--clay-ink-soft); margin: 0 0 10px; line-height: 1.5; }
+.tour-card .steps { font-size: 11px; color: var(--ink-faint, #7A8AA3); margin-bottom: 10px; font-weight: 700; letter-spacing: 0.5px; }
+.tour-actions { display: flex; gap: 8px; justify-content: flex-end; }
+
 </style>
 </head>
 <body>
@@ -1002,7 +1020,8 @@ tbody tr:hover { background: var(--clay-canvas); }
 
     <div class="sidebar-footer">
       <div class="user-pill" id="user-email"></div>
-      <button class="btn btn-ghost btn-block" id="logout-btn" style="margin-top:8px">Cerrar sesión</button>
+      <button class="btn btn-ghost btn-block" id="tour-btn" style="margin-top:8px">¿Cómo uso el panel?</button>
+      <button class="btn btn-ghost btn-block" id="logout-btn" style="margin-top:6px">Cerrar sesión</button>
       <a href="index.html" class="btn btn-ghost btn-block" style="margin-top:6px;text-align:center">Ver landing →</a>
     </div>
   </aside>
@@ -1588,6 +1607,7 @@ document.getElementById('login-form').addEventListener('submit', async (e) => {
   }
 });
 
+document.getElementById('tour-btn').onclick = () => startTour();
 document.getElementById('logout-btn').onclick = () => {
   _token = null; _user = null;
   localStorage.removeItem(TOKEN_KEY);
@@ -1602,6 +1622,9 @@ async function enterApp() {
   initUploadZone();
   await loadAll();
   showSection('dashboard');
+  if (!localStorage.getItem('mymochis_tour_done')) {
+    setTimeout(() => startTour(), 700);
+  }
 }
 
 async function loadAll() {
@@ -2826,7 +2849,7 @@ render.creds = async function() {
     if (!status.configured) {
       el.innerHTML = `
         <div class="page-head" style="margin-bottom:14px">
-          <div><h1>Credenciales</h1><div class="sub">Conexiones con tus proveedores de pago</div></div>
+          <div><h1>Credenciales</h1><div class="sub">Conexiones con tus proveedores (pagos e Instagram)</div></div>
         </div>
         <div class="card" style="border-left:4px solid var(--accent)">
           <strong>Falta la llave del almacén cifrado</strong>
@@ -2841,7 +2864,7 @@ render.creds = async function() {
 
     el.innerHTML = `
       <div class="page-head" style="margin-bottom:14px">
-        <div><h1>Credenciales</h1><div class="sub">Conexiones con tus proveedores de pago</div></div>
+        <div><h1>Credenciales</h1><div class="sub">Conexiones con tus proveedores (pagos e Instagram)</div></div>
         <div class="actions"><button class="btn btn-ghost" onclick="render.credsAudit()">Ver auditoría</button></div>
       </div>
 
@@ -2886,6 +2909,11 @@ render.creds = async function() {
               </div>`;
             }).join('')}
           </div>
+          ${p.id === 'instagram' ? `
+          <div style="margin-top:10px;display:flex;align-items:center;gap:10px;flex-wrap:wrap">
+            <button class="btn btn-sm btn-primary" onclick="syncIgNow()">🔄 Sincronizar ahora</button>
+            <span class="sub" id="ig-sync-status" style="font-size:12px">${saved.length ? 'La galería de la página se llena sola con lo que publiques. Este botón la actualiza al instante.' : 'Guardá el token y la galería de la página se llenará sola con tus publicaciones.'}</span>
+          </div>` : ''}
         </div>`;
       }).join('')}`;
   } catch (e) { toast('Error: ' + e.message, 'error'); }
@@ -2896,6 +2924,107 @@ function escDate(s) {
   const d = new Date(s.includes('T') ? s : s.replace(' ', 'T') + 'Z');
   return isNaN(d) ? s : d.toLocaleString('es-CO', { day: '2-digit', month: '2-digit', hour: '2-digit', minute: '2-digit' });
 }
+
+window.syncIgNow = async function () {
+  const btn = window.event?.target;
+  if (btn) btn.disabled = true;
+  try {
+    const out = await api('/social/sync-ig', { method: 'POST', body: JSON.stringify({}) });
+    if (out.synced > 0) {
+      toast(out.synced + ' publicación(es) sincronizada(s) — ya se ven en la página', 'success');
+      const st = document.getElementById('ig-sync-status');
+      if (st) st.textContent = 'Última sincronización: ahora · ' + out.synced + ' publicación(es)';
+    } else if (out.reason === 'not_connected') {
+      toast('Primero guardá el token de Instagram en esta misma tarjeta', 'error');
+    } else {
+      toast('Sincronizado: no había publicaciones nuevas', 'success');
+    }
+  } catch (e) {
+    toast('Error: ' + e.message, 'error');
+  } finally {
+    if (btn) btn.disabled = false;
+  }
+};
+
+// ============ TOUR DE BIENVENIDA (primera sesión del admin) ============
+const TOUR_STEPS = [
+  { sel: '#kpi-today-count', title: '¡Bienvenido a tu panel!', text: 'Aquí ves las ventas de hoy, de la semana y el stock retenido por pedidos que aún no pagaron. Es tu foto del negocio en 5 segundos.' },
+  { sel: '#sidebar .nav-item[data-section="orders"]', title: 'Pedidos y cobros', text: 'Toda la vida del negocio en un solo lado: cada pedido con su botón Cobrar (confirmás que el plata llegó), cambio de estado, y la caja completa con el botón Cobros y caja.' },
+  { sel: '#sidebar .nav-item[data-section="flavors"]', title: 'Catálogo: tus productos', text: 'Creá productos — mochis, malteadas, lo que quieras vender — subí sus fotos y elegí cuál se ve en la portada de la página (chip Portada).' },
+  { sel: '#sidebar .nav-item[data-section="entregas"]', title: 'Entregas y pagos', text: 'Horarios de recogida, ventanas de la semana, domicilio con precio por distancia (estilo DiDi) y los métodos de pago que aceptás: Nequi, cuentas de banco y más.' },
+  { sel: '#sidebar .nav-item[data-section="produccion"]', title: 'Producción y ganancias', text: 'Anotá tus insumos y su costo: el panel calcula cuánto te cuesta cada unidad, qué precio cobrar para cumplir tu margen, y lo contrasta con tus ventas reales.' },
+  { sel: '#sidebar .nav-item[data-section="creds"]', title: 'Conectá Instagram y tus llaves', text: 'Guardá el token de Instagram y la galería de la página se llena sola con lo que publiques. También van aquí las llaves de tus pasarelas de pago — cifradas: ni se vuelven a mostrar.' },
+];
+
+let _tourStep = 0;
+
+function tourRender() {
+  document.querySelectorAll('.tour-blocker,.tour-spot,.tour-card').forEach(e => e.remove());
+  if (_tourStep >= TOUR_STEPS.length) {
+    localStorage.setItem('mymochis_tour_done', '1');
+    return;
+  }
+  const step = TOUR_STEPS[_tourStep];
+  const target = document.querySelector(step.sel);
+
+  const blocker = document.createElement('div');
+  blocker.className = 'tour-blocker';
+  blocker.addEventListener('click', () => {}, { capture: true });
+
+  const spot = document.createElement('div');
+  spot.className = 'tour-spot';
+
+  const card = document.createElement('div');
+  card.className = 'tour-card';
+  card.innerHTML = `
+    <h3>${step.title}</h3>
+    <p>${step.text}</p>
+    <div class="steps">PASO ${_tourStep + 1} DE ${TOUR_STEPS.length}</div>
+    <div class="tour-actions">
+      <button class="btn btn-sm btn-ghost" data-tour="skip">Saltar</button>
+      ${_tourStep > 0 ? '<button class="btn btn-sm btn-ghost" data-tour="prev">Atrás</button>' : ''}
+      <button class="btn btn-sm btn-primary" data-tour="next">${_tourStep === TOUR_STEPS.length - 1 ? '¡Entendido, a vender!</button>' : 'Siguiente</button>'}
+    </div>`;
+  card.querySelectorAll('[data-tour]').forEach(b => {
+    b.onclick = () => {
+      const a = b.dataset.tour;
+      if (a === 'skip') _tourStep = TOUR_STEPS.length;
+      else if (a === 'prev') _tourStep = Math.max(0, _tourStep - 1);
+      else _tourStep++;
+      tourRender();
+    };
+  });
+
+  document.body.append(blocker, spot, card);
+
+  if (target) {
+    const r = target.getBoundingClientRect();
+    spot.style.left = (r.left - 8) + 'px';
+    spot.style.top = (r.top - 8) + 'px';
+    spot.style.width = (r.width + 16) + 'px';
+    spot.style.height = (r.height + 16) + 'px';
+    let top = r.bottom + 14;
+    if (top + 240 > window.innerHeight) top = Math.max(16, r.top - 230);
+    card.style.top = top + 'px';
+    card.style.left = Math.max(16, Math.min(window.innerWidth - 336, r.left)) + 'px';
+  } else {
+    spot.style.display = 'none';
+    card.style.left = '50%';
+    card.style.transform = 'translateX(-50%)';
+    card.style.top = '38%';
+  }
+  if (window.innerWidth < 640) {
+    card.style.left = '16px';
+    card.style.right = '16px';
+    card.style.maxWidth = 'none';
+    card.style.transform = 'none';
+  }
+}
+
+window.startTour = function () {
+  _tourStep = 0;
+  tourRender();
+};
 
 window.openCredModal = function(provider, field) {
   document.getElementById('modal-content').innerHTML = `

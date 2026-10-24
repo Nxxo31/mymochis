@@ -53,5 +53,16 @@ router.delete('/:id', [authMiddleware, requireRole('admin')], (req, res) => {
   res.json({ ok: true });
 });
 
+// Sincronización manual del feed de Instagram (spec_id=30 G4-01). El worker
+// corre solo cada 30 min; este botón es el "hazlo YA" del admin. Sin token
+// conectado responde ok con synced 0 — el panel explica el porqué.
+router.post('/sync-ig', [authMiddleware, requireRole('admin')], async (req, res) => {
+  const { runOnce } = await import('../../worker/social/ig-sync.mjs');
+  const out = await runOnce();
+  if (out.ok) return res.json(out);
+  const status = out.reason === 'vault_locked' ? 503 : 502;
+  res.status(status).json({ ...out, message: 'No pudimos sincronizar Instagram. Revisá que el token siga vigente.' });
+});
+
 export default router;
 

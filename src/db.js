@@ -231,6 +231,22 @@ CREATE TABLE IF NOT EXISTS production_items (
 );
 
 -- ============================================================================
+-- ig_posts (spec_id=30 G4-01) — captura automática del feed de Instagram.
+-- El admin conecta su token en Credenciales (vault, write-only) y el worker
+-- ig-sync sincroniza solo: lo que publica en IG aparece en la galería de la
+-- landing sin tocar código. Solo imágenes (los videos no van al grid).
+-- ============================================================================
+CREATE TABLE IF NOT EXISTS ig_posts (
+  ig_id TEXT PRIMARY KEY,
+  caption TEXT,
+  media_url TEXT,
+  permalink TEXT,
+  media_type TEXT,
+  posted_at TEXT,
+  synced_at TEXT NOT NULL DEFAULT (datetime('now'))
+);
+
+-- ============================================================================
 -- 0002_payments (Spec §22.5) — backend de pagos digitales
 -- ============================================================================
 CREATE TABLE IF NOT EXISTS payments (

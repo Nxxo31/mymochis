@@ -226,6 +226,7 @@ app.listen(PORT, () => {
       ['outbox-relay', () => import('./worker/payments/outbox-relay.mjs').then(m => m.startOutboxRelay({ intervalMs: Number(process.env.MYMOCHIS_OUTBOX_RELAY_INTERVAL_MS || 30000) }))],
       ['event-processor', () => import('./worker/payments/process-events.mjs').then(m => m.startEventProcessor())],
       ['reconciler', () => import('./worker/payments/reconciler.mjs').then(m => m.startReconciler())],
+      ['ig-sync', () => import('./worker/social/ig-sync.mjs').then(m => m.startIgSync())],
     ];
     for (const [name, start] of workers) {
       start().catch(e => console.error(`[${name}] failed to start:`, e.message));

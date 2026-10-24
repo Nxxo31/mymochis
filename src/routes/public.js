@@ -116,6 +116,14 @@ router.get('/', (req, res) => {
     }
   }
 
+  const igPosts = db.prepare(`
+    SELECT ig_id, caption, media_url, permalink, media_type, posted_at
+    FROM ig_posts
+    WHERE media_url IS NOT NULL AND media_type != 'VIDEO'
+    ORDER BY posted_at DESC
+    LIMIT 8
+  `).all();
+
   res.json({
     config,
     categories,
@@ -125,7 +133,8 @@ router.get('/', (req, res) => {
     payment_methods: Object.values(paymentMethodsById),
     delivery_schedule: deliverySchedule,
     delivery_config: deliveryConfig,
-    release_windows: Object.values(releaseWindowsById)
+    release_windows: Object.values(releaseWindowsById),
+    ig_posts: igPosts
   });
 });
 
