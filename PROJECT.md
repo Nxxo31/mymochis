@@ -1933,3 +1933,39 @@ Domicilio desactivado = pill deshabilitada con explicación.
 economics, G4-01 captura de Instagram (requiere conectar la cuenta del negocio),
 G2-03 pasada responsiva multi-dispositivo, G5-01 shaders visibles en secciones
 de fondo opaco.
+
+### 26.1 Cierre de la onda — 2026-10-24 (spec_id=30 COMPLETO)
+
+Commits `7bdbeea` (checkout) + `05e84d2` (aurora), suite **99/99**, push
+`ec9d925..05e84d2`.
+
+**G5-01 — la aurora se ve a través de las secciones (05e84d2).** El shader WebGL
+vive en `.page-shader` con `z-index: -1`, pero el `body` tenía `background-color`
+opaco: en el orden de pintado, un hijo con `z-index: -1` se dibuja **antes** del
+fondo del body, así que la aurora quedaba tapada (por eso "pintado" no era lo
+mismo que "visible"). El body pasa a `color-mix(... 80%, transparent)` y las
+secciones también (`.combos` / `.gallery` / `.how-it-works` → canvas-2 al 78 %,
+`.why` → canvas al 74 %, `.releases` → gradiente con ambos stops al 80 %).
+Verificado con Playwright: body `rgba(1,1,1,0.8)`, secciones 0.78 / 0.74, canvas
+WebGL 1280×720 montado, consola 0 errores.
+
+**Checkout electrónico cierra el hueco #330 (7bdbeea).** El WIP traía
+`submitOrder` calculando `payInfo` (método + intent de pago) pero
+`showSuccess(order)` **ignoraba el segundo argumento**: el `#successPay` quedaba
+siempre vacío y oculto, así que el cliente nunca veía cómo pagar. Ahora
+`showSuccess(order, payInfo)` pinta "Cómo pagar tu pedido" con las instrucciones
+del método, la cuenta del negocio (primer `payout_accounts`) cuando existe, y el
+link de la pasarela electrónica cuando el intent devuelve `deep_link`.
+Verificado e2e en dev: pedido `#03a2ddf3` creado, `#successPay` visible
+(`display: block`) con título + instrucciones; sin link porque Nequi está
+fail-closed sin credenciales (401) y el flujo manual continúa — por diseño.
+El `pay-box` solo aparece si hay método de pago elegido.
+
+**Verificación:** suite 99/99; e2e Playwright en landing (fondos con alpha +
+canvas WebGL) y en tienda (pedido + pay-box); consola 0 errores salvo el 401
+esperado de `/api/payments` (fail-closed de la pasarela).
+
+**Pendiente del operador (fuera del código):** token de Instagram del negocio
+(Credenciales→Instagram), credenciales Nequi reales, DEPLOY OCI (§18/§19) y
+limpiar las dos `release_windows` sembradas en dev para QA (2026-10-25 domingo
+y 2026-10-30 viernes, 50 unidades de `clasico-fresa`).
