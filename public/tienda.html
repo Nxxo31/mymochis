@@ -575,6 +575,21 @@ main { max-width: 1320px; margin: 0 auto; padding: 32px 24px 80px; }
 }
 .success-card .summary .row:last-child { border-bottom: 0; font-weight: 700; font-size: 15px; }
 
+.pay-box {
+  margin: 12px 0 4px; padding: 14px 16px; border-radius: 14px;
+  background: var(--clay-canvas-2); display: flex; flex-direction: column; gap: 6px;
+  box-shadow: var(--clay-shadow-xs), inset 1px -1px 2px rgba(255,255,255,0.7);
+}
+.pay-box .hint { font-size: 12.5px; color: var(--clay-ink-soft); line-height: 1.5; }
+.pay-box .title { font-family: 'Baloo 2', serif; font-size: 15px; font-weight: 700; color: var(--clay-ink); }
+.pay-box .acct { font-family: 'Baloo 2', serif; font-size: 15px; font-weight: 700; color: var(--mochi-fresa-d); }
+.pay-box .pay-link {
+  margin-top: 6px; display: inline-flex; align-items: center; justify-content: center; gap: 8px;
+  padding: 11px 18px; border-radius: 999px; background: var(--mochi-cyan);
+  color: var(--cyan-ink, #0F5A6E); font-weight: 700; text-decoration: none; font-size: 14px;
+  box-shadow: var(--clay-shadow-xs), inset 1px -1px 2px rgba(255,255,255,0.7);
+}
+
 .success-card .actions {
   display: flex; gap: 8px;
   margin-top: 18px;
@@ -794,6 +809,7 @@ footer {
     <h2>¡Pedido enviado!</h2>
     <div class="order-id" id="successOrderId"></div>
     <div class="summary" id="successSummary"></div>
+    <div class="pay-box" id="successPay" style="display:none"></div>
     <div class="cloud-pill" id="successCloudPill" style="display:none;"></div>
     <p style="font-size:13px;color:var(--clay-ink-soft)" id="successMsg">
       Te escribimos por WhatsApp para confirmar disponibilidad y método de pago.
@@ -1407,9 +1423,27 @@ footer {
         return;
       }
       // Success.
+      // Si el método elegido es de pasarela electrónica, creamos el intent de
+      // pago: el pedido queda listo para que el webhook lo verifique SOLO
+      // (regla del negocio: pagado y verificado por API). Sin pasarela viva
+      // (Nequi sin credenciales), el pago manual con la cuenta del negocio
+      // sigue su curso — el negocio confirma con el botón Cobrar.
+      const selMethod = payment_method_id ? PAYMENT_METHODS.find(m => String(m.id) === String(payment_method_id)) : null;
+      const payInfo = { method: selMethod || null, payment: null };
+      if (selMethod && ['nequi', 'mercadopago'].includes(selMethod.code)) {
+        try {
+          const pr = await fetch('/api/payments', {
+            method: 'POST',
+            headers: { 'Content-Type': 'application/json', 'Idempotency-Key': 'pay-' + data.id },
+            body: JSON.stringify({ order_id: data.id, amount_minor: data.total, currency: 'COP', provider: selMethod.code, customer_phone: phone })
+          });
+          const pj = await pr.json().catch(() => ({}));
+          if (pr.ok && pj.payment_id) payInfo.payment = pj;
+        } catch (e) { /* sin pasarela electrónica viva, el flujo manual sigue */ }
+      }
       cart = { items: {}, combos: [] };
       saveCart();
-      showSuccess(data);
+      showSuccess(data, payInfo);
       afterCartChange();
       ['customerName', 'customerPhone', 'orderNotes', 'deliveryAddress'].forEach(id => { $('#' + id).value = ''; });
       setDeliveryMode('recoger');
@@ -1428,7 +1462,7 @@ footer {
     err.scrollIntoView({ behavior: 'smooth', block: 'center' });
   }
 
-  function showSuccess(order) {
+  function showSuccess(order, payInfo = {}) {
     closeSheet();
     $('#successOrderId').textContent = `Pedido #${order.id.slice(0, 8)}`;
     const lines = [];
@@ -1440,6 +1474,27 @@ footer {
     }
     lines.push(`<div class="row"><span>Total</span><span>${fmtPrice(order.total)}</span></div>`);
     $('#successSummary').innerHTML = lines.join('');
+
+    const payBox = $('#successPay');
+    const method = payInfo.method;
+    if (method) {
+      const acct = (method.payout_accounts || [])[0];
+      const pay = payInfo.payment;
+      const parts = [`<div class="title">Cómo pagar tu pedido</div>`];
+      parts.push(`<div class="hint">${escapeHtml(method.instructions || 'Transferí a la cuenta del negocio; el negocio te confirma por WhatsApp.')}</div>`);
+      if (acct) {
+        parts.push(`<div class="acct">${escapeHtml(acct.holder_name)} · ${escapeHtml(acct.account_ref)}</div>`);
+      }
+      if (pay && pay.whatsapp && pay.whatsapp.deep_link) {
+        parts.push(`<a class="pay-link" href="${escapeHtml(pay.whatsapp.deep_link)}" target="_blank" rel="noopener">Pagar ahora →</a>`);
+        if (pay.instructions) parts.push(`<div class="hint">${escapeHtml(pay.instructions)}</div>`);
+      }
+      payBox.innerHTML = parts.join('');
+      payBox.style.display = 'block';
+    } else {
+      payBox.innerHTML = '';
+      payBox.style.display = 'none';
+    }
 
     const wsp = order.whatsapp || {};
     const btn = $('#successWspBtn');
