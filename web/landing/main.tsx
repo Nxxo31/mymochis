@@ -7,6 +7,7 @@ import '../styles/islands.css';
 
 const AnimatedHero = lazy(() => import('./AnimatedHero').then(m => ({ default: m.AnimatedHero })));
 const HeroBackground = lazy(() => import('./HeroBackground').then(m => ({ default: m.HeroBackground })));
+const ScrollReveal = lazy(() => import('./ScrollReveal').then(m => ({ default: m.ScrollReveal })));
 
 interface MountProps {
   status: string;
@@ -75,4 +76,17 @@ if (typeof document !== 'undefined') {
       console.warn('[mymochis/hero-bg] mount failed', e);
     }
   });
+
+  // ScrollReveal (21st.dev style): anima el DOM existente al hacer scroll.
+  // Siempre activo en la landing — sin él la página es la misma, solo menos
+  // movimiento.
+  const revealHost = document.createElement('div');
+  document.body.appendChild(revealHost);
+  createRoot(revealHost).render(
+    <StrictMode>
+      <Suspense fallback={null}>
+        <ScrollReveal />
+      </Suspense>
+    </StrictMode>
+  );
 }

@@ -6,6 +6,10 @@ import { resolve } from 'path';
 // Spec: PROJECT.md §21.9
 export default defineConfig({
   plugins: [react()],
+  // base: las páginas sirven el bundle desde /build/ (landing.js vive ahi).
+  // Sin esto, el mapa de preloads de Vite arma URLs en la RAIZ (/chunks/...)
+  // que Express responde con index.html -> error de MIME en consola.
+  base: '/build/',
   // publicDir tiene que estar DESACTIVADO: con el default ("public"), Vite copia
   // todo public/ dentro de public/build/, asi que el build dejaba una copia
   // entera del sitio (index.html, manage.html, tienda.html, vendor/, img/) junto
