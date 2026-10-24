@@ -73,11 +73,15 @@ async function seed() {
       items: [{ flavor_id: 'aud-fresa', units_available: 500 }],
     },
   });
-  // delivery_schedule activa ese dia de semana (cutoff 48h para que no bloquee)
+  // delivery_schedule activa ese dia de semana. sort_order 99: NUNCA debe
+  // hacer sombra a las filas de arranque del template (sort 0-5) — si no, el
+  // cutoff del dia cambia segun que dia caiga windowDate y el test se vuelve
+  // flaky (paso con Lunes, revento con Martes). Su fila solo gobierna cuando
+  // el template no tiene fila para ese dia (domingo).
   const dow = new Date(`${windowDate}T12:00:00Z`).getUTCDay();
   await api('POST', '/api/delivery-schedule', {
     token,
-    body: { day_of_week: dow, mode: 'both', start_time: '15:00', end_time: '19:00', cutoff_offset_hours: 0, active: 1 },
+    body: { day_of_week: dow, mode: 'both', start_time: '15:00', end_time: '19:00', cutoff_offset_hours: 0, active: 1, sort_order: 99 },
   });
 }
 
