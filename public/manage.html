@@ -1478,6 +1478,12 @@ async function api(path, opts = {}) {
   const ct = res.headers.get('content-type') || '';
   const body = ct.includes('json') ? await res.json() : await res.text();
   if (!res.ok) {
+    // Sesión expirada: un solo destino, el login. Sin esto, cada sección
+    // mostraba su propio "Error: ..." y el panel parecía roto en vez de
+    // pedirte iniciar sesión de nuevo.
+    if (res.status === 401 && !path.startsWith('/auth/')) {
+      document.getElementById('logout-btn').click();
+    }
     const err = new Error(body?.message || body?.error || res.statusText);
     err.status = res.status;
     err.body = body;
