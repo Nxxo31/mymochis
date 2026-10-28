@@ -77,19 +77,15 @@ export async function geocode(db, rawAddress) {
   if (!addr) return null;
   const cached = await getCached(db, addr);
   if (cached) return cached;
-  const fresh = await fetchFromNominatim(addr);
+  let fresh;
+  try {
+    fresh = await fetchFromNominatim(addr);
+  } catch {
+    return null;
+  }
   if (!fresh) return null;
   await setCached(db, addr, fresh.lat, fresh.lng, fresh.display_name);
   return { ...fresh, cached: false };
 }
 
-export function haversineKm(lat1, lng1, lat2, lng2) {
-  const toRad = d => d * Math.PI / 180;
-  const R = 6371;
-  const dLat = toRad(lat2 - lat1);
-  const dLng = toRad(lng2 - lng1);
-  const a = Math.sin(dLat / 2) ** 2 +
-            Math.cos(toRad(lat1)) * Math.cos(toRad(lat2)) *
-            Math.sin(dLng / 2) ** 2;
-  return 2 * R * Math.asin(Math.sqrt(a));
-}
+export { haversineDistanceKm as haversineKm } from '../../src/lib/delivery-rules.js';

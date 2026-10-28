@@ -51,12 +51,16 @@ CREATE TABLE IF NOT EXISTS config (
   hero_image_url TEXT,
   delivery_immediate_enabled INTEGER NOT NULL DEFAULT 0,
   delivery_immediate_fee_cents INTEGER NOT NULL DEFAULT 5000,
+  delivery_immediate_base_fare_cents INTEGER NOT NULL DEFAULT 0,
+  delivery_immediate_price_per_km_cents INTEGER NOT NULL DEFAULT 0,
   delivery_immediate_radius_km INTEGER NOT NULL DEFAULT 5,
   delivery_immediate_min_order_cents INTEGER NOT NULL DEFAULT 20000,
   delivery_immediate_eta_minutes INTEGER NOT NULL DEFAULT 45,
   delivery_zone_label TEXT NOT NULL DEFAULT 'Neiva urbana',
   delivery_zone_center_lat REAL,
   delivery_zone_center_lng REAL,
+  delivery_zone_address TEXT,
+  delivery_zone_place_id TEXT,
   delivery_default_cutoff_hours INTEGER NOT NULL DEFAULT 8,
   updated_at TEXT NOT NULL DEFAULT (datetime('now'))
 );
@@ -107,6 +111,8 @@ CREATE TABLE IF NOT EXISTS orders (
   delivery_lng REAL,
   delivery_distance_km REAL,
   delivery_fee_cents INTEGER NOT NULL DEFAULT 0,
+  delivery_free_applied INTEGER NOT NULL DEFAULT 0,
+  delivery_free_rule_id INTEGER,
   payment_method_id INTEGER REFERENCES payment_methods(id)
 );
 CREATE INDEX IF NOT EXISTS idx_orders_created_at ON orders(created_at DESC);
@@ -201,6 +207,21 @@ CREATE TABLE IF NOT EXISTS delivery_schedule (
   sort_order INTEGER NOT NULL DEFAULT 0
 );
 CREATE INDEX IF NOT EXISTS idx_delivery_schedule_dow ON delivery_schedule(day_of_week, active);
+CREATE TABLE IF NOT EXISTS delivery_free_rules (
+  id INTEGER PRIMARY KEY AUTOINCREMENT,
+  day_of_week INTEGER NOT NULL CHECK(day_of_week BETWEEN 0 AND 6),
+  free_delivery INTEGER NOT NULL DEFAULT 1,
+  label TEXT NOT NULL,
+  min_order_cents INTEGER NOT NULL DEFAULT 0,
+  starts_at TEXT,
+  ends_at TEXT,
+  active INTEGER NOT NULL DEFAULT 1,
+  notes TEXT,
+  created_at TEXT NOT NULL DEFAULT (datetime('now')),
+  updated_at TEXT NOT NULL DEFAULT (datetime('now'))
+);
+CREATE INDEX IF NOT EXISTS idx_delivery_free_rules_day_active ON delivery_free_rules(day_of_week, active);
+CREATE INDEX IF NOT EXISTS idx_delivery_free_rules_window ON delivery_free_rules(starts_at, ends_at);
 CREATE TABLE IF NOT EXISTS uploads (
   filename TEXT PRIMARY KEY,
   originalname TEXT NOT NULL,
@@ -303,9 +324,22 @@ async function execScript(db, sql) {
   }
 }
 
+async function ensureColumn(db, table, column, definition) {
+  const columns = await db.prepare(`PRAGMA table_info(${table})`).all();
+  if (!columns.some(entry => entry.name === column)) {
+    await db.exec(`ALTER TABLE ${table} ADD COLUMN ${column} ${definition}`);
+  }
+}
+
 async function doInit(env) {
   const db = createDb(env.DB);
   await execScript(db, SCHEMA_SQL);
+  await ensureColumn(db, 'config', 'delivery_immediate_base_fare_cents', 'INTEGER NOT NULL DEFAULT 0');
+  await ensureColumn(db, 'config', 'delivery_immediate_price_per_km_cents', 'INTEGER NOT NULL DEFAULT 0');
+  await ensureColumn(db, 'config', 'delivery_zone_address', 'TEXT');
+  await ensureColumn(db, 'config', 'delivery_zone_place_id', 'TEXT');
+  await ensureColumn(db, 'orders', 'delivery_free_applied', 'INTEGER NOT NULL DEFAULT 0');
+  await ensureColumn(db, 'orders', 'delivery_free_rule_id', 'INTEGER');
   await execScript(db, SEED_SQL);
   // 2026-10-17: demote global de admins eliminado (multi-admin soportado).
   // Multi-número: importar config.whatsapp_number como primer destinatario.

@@ -1,4 +1,6 @@
 import { Router } from '../router.js';
+import { businessClock } from '../lib/business-time.js';
+import { selectDeliveryFreeRule } from '../lib/delivery-rules.js';
 
 const router = new Router();
 
@@ -53,15 +55,27 @@ async function handler(req, res) {
   const deliverySchedule = await db.prepare(`
     SELECT * FROM delivery_schedule WHERE active = 1 ORDER BY day_of_week, sort_order, start_time
   `).all();
+  let deliveryFreeRules = [];
+  try {
+    deliveryFreeRules = await db.prepare(`
+      SELECT * FROM delivery_free_rules WHERE active = 1 ORDER BY day_of_week, id
+    `).all();
+  } catch {}
+  const clock = businessClock();
+  const currentDeliveryFreeRule = selectDeliveryFreeRule(deliveryFreeRules, clock);
   const deliveryConfig = {
     delivery_immediate_enabled: config.delivery_immediate_enabled,
     delivery_immediate_fee_cents: config.delivery_immediate_fee_cents,
+    delivery_immediate_base_fare_cents: config.delivery_immediate_base_fare_cents,
+    delivery_immediate_price_per_km_cents: config.delivery_immediate_price_per_km_cents,
     delivery_immediate_radius_km: config.delivery_immediate_radius_km,
     delivery_immediate_min_order_cents: config.delivery_immediate_min_order_cents,
     delivery_immediate_eta_minutes: config.delivery_immediate_eta_minutes,
     delivery_zone_label: config.delivery_zone_label,
     delivery_zone_center_lat: config.delivery_zone_center_lat,
     delivery_zone_center_lng: config.delivery_zone_center_lng,
+    delivery_zone_address: config.delivery_zone_address,
+    delivery_zone_place_id: config.delivery_zone_place_id,
     delivery_default_cutoff_hours: config.delivery_default_cutoff_hours
   };
   const releaseWindows = await db.prepare(`
@@ -101,6 +115,11 @@ async function handler(req, res) {
     payment_methods: Object.values(paymentMethodsById),
     delivery_schedule: deliverySchedule,
     delivery_config: deliveryConfig,
+    delivery_free_rules: deliveryFreeRules,
+    delivery_free_rule: currentDeliveryFreeRule,
+    today_free_delivery: Boolean(currentDeliveryFreeRule && Number(currentDeliveryFreeRule.free_delivery) === 1),
+    business_date: clock.business_date,
+    business_tz: clock.business_tz,
     release_windows: Object.values(releaseWindowsById)
   });
   } catch (e) {
