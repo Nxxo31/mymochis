@@ -59,6 +59,8 @@ header {
   font-family: 'Baloo 2', sans-serif;
   font-size: 26px; font-weight: 700; letter-spacing: -0.4px;
   color: var(--clay-ink); text-decoration: none;
+  /* Target tactil: el link al logo es el "inicio" y quedaba en 38px. */
+  min-height: 44px;
 }
 .brand-mark {
   width: 48px; height: 48px; border-radius: 50%;
@@ -159,7 +161,10 @@ main { max-width: 1320px; margin: 0 auto; padding: 32px 24px 80px; }
   background: var(--clay-surface);
   border: 0;
   color: var(--clay-ink);
-  padding: 10px 20px;
+  /* min-height 44px: los chips quedaban en 41px, bajo el minimo de target
+     tactil (WCAG 2.2 · 2.5.8). */
+  padding: 11px 20px;
+  min-height: 44px;
   border-radius: 999px;
   font-family: 'Quicksand', sans-serif;
   font-size: 13px; font-weight: 700;
@@ -248,7 +253,10 @@ main { max-width: 1320px; margin: 0 auto; padding: 32px 24px 80px; }
 
 .qty-controls {
   display: grid;
-  grid-template-columns: 36px 1fr 36px;
+  /* 44px: los botones +/− son el control mas tocado del carrito y quedaban
+     en 36x28px, muy por debajo del minimo de target tactil (WCAG 2.2 ·
+     2.5.8). En movil el cliente los toca con el pulgar, sin apuntar. */
+  grid-template-columns: 44px 1fr 44px;
   gap: 6px;
   align-items: stretch;
   border-radius: 14px;
@@ -263,6 +271,7 @@ main { max-width: 1320px; margin: 0 auto; padding: 32px 24px 80px; }
   font-size: 18px; font-weight: 700;
   border-radius: 10px;
   cursor: pointer;
+  min-height: 44px;
   box-shadow: var(--clay-shadow-xs), inset 1px -1px 2px rgba(255,255,255,0.7);
   transition: all 0.15s;
 }
@@ -704,6 +713,15 @@ footer {
 @media (prefers-reduced-motion: reduce) {
   * { transition: none !important; animation: none !important; }
 }
+
+/* Link del footer: con texto plano de 15px de alto no se podia tocar en
+   movil (WCAG 2.2 · 2.5.8). */
+.footer-link {
+  display: inline-flex; align-items: center;
+  min-height: 44px; padding: 0 4px;
+  text-decoration: underline;
+  text-underline-offset: 3px;
+}
 </style>
 </head>
 <body>
@@ -852,7 +870,7 @@ footer {
 </div>
 
 <footer>
-  Mochi's Land · Neiva – Huila · <a href="/" style="color:var(--clay-ink-soft)">Inicio</a>
+  Mochi's Land · Neiva – Huila · <a href="/" class="footer-link" style="color:var(--clay-ink-soft)">Inicio</a>
 </footer>
 
 <div class="success-back" id="successBack" role="dialog" aria-modal="true">

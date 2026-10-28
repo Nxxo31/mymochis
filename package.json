@@ -14,7 +14,10 @@
     "r2:create": "wrangler r2 bucket create mymochis-uploads",
     "dev:web": "vite",
     "build:web": "vite build",
-    "build:web:watch": "vite build --watch"
+    "build:web:watch": "vite build --watch",
+    "e2e": "playwright test",
+    "e2e:ui": "playwright test --ui",
+    "e2e:desktop": "playwright test --project=desktop-1440"
   },
   "devDependencies": {
     "@playwright/test": "^1.64.1",

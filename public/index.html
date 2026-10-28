@@ -185,6 +185,9 @@ header {
   font-family: 'Baloo 2', sans-serif;
   font-size: 26px; font-weight: 600; letter-spacing: -0.4px;
   color: var(--clay-ink);
+  /* Target tactil: el link al logo es el "inicio" del sitio y en movil
+     queda en 36px de alto. */
+  min-height: 44px;
 }
 .brand-mark {
   width: 48px; height: 48px; border-radius: 50%;
@@ -215,7 +218,8 @@ header {
 
 .admin-icon {
   display: inline-flex; align-items: center; justify-content: center;
-  width: 38px; height: 38px; border-radius: 50%;
+  /* 44px: minimo de target tactil (WCAG 2.2 · 2.5.8) */
+  width: 44px; height: 44px; border-radius: 50%;
   background: var(--clay-surface);
   color: var(--clay-ink-soft);
   text-decoration: none; margin-right: 10px;
@@ -841,8 +845,13 @@ section { padding: 80px 24px; position: relative; }
 @media (max-width: 880px) {
   .hero { grid-template-columns: 1fr; min-height: auto; padding: 56px 20px 30px; gap: 32px; }
   .hero-visual-wrap { height: 320px; order: -1; }
+  /* El marco blob se extiende 28px a cada lado del wrap (inset: -28px). Con
+     el wrap de 335px (375 - 2*20 de padding) eso lo saca 8px por lado de la
+     pantalla y genera un scroll horizontal de ~20px en movil y tablet. A
+     -8px el blob cabe dentro del gutter sin perder el efecto de marco. */
+  .hero-visual-wrap::before { inset: -8px; }
   section { padding: 56px 20px; }
-  .nav-cta { padding: 10px 18px; font-size: 13px; }
+  .nav-cta { padding: 12px 18px; font-size: 13px; min-height: 44px; display: inline-flex; align-items: center; }
   .hero h1 { font-size: 42px; }
   .section-title { font-size: 32px; }
   /* Mobile fixes (sesión 2026-10-14): */
@@ -1062,7 +1071,7 @@ section { padding: 80px 24px; position: relative; }
 /* ============ HEADER SOCIAL BAR ============ */
 .social-bar { display: flex; align-items: center; gap: 6px; margin-right: 12px; }
 .social-icon {
-  width: 38px; height: 38px;
+  width: 44px; height: 44px;
   border-radius: 50%;
   display: inline-flex; align-items: center; justify-content: center;
   background: var(--clay-surface);
@@ -1162,6 +1171,9 @@ footer .brand-name .dot { color: var(--brand-sakura-d); }
   color: var(--clay-ink); font-size: 14px; text-decoration: none;
   transition: color 0.15s;
   display: flex; align-items: center; gap: 8px;
+  /* Target tactil: los enlaces del footer quedaban en 34px de alto, bajo el
+     minimo de 44px (WCAG 2.2 · 2.5.8). */
+  min-height: 44px;
 }
 .footer-grid a:hover { color: var(--brand-sakura-d); }
 .footer-brand-text {
@@ -1216,7 +1228,14 @@ footer .brand-name .dot { color: var(--brand-sakura-d); }
   display: flex; justify-content: space-between; gap: 12px; flex-wrap: wrap;
   font-size: 12px; color: var(--clay-ink-soft);
 }
-.footer-bottom a { color: var(--clay-ink-soft); text-decoration: none; margin-left: 8px; border-bottom: 1px dotted var(--brand-sky); }
+.footer-bottom a {
+  color: var(--clay-ink-soft); text-decoration: none; margin-left: 8px;
+  border-bottom: 1px dotted var(--brand-sky);
+  /* Target tactil: el enlace principal del footer ("Armar mi pedido") era de
+     20px de alto, por debajo del minimo de 44px (WCAG 2.2 · 2.5.8) y de lo
+     que un dedo con unsteady en un movil alcanza comodo. */
+  display: inline-flex; align-items: center; min-height: 44px; padding: 0 4px;
+}
 .footer-bottom a:hover { color: var(--brand-sakura-d); }
 footer .op-hint { color: var(--clay-ink-soft); }
 footer .privacy-note {
