@@ -9,7 +9,8 @@
 // Si price_per_km es 0 (default), se cae a la tarifa plana histórica
 // (delivery_immediate_fee_cents): los despliegues que ya la usaban no cambian
 // de precio hasta que el admin configure la tarifa por distancia.
-export function computeDeliveryFeeCents(config, distanceKm) {
+export function computeDeliveryFeeCents(config, distanceKm, options = {}) {
+  if (options?.freeDelivery === true) return 0;
   const perKm = Number(config?.delivery_immediate_price_per_km_cents) || 0;
   const base = Number(config?.delivery_immediate_base_fare_cents) || 0;
   if (perKm > 0) {

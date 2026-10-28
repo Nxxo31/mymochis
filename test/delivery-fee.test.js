@@ -36,6 +36,11 @@ test('tarifa: sin config no inventa cobros', () => {
   assert.equal(computeDeliveryFeeCents(null, 4), 0);
 });
 
+test('tarifa: un día gratis autorizado devuelve cero', () => {
+  const cfg = { delivery_immediate_fee_cents: 5000, delivery_immediate_base_fare_cents: 3500, delivery_immediate_price_per_km_cents: 1600 };
+  assert.equal(computeDeliveryFeeCents(cfg, 3.2, { freeDelivery: true }), 0);
+});
+
 let child;
 let tmpDir;
 

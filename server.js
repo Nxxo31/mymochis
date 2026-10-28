@@ -21,6 +21,7 @@ import socialRoutes from './src/routes/social.js';
 import metricsRoutes from './src/routes/metrics.js';
 import categoriesRoutes from './src/routes/categories.js';
 import deliveryConfigRoutes from './src/routes/delivery-config.js';
+import deliveryRulesRoutes from './src/routes/delivery-rules.js';
 import deliveryRoutes from './src/routes/delivery.js';
 import productionRoutes from './src/routes/production.js';
 import deliveryScheduleRoutes from './src/routes/delivery-schedule.js';
@@ -85,11 +86,11 @@ app.use(helmet({
     useDefaults: false,
     directives: {
       defaultSrc: ["'self'"],
-      scriptSrc: ["'self'", "'unsafe-inline'", 'https://fonts.googleapis.com'],
+      scriptSrc: ["'self'", "'unsafe-inline'", 'https://fonts.googleapis.com', 'https://maps.googleapis.com'],
       styleSrc: ["'self'", "'unsafe-inline'", 'https://fonts.googleapis.com'],
       fontSrc: ["'self'", 'https://fonts.gstatic.com', 'data:'],
       imgSrc: ["'self'", 'data:', 'blob:', 'https:'],
-      connectSrc: ["'self'"],
+      connectSrc: ["'self'", 'https://maps.googleapis.com'],
       mediaSrc: ["'self'"],
       objectSrc: ["'none'"],
       frameSrc: ["'none'"],
@@ -165,6 +166,7 @@ app.use('/api/auth', authRoutes);
 app.use('/api/me', meRoutes);
 app.use('/api/config', configRoutes);
 app.use('/api/delivery-config', deliveryConfigRoutes);
+app.use('/api/delivery-rules', deliveryRulesRoutes);
 app.use('/api/delivery', deliveryRoutes);
 app.use('/api/production', productionRoutes);
 app.use('/api/delivery-schedule', deliveryScheduleRoutes);

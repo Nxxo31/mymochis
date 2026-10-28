@@ -192,6 +192,23 @@ CREATE TABLE IF NOT EXISTS delivery_schedule (
 
 CREATE INDEX IF NOT EXISTS idx_delivery_schedule_dow ON delivery_schedule(day_of_week, active);
 
+CREATE TABLE IF NOT EXISTS delivery_free_rules (
+  id INTEGER PRIMARY KEY AUTOINCREMENT,
+  day_of_week INTEGER NOT NULL CHECK(day_of_week BETWEEN 0 AND 6),
+  free_delivery INTEGER NOT NULL DEFAULT 1,
+  label TEXT NOT NULL,
+  min_order_cents INTEGER NOT NULL DEFAULT 0,
+  starts_at TEXT,
+  ends_at TEXT,
+  active INTEGER NOT NULL DEFAULT 1,
+  notes TEXT,
+  created_at TEXT NOT NULL DEFAULT (datetime('now')),
+  updated_at TEXT NOT NULL DEFAULT (datetime('now'))
+);
+
+CREATE INDEX IF NOT EXISTS idx_delivery_free_rules_day_active ON delivery_free_rules(day_of_week, active);
+CREATE INDEX IF NOT EXISTS idx_delivery_free_rules_window ON delivery_free_rules(starts_at, ends_at);
+
 CREATE TABLE IF NOT EXISTS uploads (
   filename TEXT PRIMARY KEY,
   originalname TEXT NOT NULL,
@@ -600,9 +617,13 @@ export function init() {
   ensureColumn('config',  'delivery_zone_label',               "TEXT NOT NULL DEFAULT 'Neiva urbana'");
   ensureColumn('config',  'delivery_zone_center_lat',          'REAL');
   ensureColumn('config',  'delivery_zone_center_lng',          'REAL');
+  ensureColumn('config',  'delivery_zone_address',             'TEXT');
+  ensureColumn('config',  'delivery_zone_place_id',            'TEXT');
   ensureColumn('config',  'delivery_default_cutoff_hours',     'INTEGER NOT NULL DEFAULT 8');
   ensureColumn('config',  'production_units_per_batch',        'INTEGER NOT NULL DEFAULT 50');
   ensureColumn('config',  'production_target_margin_pct',       'INTEGER NOT NULL DEFAULT 70');
+  ensureColumn('config',  'production_market_reference_cents',  'INTEGER NOT NULL DEFAULT 0');
+  ensureColumn('config',  'production_market_reference_date',   'TEXT');
 
   ensureColumn('orders',  'delivery_mode',         "TEXT CHECK(delivery_mode IN ('scheduled','immediate')) DEFAULT 'scheduled'");
   ensureColumn('orders',  'delivery_provider',     "TEXT NOT NULL DEFAULT 'own'");
@@ -611,6 +632,8 @@ export function init() {
   ensureColumn('orders',  'delivery_lng',          'REAL');
   ensureColumn('orders',  'delivery_distance_km',  'REAL');
   ensureColumn('orders',  'delivery_fee_cents',    'INTEGER NOT NULL DEFAULT 0');
+  ensureColumn('orders',  'delivery_free_applied', 'INTEGER NOT NULL DEFAULT 0');
+  ensureColumn('orders',  'delivery_free_rule_id', 'INTEGER');
   ensureColumn('orders',  'payment_method_id',     'INTEGER REFERENCES payment_methods(id)');
 
   ensureColumn('flavors', 'category_id', 'INTEGER REFERENCES categories(id)');

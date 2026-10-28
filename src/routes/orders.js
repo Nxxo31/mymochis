@@ -6,8 +6,9 @@ import { priceOrder } from '../lib/pricing.js';
 import { rememberOrderTotal } from '../lib/payments/index.js';
 import { confirmManualPayment, ManualPaymentError } from '../lib/payments/manual.js';
 import { authMiddleware, requireRole } from '../auth.js';
-import { geocode, haversineKm } from '../lib/geocode.js';
-import { computeDeliveryFeeCents } from '../lib/delivery-fee.js';
+import { geocode } from '../lib/geocode.js';
+import { BUSINESS_TZ_OFFSET_MINUTES, weekdayForDate } from '../lib/business-time.js';
+import { deliveryZoneRequirement, evaluateDelivery } from '../lib/delivery-rules.js';
 import { buildDispatch } from '../lib/whatsapp.js';
 import { commitReservedStock, releaseReservedStock } from '../lib/stock.js';
 import { notifyOrderConfirmed } from '../lib/payments/order-notify.js';
@@ -47,27 +48,13 @@ function rowToOrder(r) {
     delivery_lng: r.delivery_lng,
     delivery_distance_km: r.delivery_distance_km,
     delivery_fee_cents: r.delivery_fee_cents,
+    delivery_free_applied: r.delivery_free_applied,
+    delivery_free_rule_id: r.delivery_free_rule_id,
     payment_id: r.payment_id,
     payment_state: r.payment_state,
     release_window_id: r.release_window_id
   };
 }
-
-function dayOfWeek(yyyyMmDd) {
-  const [y, m, d] = yyyyMmDd.split('-').map(Number);
-  return new Date(Date.UTC(y, m - 1, d)).getUTCDay();
-}
-
-/**
- * Offset horario del negocio, convención getTimezoneOffset(): America/Bogota
- * es UTC-5 fijo (sin DST desde 1992). Las horas que el dueño ingresa
- * ("15:00" de pickup) son horas LOCALES de Colombia, no horas UTC.
- * Bug 2026-10-21 (kanban t_f6d7dd48): interpretarlas como UTC adelantaba el
- * cutoff 5 horas — un pickup de 15:00 con cutoff de 8h cerraba los pedidos a
- * las 02:00 local en vez de 07:00. Constante extruida a propósito: si el
- * negocio algún día opera en otra zona, es EL único punto de cambio.
- */
-const BUSINESS_TZ_OFFSET_MINUTES = -300; // UTC-5, America/Bogota
 
 function combineDateAndTime(dateStr, hhmm) {
   const [y, m, d] = dateStr.split('-').map(Number);
@@ -99,7 +86,7 @@ function getConfig() {
  * @returns {{orderable: boolean, cutoffAt: string|null, reason: string|null}}
  */
 export function pickupCutoffFor(pickup_day, schedule, nowMs = Date.now()) {
-  const dow = dayOfWeek(pickup_day);
+  const dow = weekdayForDate(pickup_day);
   const matching = schedule.filter(s =>
     s.day_of_week === dow && (s.mode === 'pickup' || s.mode === 'both') && s.active === 1
   );
@@ -119,7 +106,7 @@ export function pickupCutoffFor(pickup_day, schedule, nowMs = Date.now()) {
 
 function validateScheduled(opts) {
   const { pickup_day, items, combos, nowMs, schedule, config } = opts;
-  const dow = dayOfWeek(pickup_day);
+  const dow = weekdayForDate(pickup_day);
 
   const matchingSchedule = schedule.filter(s =>
     s.day_of_week === dow && (s.mode === 'pickup' || s.mode === 'both') && s.active === 1
@@ -190,23 +177,21 @@ function validateScheduled(opts) {
 }
 
 function validateImmediate(opts) {
-  const { total, delivery_address, delivery_lat, delivery_lng, distance_km, config } = opts;
-  if (!config.delivery_immediate_enabled) {
-    return { ok: false, code: 'immediate_disabled', message: 'La entrega inmediata está desactivada' };
+  const { total, evaluation, config } = opts;
+  if (!evaluation.ok) {
+    const messages = {
+      immediate_disabled: 'La entrega inmediata está desactivada',
+      address_required: 'La dirección es obligatoria para entrega inmediata',
+      geocode_failed: 'No pudimos geocodificar la dirección',
+      zone_not_configured: 'La zona de domicilio no está configurada',
+      out_of_zone: `Fuera de zona: distancia ${evaluation.distance_km ? evaluation.distance_km.toFixed(1) : '?'} km`,
+    };
+    return { ok: false, code: evaluation.error, message: messages[evaluation.error] || 'No pudimos validar la entrega inmediata' };
   }
-  if (total < config.delivery_immediate_min_order_cents) {
+  if (total < Number(config.delivery_immediate_min_order_cents || 0)) {
     return {
       ok: false, code: 'below_minimum',
-      message: `Pedido mínimo para entrega inmediata: $${(config.delivery_immediate_min_order_cents / 100).toFixed(0)}`
-    };
-  }
-  if (!delivery_address || delivery_lat == null || delivery_lng == null) {
-    return { ok: false, code: 'address_required', message: 'La dirección y coordenadas son obligatorias para entrega inmediata' };
-  }
-  if (distance_km == null || distance_km > config.delivery_immediate_radius_km) {
-    return {
-      ok: false, code: 'out_of_zone',
-      message: `Fuera de zona: distancia ${distance_km ? distance_km.toFixed(1) : '?'} km, radio máximo ${config.delivery_immediate_radius_km} km`
+      message: `Pedido mínimo para entrega inmediata: $${Number(config.delivery_immediate_min_order_cents || 0).toLocaleString('es-CO')}`
     };
   }
   return { ok: true };
@@ -298,51 +283,17 @@ router.post('/', async (req, res) => {
   let computedDistanceKm = null;
   let finalLat = null;
   let finalLng = null;
+  let deliveryFreeApplied = 0;
+  let deliveryFreeRuleId = null;
 
   if (delivery_mode === 'scheduled') {
     const r = validateScheduled({ pickup_day, items, combos, nowMs, schedule, config });
     if (!r.ok) return res.status(400).json({ error: r.code, message: r.message });
     validated = r;
-  } else {
-    let lat = body.delivery_lat;
-    let lng = body.delivery_lng;
-    let distanceKm = null;
-    if ((lat == null || lng == null) && delivery_address) {
-      const geo = await geocode(delivery_address);
-      if (!geo) {
-        return res.status(400).json({ error: 'geocode_failed', message: 'No pudimos geocodificar la dirección. Probá con otra referencia (barrio + calle).' });
-      }
-      lat = geo.lat; lng = geo.lng;
-    }
-    if (lat != null && lng != null && config.delivery_zone_center_lat != null && config.delivery_zone_center_lng != null) {
-      distanceKm = haversineKm(config.delivery_zone_center_lat, config.delivery_zone_center_lng, lat, lng);
-    }
-    // Tarifa por distancia (estilo DiDi/Rappi): la MISMA fórmula que usa la
-    // cotización del carrito (POST /api/delivery/quote) — vive en
-    // lib/delivery-fee.js para que las dos no puedan divergir.
-    const feeCents = computeDeliveryFeeCents(config, distanceKm);
-    const r = validateImmediate({
-      total: Number(total) + feeCents,
-      delivery_address,
-      delivery_lat: lat,
-      delivery_lng: lng,
-      distance_km: distanceKm,
-      config
-    });
-    if (!r.ok) return res.status(400).json({ error: r.code, message: r.message });
-    validated = r;
-    computedDeliveryFee = feeCents;
-    computedDistanceKm = distanceKm;
-    finalLat = lat;
-    finalLng = lng;
   }
 
-  // ---- Pricing server-side (auditoria 2026-10-20, bug #1) ----
-  // El `total` que manda el cliente es solo una declaracion: el server lo
-  // recalcula desde flavors.price / combos.price. Antes se persistia tal cual
-  // y un POST con total=1DCS compraba 2 mochi + 1 combo por un peso.
   const clientTotal = Number(total);
-  const priced = priceOrder({ items, combos, deliveryFee: computedDeliveryFee });
+  const priced = priceOrder({ items, combos, deliveryFee: 0 });
   if (!priced.ok) {
     return res.status(400).json({
       error: 'invalid_catalog_items',
@@ -353,7 +304,53 @@ router.post('/', async (req, res) => {
   if (priced.lines.length === 0) {
     return res.status(400).json({ error: 'empty_order', message: 'El pedido no tiene productos' });
   }
-  const authoritativeTotal = priced.total;
+  const authoritativeSubtotal = priced.total;
+  let authoritativeTotal = authoritativeSubtotal;
+
+  if (delivery_mode === 'immediate') {
+    if (!config.delivery_immediate_enabled) {
+      return res.status(400).json({ error: 'immediate_disabled', message: 'La entrega inmediata está desactivada' });
+    }
+    if (!String(delivery_address || '').trim()) {
+      return res.status(400).json({ error: 'address_required', message: 'La dirección es obligatoria para entrega inmediata' });
+    }
+    const zone = deliveryZoneRequirement(config);
+    if (!zone.ok) {
+      return res.status(400).json({ error: 'zone_not_configured', message: 'La zona de domicilio no está configurada' });
+    }
+    let geo = null;
+    try {
+      geo = await geocode(delivery_address);
+    } catch {
+      geo = null;
+    }
+    if (!geo) {
+      return res.status(400).json({ error: 'geocode_failed', message: 'No pudimos geocodificar la dirección. Probá con otra referencia (barrio + calle).' });
+    }
+    let rules = [];
+    try {
+      rules = db.prepare('SELECT * FROM delivery_free_rules WHERE active = 1 ORDER BY id').all();
+    } catch {}
+    const evaluation = evaluateDelivery({
+      config,
+      geo,
+      address: delivery_address,
+      rules,
+      subtotalCents: authoritativeSubtotal,
+      nowMs,
+    });
+    authoritativeTotal = authoritativeSubtotal + Number(evaluation.fee_cents || 0);
+    const r = validateImmediate({ total: authoritativeTotal, evaluation, config });
+    if (!r.ok) return res.status(400).json({ error: r.code, message: r.message });
+    validated = r;
+    computedDeliveryFee = Number(evaluation.fee_cents || 0);
+    computedDistanceKm = evaluation.distance_km;
+    finalLat = geo.lat;
+    finalLng = geo.lng;
+    deliveryFreeApplied = evaluation.delivery_free_applied;
+    deliveryFreeRuleId = evaluation.delivery_free_rule_id;
+  }
+
   const totalDrift = Number.isFinite(clientTotal) && clientTotal !== authoritativeTotal
     ? { client_sent: clientTotal, server_computed: authoritativeTotal }
     : null;
@@ -364,8 +361,9 @@ router.post('/', async (req, res) => {
       items_json, combos_json, total, notes, source,
       delivery_mode, delivery_provider, delivery_address,
       delivery_lat, delivery_lng, delivery_distance_km, delivery_fee_cents,
+      delivery_free_applied, delivery_free_rule_id,
       payment_method_id, release_window_id
-    ) VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?)
+    ) VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?)
   `);
   // === Reserva (no venta) ===
   //
@@ -399,6 +397,7 @@ router.post('/', async (req, res) => {
       authoritativeTotal, notes || null, source || 'web',
       delivery_mode, delivery_provider, delivery_address || null,
       finalLat, finalLng, computedDistanceKm, computedDeliveryFee,
+      deliveryFreeApplied, deliveryFreeRuleId,
       payment_method_id || null,
       // La ventana de la que salio el stock. validateScheduled ya la resolvio
       // (window_id); sin guardarla el pedido solo conservaba la fecha como
@@ -471,7 +470,7 @@ router.post('/', async (req, res) => {
     }
 
     // Ventana de horario real del día de recogida (para el mensaje WSP)
-    const pickupDow = dayOfWeek(pickup_day);
+    const pickupDow = weekdayForDate(pickup_day);
     const sched = db.prepare(
       "SELECT start_time, end_time FROM delivery_schedule WHERE day_of_week = ? AND active = 1 AND mode IN ('pickup','both') ORDER BY id LIMIT 1"
     ).get(pickupDow);
