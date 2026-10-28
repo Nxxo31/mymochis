@@ -79,6 +79,16 @@
   --crema:         #FFE8A8;   --crema-ink:     #7A5B0A;
   --cyan:          #9DDDEC;   --cyan-ink:      #0F5A6E;
 
+  /* === Sabores · vivos (rellenos y degradados, NO texto) =============
+     Acentos mas saturados para superficies, chips y bordes de la landing.
+     El texto sobre estos colores usa siempre la variante "-ink" de arriba
+     (las crudas no llegan a 4.5:1 sobre blanco). */
+  --fresa-vivo:    #FF8FB4;
+  --durazno-vivo:  #FFC24D;
+  --matcha-vivo:   #A8CC55;
+  --ube-vivo:      #B08CF0;
+  --cian-vivo:     #56C8E4;
+
   /* === Estado === */
   --ok:            #146245;   --ok-soft:     #E1F2EA;
   --warn:          #8A6208;   --warn-soft:   #FBF0DC;
@@ -324,9 +334,10 @@
 :focus-visible {
   outline: 2px solid var(--focus);
   outline-offset: 2px;
-  border-radius: 4px;
 }
-/* No removing the ring: sólo se marca el color por componente */
+/* No removing the ring: sólo se marca el color por componente.
+   Sin border-radius forzado: el contorno sigue la forma real del elemento
+   (un boton pill con focus no debe volverse cuadrado). */
 .focus-brand:focus-visible { outline-color: var(--brand); }
 
 @media (prefers-reduced-motion: reduce) {

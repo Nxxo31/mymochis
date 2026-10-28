@@ -68,34 +68,40 @@ float fbm(vec2 p) {
 
 void main() {
   vec2 uv = vUv;
-  // aspect-correct: sin esto el noise se estira en pantallas anchas
   float aspect = uRes.x / max(uRes.y, 1.0);
   vec2 p = vec2(uv.x * aspect, uv.y);
 
-  vec2 m = (uMouse - 0.5) * 0.15;
-  float t = uTime * 0.15;
+  vec2 m = (uMouse - 0.5) * 0.12;
+  float t = uTime * 0.05;
 
-  float n1 = fbm(p * 1.8 + vec2(t, t * 0.7) + m);
-  float n2 = fbm(p * 3.4 - vec2(t * 0.5, t) + m * 0.5);
-  float n = 0.62 * n1 + 0.38 * n2;
+  float n1 = fbm(p * 1.5 + vec2(t, t * 0.6) + m);
+  float n2 = fbm(p * 2.9 - vec2(t * 0.45, t * 0.8) + m * 0.6);
+  float n = 0.66 * n1 + 0.34 * n2;
 
-  // rampa de 3 paradas: cielo -> sakura -> mist (identidad v5 "Sakura & Cielo",
-  // litertalmente los crudos del logo: theme.css --sky --sakura --sky-soft)
-  float k = smoothstep(-0.45, 0.45, n);
+  float k = smoothstep(-0.5, 0.55, n);
   vec3 col = k < 0.5
     ? mix(uColorA, uColorB, k * 2.0)
     : mix(uColorB, uColorC, (k - 0.5) * 2.0);
 
+  // haces muy lentos: dos lóbulos que barren la escena sin que se note el loop
+  float beam1 = smoothstep(0.70, 0.0, abs(uv.x - (0.26 + 0.05 * sin(t * 0.7))));
+  float beam2 = smoothstep(0.80, 0.0, abs(uv.x - (0.74 + 0.04 * cos(t * 0.5))));
+  col += (beam1 * 0.10 + beam2 * 0.06) * uColorC;
+
   // viñeta suave: mantiene el centro legible bajo el texto del hero
   float d = distance(uv, vec2(0.5));
-  col *= 1.0 - d * 0.38;
+  col *= 1.0 - d * 0.30;
 
   // grano muy leve: mata el banding en degradados amplios
   float grain = fract(sin(dot(uv * uRes, vec2(12.9898, 78.233))) * 43758.5453);
-  col += (grain - 0.5) * 0.012;
+  col += (grain - 0.5) * 0.010;
 
-  gl_FragColor = vec4(col * uIntensity, 0.55);
+  gl_FragColor = vec4(col * uIntensity, 0.62);
 }`;
+
+const DPR_CAP = 1.5;
+const MAX_PIXELS = 2400000;
+const STATIC_TIME = 9.5;
 
 function compile(
   gl: WebGLRenderingContext,
@@ -129,13 +135,15 @@ export interface HeroBackgroundProps {
   colorC?: string;
   /** 0..1 — baja la intensidad cuando hay contenido legible encima */
   intensity?: number;
+  className?: string;
 }
 
 export function HeroBackground({
-  colorA = '#62D3EC',
-  colorB = '#FFC2D4',
-  colorC = '#D8ECFF',
+  colorA = '#FF8FB4',
+  colorB = '#FFC24D',
+  colorC = '#56C8E4',
   intensity = 1,
+  className = 'shader-canvas',
 }: HeroBackgroundProps = {}) {
   const canvasRef = useRef<HTMLCanvasElement | null>(null);
 
@@ -143,26 +151,23 @@ export function HeroBackground({
     const canvas = canvasRef.current;
     if (!canvas) return undefined;
 
-    const fallback = () => canvas.parentElement?.classList.add('hero-island__bg--fallback');
-
     const gl = (canvas.getContext('webgl', {
       alpha: true, antialias: false, depth: false, powerPreference: 'low-power',
     }) || canvas.getContext('experimental-webgl')) as WebGLRenderingContext | null;
 
-    if (!gl) { fallback(); return undefined; }
+    if (!gl) return undefined;
 
     const vs = compile(gl, gl.VERTEX_SHADER, VERT);
     const fs = compile(gl, gl.FRAGMENT_SHADER, FRAG);
-    if (!vs || !fs) { fallback(); return undefined; }
+    if (!vs || !fs) return undefined;
 
     const prog = gl.createProgram();
-    if (!prog) { fallback(); return undefined; }
+    if (!prog) return undefined;
     gl.attachShader(prog, vs);
     gl.attachShader(prog, fs);
     gl.linkProgram(prog);
     if (!gl.getProgramParameter(prog, gl.LINK_STATUS)) {
       console.warn('[mymochis/shader] link', gl.getProgramInfoLog(prog));
-      fallback();
       return undefined;
     }
     gl.useProgram(prog);
@@ -192,20 +197,22 @@ export function HeroBackground({
     gl.uniform3f(u.cC, cr, cg, cb);
     gl.uniform1f(u.int, intensity);
 
-    // pointer con throttle: sin esto cada mousemove fuerza un read de layout
-    let pending: [number, number] | null = null;
-    const onMove = (e: PointerEvent) => {
-      const r = canvas.getBoundingClientRect();
-      if (!r.width || !r.height) return;
-      pending = [(e.clientX - r.left) / r.width, 1 - (e.clientY - r.top) / r.height];
-    };
-    window.addEventListener('pointermove', onMove, { passive: true });
+    let rect = canvas.getBoundingClientRect();
+    let pointer: [number, number] = [0.5, 0.5];
 
     const resize = () => {
-      // dpr capado a 1.6: en móvil un dpr nativo de 3 quadruplica el fill rate
-      const dpr = Math.min(window.devicePixelRatio || 1, 1.6);
-      const w = Math.max(1, Math.floor(canvas.clientWidth * dpr));
-      const h = Math.max(1, Math.floor(canvas.clientHeight * dpr));
+      rect = canvas.getBoundingClientRect();
+      const cssW = Math.max(1, rect.width);
+      const cssH = Math.max(1, rect.height);
+      const dpr = Math.min(window.devicePixelRatio || 1, DPR_CAP);
+      let w = Math.floor(cssW * dpr);
+      let h = Math.floor(cssH * dpr);
+      const px = w * h;
+      if (px > MAX_PIXELS) {
+        const k = Math.sqrt(MAX_PIXELS / px);
+        w = Math.max(1, Math.floor(w * k));
+        h = Math.max(1, Math.floor(h * k));
+      }
       if (canvas.width !== w || canvas.height !== h) {
         canvas.width = w;
         canvas.height = h;
@@ -213,40 +220,89 @@ export function HeroBackground({
         gl.uniform2f(u.res, w, h);
       }
     };
-    window.addEventListener('resize', resize, { passive: true });
+
+    // El rect se relee solo cuando el layout cambia: en el loop no hay ninguna
+    // lectura de layout (el puntero usa el rect cacheado).
+    const ro = new ResizeObserver(resize);
+    ro.observe(canvas);
+
+    const onMove = (e: PointerEvent) => {
+      const w = Math.max(rect.width, 1);
+      const h = Math.max(rect.height, 1);
+      pointer = [(e.clientX - rect.left) / w, 1 - (e.clientY - rect.top) / h];
+    };
+    window.addEventListener('pointermove', onMove, { passive: true });
+
+    let scrollQueued = false;
+    const onScroll = () => {
+      if (scrollQueued) return;
+      scrollQueued = true;
+      requestAnimationFrame(() => {
+        scrollQueued = false;
+        rect = canvas.getBoundingClientRect();
+      });
+    };
+    window.addEventListener('scroll', onScroll, { passive: true });
+
+    const draw = (time: number) => {
+      gl.uniform1f(u.time, time);
+      gl.uniform2f(u.mouse, pointer[0], pointer[1]);
+      gl.drawArrays(gl.TRIANGLES, 0, 3);
+    };
 
     let raf = 0;
     const t0 = performance.now();
     const loop = () => {
-      resize();
-      gl.uniform1f(u.time, (performance.now() - t0) / 1000);
-      if (pending) { gl.uniform2f(u.mouse, pending[0], pending[1]); pending = null; }
-      gl.drawArrays(gl.TRIANGLES, 0, 3);
+      draw((performance.now() - t0) / 1000);
       raf = requestAnimationFrame(loop);
     };
     const start = () => { if (!raf) raf = requestAnimationFrame(loop); };
     const stop = () => { if (raf) { cancelAnimationFrame(raf); raf = 0; } };
 
-    // No renderizar fuera de viewport: la landing es un scroll largo y el
-    // shader se pagaría entero el tiempo aunque nadie lo esté viendo.
+    const motionQuery = window.matchMedia('(prefers-reduced-motion: reduce)');
+    let reduced = motionQuery.matches;
+
+    const applyMotionMode = () => {
+      if (reduced) {
+        stop();
+        draw(STATIC_TIME);
+      } else if (!document.hidden) {
+        start();
+      }
+    };
+
+    const onMotionChange = (e: MediaQueryListEvent) => {
+      reduced = e.matches;
+      applyMotionMode();
+    };
+
+    // No renderizar fuera de viewport y pausar en background: la landing es un
+    // scroll largo y el shader se pagaría entero el tiempo aunque nadie lo vea.
     const io = new IntersectionObserver((entries) => {
-      if (entries[0] && entries[0].isIntersecting) start(); else stop();
+      const visible = entries[0] && entries[0].isIntersecting;
+      if (reduced) return;
+      if (visible) start(); else stop();
     }, { threshold: 0 });
     io.observe(canvas);
 
-    // pausa en background: un rAF abierto en una pestaña oculta quema batería
-    const onVis = () => (document.hidden ? stop() : start());
+    const onVis = () => {
+      if (reduced) return;
+      if (document.hidden) stop(); else start();
+    };
     document.addEventListener('visibilitychange', onVis);
+    motionQuery.addEventListener('change', onMotionChange);
 
     resize();
-    start();
+    applyMotionMode();
 
     return () => {
       stop();
       io.disconnect();
+      ro.disconnect();
       window.removeEventListener('pointermove', onMove);
-      window.removeEventListener('resize', resize);
+      window.removeEventListener('scroll', onScroll);
       document.removeEventListener('visibilitychange', onVis);
+      motionQuery.removeEventListener('change', onMotionChange);
       gl.deleteProgram(prog);
       gl.deleteShader(vs);
       gl.deleteShader(fs);
@@ -254,11 +310,7 @@ export function HeroBackground({
     };
   }, [colorA, colorB, colorC, intensity]);
 
-  return (
-    <div className="hero-island__bg" aria-hidden="true">
-      <canvas ref={canvasRef} />
-    </div>
-  );
+  return <canvas ref={canvasRef} className={className} aria-hidden="true" />;
 }
 
 export default HeroBackground;

@@ -39,7 +39,7 @@
 
 <link rel="preconnect" href="https://fonts.googleapis.com">
 <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
-<link href="https://fonts.googleapis.com/css2?family=Baloo+2:wght@400;500;600;700;800&family=Quicksand:wght@300;400;500;600;700&display=swap" rel="stylesheet">
+<link href="https://fonts.googleapis.com/css2?family=Baloo+2:wght@400;600;700;800&family=Quicksand:wght@400;500;600;700&display=swap" rel="stylesheet">
 
 <style>
 /* ==========================================================================
@@ -54,15 +54,17 @@ html { scroll-behavior: smooth; overflow-x: hidden; }
 /* ============ BODY · canvas con mochis flotantes ============ */
 body {
   font-family: 'Quicksand', 'Baloo 2', system-ui, sans-serif;
-  background-color: color-mix(in srgb, var(--clay-canvas) 80%, transparent);
+  background-color: color-mix(in srgb, var(--clay-canvas) 88%, transparent);
     /* Los 4 halos usaban rgba() hardcodeados de la paleta vieja (rosa/cyan/
        matcha/durazno) y se dibujaban POR ENCIMA de theme.css, dejando la
-       pagina con la identidad anterior. Ahora salen de tokens. */
+       pagina con la identidad anterior. Ahora salen de tokens. Alfas bajos:
+       la pagina se lee limpia y la aurora del hero es el ambiente, no un
+       arcoiris detras de todo el texto. */
     background-image:
-      radial-gradient(circle at 10% 8%,  color-mix(in srgb, var(--fresa) 45%, transparent) 0%, transparent 26%),
-      radial-gradient(circle at 90% 14%, color-mix(in srgb, var(--ube) 40%, transparent) 0%, transparent 28%),
-      radial-gradient(circle at 14% 82%, color-mix(in srgb, var(--durazno) 40%, transparent) 0%, transparent 24%),
-      radial-gradient(circle at 88% 78%, color-mix(in srgb, var(--accent) 32%, transparent) 0%, transparent 26%);
+      radial-gradient(circle at 10% 6%,  color-mix(in srgb, var(--fresa) 26%, transparent) 0%, transparent 34%),
+      radial-gradient(circle at 92% 12%, color-mix(in srgb, var(--ube) 20%, transparent) 0%, transparent 32%),
+      radial-gradient(circle at 12% 88%, color-mix(in srgb, var(--durazno) 18%, transparent) 0%, transparent 30%),
+      radial-gradient(circle at 90% 82%, color-mix(in srgb, var(--accent) 16%, transparent) 0%, transparent 30%);
     background-attachment: fixed;
   color: var(--clay-ink);
   line-height: 1.6;
@@ -73,6 +75,44 @@ body {
   position: relative;
 }
 
+/* ============ CAPAS · la aurora va DETRAS de todo el contenido ============
+   .page-shader (canvas WebGL) vive en z-index 0. El contenido va en
+   z-index 1. Sin esto el <main> (in-flow, no posicionado) queda por DEBAJO
+   del shader y las secciones, aunque sean translucidas, lo tapan. */
+body > main,
+body > footer,
+body > section,
+body > .flavors-marquee { position: relative; z-index: 1; }
+
+/* Dot grid (21st.dev): textura fina sobre la aurora, debajo del contenido */
+body::after {
+  content: '';
+  position: fixed; inset: 0;
+  z-index: 0;
+  pointer-events: none;
+  background-image: radial-gradient(rgba(32, 48, 74, 0.075) 1px, transparent 1.2px);
+  background-size: 24px 24px;
+  opacity: .6;
+  -webkit-mask-image: radial-gradient(130% 100% at 50% 10%, #000 25%, transparent 82%);
+  mask-image: radial-gradient(130% 100% at 50% 10%, #000 25%, transparent 82%);
+}
+
+/* ============ SUPERFICIES DE CRISTAL · dejan ver la aurora ============
+   Regla de la casa: ninguna seccion es un bloque opaco. Superficie
+   translucida + borde claro + blur -> el shader se ve a traves. */
+.flavors,
+.combos,
+.releases,
+.horarios,
+.why,
+.gallery,
+.how-it-works {
+  backdrop-filter: blur(12px) saturate(1.25);
+  -webkit-backdrop-filter: blur(12px) saturate(1.25);
+  border: 1px solid rgba(255, 255, 255, 0.6);
+  box-shadow: 0 20px 48px rgba(32, 48, 74, 0.09), inset 0 1px 0 rgba(255, 255, 255, 0.75);
+}
+
 /* ============ MOCHIS FLOTANTES (decoración) · ahora PUFFY CLAY ============ */
 @keyframes drift {
   0%   { background-position: 0% 0%; }
@@ -80,7 +120,7 @@ body {
 }
 
 .mochi-float {
-  position: fixed; z-index: -1; pointer-events: none;
+  position: fixed; z-index: 0; pointer-events: none;
   width: 70px; height: 70px; border-radius: 50%;
   animation: mochiFloat 16s ease-in-out infinite;
   opacity: 0.55;
@@ -156,8 +196,8 @@ header {
 .brand-name .dot { color: var(--mochi-fresa-d); font-weight: 700; }
 
 .nav-cta {
-  background: var(--mochi-cyan);
-  color: var(--mochi-cyan-d);
+  background: var(--mochi-fresa);
+  color: var(--mochi-fresa-d);
   padding: 12px 24px; border-radius: 999px;
   font-family: 'Quicksand', sans-serif; font-weight: 700; font-size: 14px;
   border: 0; cursor: pointer; text-decoration: none;
@@ -214,7 +254,7 @@ header {
   font-weight: 700; letter-spacing: -1.8px; line-height: 1.02;
   margin-bottom: 24px; color: var(--clay-ink);
 }
-.hero h1 .accent { color: var(--mochi-fresa-d); font-style: italic; }
+.hero h1 .accent { color: var(--mochi-fresa-d); font-weight: 800; letter-spacing: -2px; }
 .hero p.lead {
   font-size: 18px; max-width: 480px;
   color: var(--clay-ink-soft); line-height: 1.6; margin-bottom: 32px;
@@ -239,23 +279,33 @@ header {
   box-shadow: var(--clay-inset);
 }
 .hero-cta svg { width: 20px; height: 20px; }
-.hero-trust { margin-top: 28px; display: flex; gap: 20px; flex-wrap: wrap; font-size: 13px; color: var(--clay-ink-soft); }
+.hero-trust { margin-top: 28px; display: flex; gap: 20px; flex-wrap: wrap; font-size: 13px; color: color-mix(in srgb, var(--clay-ink) 82%, var(--clay-ink-soft)); }
 .hero-trust span { display: flex; align-items: center; gap: 6px; }
 
 /* Hero visual: clay blob con doble sombra muy puffy */
 .hero-visual {
   position: relative; height: 100%;
-  border-radius: 58% 42% 55% 45% / 52% 60% 40% 48%;
+  border-radius: 28px;
   border: 0;
   overflow: hidden; z-index: 1;
   box-shadow:
-    -18px 22px 38px rgba(232,80,110,0.30),
-    12px -12px 28px rgba(255,255,255,0.85),
-    inset 4px -4px 8px rgba(255,255,255,0.4);
-  transform: rotate(-1.5deg);
-  transition: transform 0.4s cubic-bezier(.34,1.56,.64,1);
+    0 28px 60px -28px rgba(45,26,17,.38),
+    0 2px 10px rgba(45,26,17,.08),
+    inset 0 1px 0 rgba(255,255,255,0.5);
+  transition: transform 0.35s cubic-bezier(.2,.7,.3,1);
 }
-.hero-visual-wrap:hover .hero-visual { transform: rotate(0deg) scale(1.04); }
+.hero-visual-wrap:hover .hero-visual { transform: translateY(-6px); }
+
+/* Iconos de linea: SVG inline en vez de emoji (el emoji se ve como tofu en
+   algunos dispositivos y no se puede controlar por color). */
+.ico {
+  width: 18px; height: 18px; flex: none;
+  fill: none; stroke: currentColor; stroke-width: 1.7;
+  stroke-linecap: round; stroke-linejoin: round;
+  vertical-align: -3px; margin-right: 7px;
+}
+.hero-trust .ico { color: var(--mochi-fresa-d); }
+footer .ico { color: var(--mochi-fresa-d); }
 .hero-visual img,
 .hero-visual video { width: 100%; height: 100%; object-fit: cover; display: block; }
 .hero-visual-placeholder {
@@ -263,23 +313,6 @@ header {
   display: flex; align-items: center; justify-content: center;
   background: linear-gradient(135deg, var(--mochi-fresa) 0%, var(--mochi-durazno) 100%);
   color: var(--clay-ink-soft); font-size: 14px; text-align: center; padding: 20px;
-}
-
-.hero-badge {
-  position: absolute; top: 22px; right: 22px;
-  background: var(--clay-surface);
-  padding: 10px 18px; border-radius: 999px;
-  font-size: 13px; font-weight: 700; color: var(--clay-ink);
-  box-shadow: var(--clay-shadow-md), inset 2px -2px 4px rgba(255,255,255,0.7);
-  display: flex; align-items: center; gap: 8px;
-}
-.hero-badge .dot-live {
-  width: 8px; height: 8px; border-radius: 50%; background: var(--mochi-matcha-d);
-  animation: pulse 2s ease infinite;
-}
-@keyframes pulse {
-  0%, 100% { opacity: 1; transform: scale(1); }
-  50% { opacity: 0.5; transform: scale(1.3); }
 }
 
 /* ============ SECTIONS ============ */
@@ -290,11 +323,11 @@ section { padding: 80px 24px; position: relative; }
 .section-eyebrow {
   display: inline-block; font-size: 11px; font-weight: 700;
   letter-spacing: 1.8px; text-transform: uppercase;
-  color: var(--mochi-fresa-d); margin-bottom: 12px;
+  color: #3A1226; margin-bottom: 12px;
   padding: 6px 16px;
-  background: var(--mochi-fresa);
+  background: linear-gradient(120deg, var(--fresa-vivo) 0%, var(--durazno-vivo) 100%);
   border-radius: 999px;
-  box-shadow: var(--clay-shadow-xs), inset 1px -1px 2px rgba(255,255,255,0.7);
+  box-shadow: 0 6px 16px rgba(142, 35, 80, 0.16), inset 0 1px 0 rgba(255,255,255,0.55);
 }
 .section-title {
   font-family: 'Baloo 2', serif;
@@ -304,7 +337,7 @@ section { padding: 80px 24px; position: relative; }
 .section-sub { color: var(--clay-ink-soft); font-size: 15px; max-width: 540px; margin: 0 auto; }
 
 /* ============ HORARIOS · pickup schedule ============ */
-.horarios { padding: 56px 20px; background: var(--clay-canvas-2); border-radius: 48px; margin: 0 16px; }
+.horarios { padding: 56px 20px; background: color-mix(in srgb, var(--clay-canvas-2) 46%, transparent); border-radius: 48px; margin: 0 16px; }
 .horarios-grid { display: grid; grid-template-columns: repeat(3, 1fr); gap: 14px; max-width: 1100px; margin: 0 auto; }
 @media (max-width: 920px) { .horarios-grid { grid-template-columns: repeat(2, 1fr); } }
 @media (max-width: 620px) { .horarios-grid { grid-template-columns: 1fr; } }
@@ -398,7 +431,7 @@ section { padding: 80px 24px; position: relative; }
 .pay-method .pay-default { font-size: 11px; padding: 2px 8px; border-radius: 999px; background: var(--mochi-matcha); color: #1F7C3E; font-weight: 700; }
 
 /* ============ COMBOS · clay cards ============ */
-.combos { background: color-mix(in srgb, var(--clay-canvas-2) 78%, transparent); border-radius: 48px; margin: 0 16px; }
+.combos { background: color-mix(in srgb, var(--clay-canvas-2) 46%, transparent); border-radius: 48px; margin: 0 16px; }
 .combos-grid {
   display: grid; grid-template-columns: repeat(3, 1fr);
   gap: 32px;
@@ -487,7 +520,7 @@ section { padding: 80px 24px; position: relative; }
 }
 
 /* ============ WHY ============ */
-.why { background: color-mix(in srgb, var(--clay-canvas) 74%, transparent); }
+.why { background: color-mix(in srgb, var(--clay-canvas) 44%, transparent); }
 .why-grid {
   display: grid; grid-template-columns: repeat(3, 1fr);
   gap: 32px; max-width: 1080px; margin: 0 auto;
@@ -499,21 +532,32 @@ section { padding: 80px 24px; position: relative; }
   border-radius: 50%;
   background: var(--mochi-crema);
   display: flex; align-items: center; justify-content: center;
-  color: var(--mocha-3);
+  color: var(--clay-ink);
   box-shadow: var(--clay-shadow-md), inset 3px -3px 6px rgba(255,255,255,0.8);
 }
+.why-item:nth-child(1) .why-icon { background: var(--fresa-vivo); }
+.why-item:nth-child(2) .why-icon { background: var(--cian-vivo); }
+.why-item:nth-child(3) .why-icon { background: var(--ube-vivo); }
 .why-icon svg { width: 32px; height: 32px; }
 .why-item h3 { font-family: 'Baloo 2', serif; font-size: 22px; font-weight: 700; margin-bottom: 8px; }
 .why-item p { font-size: 14px; color: var(--clay-ink-soft); line-height: 1.6; }
 
-/* ============ GALLERY ============ */
-.gallery { background: color-mix(in srgb, var(--clay-canvas-2) 78%, transparent); border-radius: 48px; margin: 0 16px; }
+/* ============ GALLERY · Instagram ============ */
+.gallery { background: color-mix(in srgb, var(--clay-canvas-2) 46%, transparent); border-radius: 48px; margin: 0 16px; }
+.ig-layout {
+  display: grid;
+  grid-template-columns: minmax(250px, 300px) 1fr;
+  gap: 22px;
+  align-items: start;
+}
+@media (max-width: 900px) { .ig-layout { grid-template-columns: 1fr; } }
+
 .gallery-grid {
-  display: grid; grid-template-columns: repeat(auto-fit, minmax(200px, 1fr));
-  gap: 16px;
+  display: grid; grid-template-columns: repeat(auto-fit, minmax(140px, 1fr));
+  gap: 14px;
 }
 .gallery-item {
-  aspect-ratio: 1 / 1; border-radius: 24px; overflow: hidden;
+  aspect-ratio: 1 / 1; border-radius: 22px; overflow: hidden;
   background: var(--clay-surface);
   box-shadow: var(--clay-shadow-sm), inset 2px -2px 4px rgba(255,255,255,0.7);
   position: relative;
@@ -526,28 +570,59 @@ section { padding: 80px 24px; position: relative; }
 .gallery-item img { width: 100%; height: 100%; object-fit: cover; display: block; transition: transform 0.4s; }
 .gallery-item:hover img { transform: scale(1.08); }
 
-.gallery-item-insta {
-  background: linear-gradient(135deg, var(--mochi-fresa) 0%, var(--mochi-ube) 100%);
-  display: flex; align-items: center; justify-content: center;
-  transition: transform 0.25s, box-shadow 0.25s;
+/* Tarjeta editorial de Instagram: sustituye al bloque rosa gigante que
+   ocupaba una celda del grid y competia con el contenido. */
+.ig-card {
+  position: relative;
+  overflow: hidden;
+  display: flex; flex-direction: column; gap: 10px;
+  padding: 28px 26px;
+  border-radius: 28px;
+  color: #fff;
+  background:
+    radial-gradient(130% 90% at 0% 0%, rgba(255,255,255,0.26) 0%, transparent 62%),
+    linear-gradient(150deg, var(--mochi-fresa-d) 0%, var(--mochi-ube-d) 56%, var(--mochi-cyan-d) 100%);
+  box-shadow: 0 22px 48px rgba(32, 48, 74, 0.22), inset 0 1px 0 rgba(255,255,255,0.35);
 }
-.gallery-item-insta:hover { transform: translateY(-4px); box-shadow: var(--clay-shadow-md); }
-.gallery-item-insta a {
-  display: flex; flex-direction: column; align-items: center; gap: 8px;
-  color: var(--mochi-fresa-d); font-weight: 700; font-size: 14px;
+.ig-card__icon {
+  width: 46px; height: 46px; border-radius: 16px;
+  display: inline-flex; align-items: center; justify-content: center;
+  background: rgba(255,255,255,0.18);
+  border: 1px solid rgba(255,255,255,0.4);
+  backdrop-filter: blur(6px);
+  -webkit-backdrop-filter: blur(6px);
+}
+.ig-card__icon svg { width: 24px; height: 24px; }
+.ig-card__handle {
+  font-size: 12px; font-weight: 700; letter-spacing: 1.4px; text-transform: uppercase;
+  color: rgba(255,255,255,0.86);
+}
+.ig-card__title {
+  font-family: 'Baloo 2', sans-serif;
+  font-size: 24px; font-weight: 700; line-height: 1.15; margin: 0;
+  letter-spacing: -0.4px;
+}
+.ig-card__text {
+  font-size: 14px; line-height: 1.55; margin: 0;
+  color: rgba(255,255,255,0.88);
+}
+.ig-card__cta {
+  margin-top: 6px;
+  align-self: flex-start;
+  display: inline-flex; align-items: center; gap: 8px;
+  padding: 12px 20px;
+  border-radius: 999px;
+  background: #fff;
+  color: var(--mochi-ube-d);
+  font-family: 'Quicksand', sans-serif;
+  font-size: 14px; font-weight: 700;
   text-decoration: none;
+  box-shadow: 0 8px 20px rgba(32,48,74,0.22);
+  transition: transform 0.2s cubic-bezier(.34,1.56,.64,1), box-shadow 0.2s;
 }
-.gallery-item-insta svg { width: 38px; height: 38px; }
-
-.gallery-cta { text-align: center; margin-top: 32px; }
-.gallery-cta a {
-  color: var(--mochi-fresa-d); text-decoration: none;
-  font-weight: 700; font-size: 15px;
-  padding: 8px 0;
-  border-bottom: 2px dashed var(--mochi-fresa);
-  transition: all 0.2s;
-}
-.gallery-cta a:hover { color: var(--mocha-3); }
+.ig-card__cta:hover { transform: translateY(-2px); box-shadow: 0 12px 26px rgba(32,48,74,0.26); }
+.ig-card__cta svg { width: 17px; height: 17px; }
+.ig-card__cta:focus-visible { outline: 3px solid #fff; outline-offset: 3px; }
 
 /* La barra flotante inferior se eliminó (2026-10-20, pedido del operador):
    tapaba el footer y competía con el CTA del hero. El CTA vive ahora en el
@@ -593,24 +668,32 @@ section { padding: 80px 24px; position: relative; }
 }
 @media (prefers-reduced-motion: reduce) { .wsp-fab { animation: none; } }
 
-/* ============ HERO · Pedidos badge (más proeminente, encima del header) ============ */
+/* ============ HERO · badge "Pedidos abiertos" ============
+   Pildora compacta de vidrio, DENTRO del marco de la foto (no cuelga hacia
+   fuera): asi no se sale del viewport en 375px ni tapa el borde superior.
+   Antes existian dos definiciones de .hero-badge (268 y 596) y la segunda
+   pisaba a la primera; queda una sola. */
 .hero-badge {
-  position: absolute; top: -20px; left: 30px; z-index: 5;
-  background: var(--clay-surface);
-  padding: 10px 18px; border-radius: 999px;
-  font-size: 13px; font-weight: 700;
+  position: absolute; top: 14px; left: 14px; z-index: 5;
+  display: inline-flex; align-items: center; gap: 7px;
+  padding: 6px 13px;
+  border-radius: 999px;
+  font-family: 'Quicksand', sans-serif;
+  font-size: 12px; font-weight: 700; letter-spacing: 0.2px;
   color: var(--clay-ink);
-  box-shadow: var(--clay-shadow-md), inset 2px -2px 4px rgba(255,255,255,0.85);
-  display: inline-flex; align-items: center; gap: 8px;
+  background: color-mix(in srgb, var(--surface) 88%, transparent);
+  border: 1px solid rgba(255, 255, 255, 0.75);
+  box-shadow: 0 8px 20px rgba(32, 48, 74, 0.16), inset 0 1px 0 rgba(255, 255, 255, 0.9);
+  backdrop-filter: blur(8px) saturate(1.2);
+  -webkit-backdrop-filter: blur(8px) saturate(1.2);
+  pointer-events: none;
+  white-space: nowrap;
 }
 .hero-badge .dot-live {
-  width: 9px; height: 9px; border-radius: 50%;
-  background: var(--mochi-matcha-d);
-  animation: pulse 1.6s ease infinite;
-}
-.hero-badge.secondary {
-  background: var(--mochi-crema);
-  color: var(--mocha-3);
+  width: 8px; height: 8px; border-radius: 50%; flex: none;
+  background: var(--ok);
+  box-shadow: 0 0 0 3px color-mix(in srgb, var(--ok) 20%, transparent);
+  animation: pulse 1.8s ease infinite;
 }
 @keyframes pulse {
   0%, 100% { opacity: 1; transform: scale(1); }
@@ -763,7 +846,6 @@ section { padding: 80px 24px; position: relative; }
   .hero h1 { font-size: 42px; }
   .section-title { font-size: 32px; }
   /* Mobile fixes (sesión 2026-10-14): */
-  .hero-badge { display: none; }   /* píldora decorativa quitada — tapaba el borde superior del hero en mobile */
   .wsp-fab { left: 16px; right: auto; bottom: 16px; width: 56px; height: 56px; }   /* reposicionado a bottom-LEFT para no tapar el CTA "Armar mi pedido" */
   body { padding-bottom: 70px; }  /* safe-area inferior para que el FAB no cubra contenido al hacer scroll al fondo */
 }
@@ -778,7 +860,7 @@ section { padding: 80px 24px; position: relative; }
 }
 
 /* ============ FLAVOR CARDS · clay puffs ============ */
-.flavors { background: var(--clay-canvas); border-radius: 48px; margin: 0 16px; }
+.flavors { background: color-mix(in srgb, var(--clay-canvas) 46%, transparent); border-radius: 48px; margin: 0 16px; }
 .flavor-grid {
   display: grid;
   grid-template-columns: repeat(3, 1fr);
@@ -805,7 +887,8 @@ section { padding: 80px 24px; position: relative; }
 }
 .flavor-card .ribbon {
   position: absolute; top: 16px; right: 16px; z-index: 3;
-  background: var(--flavor-accent); color: #fff;
+  background: color-mix(in srgb, var(--flavor-accent) 86%, #14202E);
+  color: var(--flavor-on-accent, #fff);
   padding: 7px 14px; border-radius: 999px;
   font-size: 11px; font-weight: 700;
   letter-spacing: 0.8px; text-transform: uppercase;
@@ -833,8 +916,9 @@ section { padding: 80px 24px; position: relative; }
 .flavor-card .unit { color: var(--clay-ink-soft); font-size: 12px; }
 .flavor-card .add-btn {
   width: 100%;
-  background: var(--flavor-accent);
-  color: #fff; border: 0; padding: 14px;
+  background: color-mix(in srgb, var(--flavor-accent) 86%, #14202E);
+  color: var(--flavor-on-accent, #fff);
+  border: 0; padding: 14px;
   border-radius: 18px;
   font-family: 'Baloo 2', sans-serif; font-weight: 700; font-size: 14px;
   cursor: pointer; letter-spacing: 0.3px;
@@ -844,8 +928,12 @@ section { padding: 80px 24px; position: relative; }
 .flavor-card .add-btn:hover { transform: translateY(-2px); box-shadow: var(--clay-shadow-md); }
 .flavor-card .add-btn:active { transform: scale(0.97); box-shadow: var(--clay-inset-sm); }
 
-/* ============ HOW IT WORKS · clay numbered puffs ============ */
-.how-it-works { background: color-mix(in srgb, var(--clay-canvas-2) 78%, transparent); border-radius: 48px; margin: 0 16px; padding: 80px 24px; }
+/* ============ HOW IT WORKS · stepper 01/02/03 ============
+   Antes: circulos con un conector punteado hecho con ::before (se rompia en
+   cualquier grid y no significaba nada para el lector de pantalla).
+   Ahora: <ol>/<li> con tarjetas de cristal y numero 01/02/03. El conector
+   no existe: la jerarquia la dan el numero y el aire entre tarjetas. */
+.how-it-works { background: color-mix(in srgb, var(--clay-canvas-2) 46%, transparent); border-radius: 48px; margin: 0 16px; padding: 80px 24px; }
 .how-it-works .container,
 .releases .container,
 .social-strip .container { max-width: 1100px; margin: 0 auto; }
@@ -853,39 +941,54 @@ section { padding: 80px 24px; position: relative; }
 .steps-grid {
   display: grid;
   grid-template-columns: repeat(3, 1fr);
-  gap: 36px;
-  margin-top: 56px;
+  gap: 22px;
+  margin: 52px 0 0;
+  padding: 0;
+  list-style: none;
+  counter-reset: step;
+}
+.steps-grid .step {
   position: relative;
+  display: flex; flex-direction: column; gap: 8px;
+  padding: 26px 24px 28px;
+  border-radius: 26px;
+  background: color-mix(in srgb, var(--surface) 76%, transparent);
+  border: 1px solid rgba(255,255,255,0.72);
+  box-shadow: 0 16px 38px rgba(32,48,74,0.10), inset 0 1px 0 rgba(255,255,255,0.85);
+  backdrop-filter: blur(10px) saturate(1.15);
+  -webkit-backdrop-filter: blur(10px) saturate(1.15);
+  transition: transform 0.28s cubic-bezier(.34,1.56,.64,1), box-shadow 0.28s;
 }
-.steps-grid::before {
-  content: '';
-  position: absolute;
-  top: 38px; left: 16.66%; right: 16.66%;
-  height: 4px;
-  background: repeating-linear-gradient(90deg, var(--mochi-crema) 0 12px, transparent 12px 24px);
-  border-radius: 999px;
-  z-index: 0;
+.steps-grid .step:hover {
+  transform: translateY(-5px);
+  box-shadow: 0 24px 48px rgba(32,48,74,0.14), inset 0 1px 0 rgba(255,255,255,0.85);
 }
-.step { text-align: center; position: relative; z-index: 1; }
-.step-num {
+.steps-grid .step-num {
   display: inline-flex; align-items: center; justify-content: center;
-  width: 76px; height: 76px;
-  border-radius: 50%;
-  background: var(--mochi-crema);
-  color: var(--mocha-3);
+  width: 50px; height: 50px;
+  border-radius: 16px;
   font-family: 'Baloo 2', sans-serif;
-  font-size: 30px; font-weight: 700;
-  margin-bottom: 22px;
-  box-shadow: var(--clay-shadow-md), inset 3px -3px 6px rgba(255,255,255,0.85);
+  font-size: 19px; font-weight: 700; letter-spacing: 0.6px;
+  color: #fff;
+  background: var(--step-accent, var(--mochi-fresa-d));
+  box-shadow: 0 10px 22px color-mix(in srgb, var(--step-accent, var(--mochi-fresa-d)) 32%, transparent);
 }
-.step h3 { font-family: 'Baloo 2', sans-serif; font-size: 22px; font-weight: 700; color: var(--clay-ink); margin-bottom: 8px; }
-.step p { color: var(--clay-ink-soft); font-size: 14px; line-height: 1.6; max-width: 280px; margin: 0 auto; }
+.steps-grid .step:nth-child(1) { --step-accent: var(--mochi-fresa-d); }
+.steps-grid .step:nth-child(2) { --step-accent: var(--mochi-durazno-d); }
+.steps-grid .step:nth-child(3) { --step-accent: var(--mochi-ube-d); }
+.steps-grid .step h3 {
+  font-family: 'Baloo 2', sans-serif; font-size: 21px; font-weight: 700;
+  color: var(--clay-ink); margin: 6px 0 0; letter-spacing: -0.2px;
+}
+.steps-grid .step p {
+  color: var(--clay-ink-soft); font-size: 14px; line-height: 1.6; margin: 0;
+}
 
 /* ============ RELEASES ============ */
 .releases {
-  background: linear-gradient(135deg, color-mix(in srgb, var(--mochi-cyan) 80%, transparent) 0%, color-mix(in srgb, var(--mochi-crema) 80%, transparent) 100%);
+  background: linear-gradient(135deg, color-mix(in srgb, var(--cian-vivo) 30%, transparent) 0%, color-mix(in srgb, var(--durazno-vivo) 26%, transparent) 100%);
   border-radius: 48px; margin: 0 16px; padding: 80px 24px;
-  box-shadow: var(--clay-shadow-md), inset 4px -4px 8px rgba(255,255,255,0.85);
+  box-shadow: 0 20px 48px rgba(32,48,74,0.09), inset 0 1px 0 rgba(255,255,255,0.75);
 }
 .releases-grid {
   display: grid;
@@ -918,7 +1021,7 @@ section { padding: 80px 24px; position: relative; }
 .release-items .ri-name { color: var(--clay-ink); }
 .release-items .ri-qty { color: var(--mochi-matcha-d); font-weight: 700; font-family: 'Baloo 2', sans-serif; }
 .release-status { display: inline-block; padding: 5px 14px; border-radius: 999px; font-size: 11px; font-weight: 700; letter-spacing: 0.8px; text-transform: uppercase; margin-top: 14px; box-shadow: var(--clay-shadow-xs), inset 1px -1px 2px rgba(255,255,255,0.7); }
-.release-status.open    { background: var(--mochi-matcha); color: var(--mochi-matcha-d); }
+.release-status.open    { background: var(--matcha-vivo); color: var(--clay-ink); }
 .release-status.closed  { background: var(--clay-canvas-2); color: var(--clay-ink-soft); }
 .release-status.full    { background: var(--mochi-fresa); color: var(--mochi-fresa-d); }
 
@@ -977,12 +1080,15 @@ section { padding: 80px 24px; position: relative; }
 
 /* ============ SOCIAL STRIP ============ */
 .social-strip {
-  background: var(--mocha-3);
+  background: color-mix(in srgb, var(--ink) 84%, transparent);
   color: #fff;
   padding: 36px 24px;
   border-radius: 36px;
   margin: 32px 16px;
-  box-shadow: var(--clay-shadow-md), inset 3px -3px 6px rgba(0,0,0,0.2);
+  box-shadow: 0 20px 48px rgba(32,48,74,0.18), inset 0 1px 0 rgba(255,255,255,0.14);
+  backdrop-filter: blur(16px) saturate(1.15);
+  -webkit-backdrop-filter: blur(16px) saturate(1.15);
+  border: 1px solid rgba(255,255,255,0.16);
 }
 .social-strip-inner {
   display: flex; align-items: center; justify-content: space-between;
@@ -1018,7 +1124,7 @@ section { padding: 80px 24px; position: relative; }
    orden y el primero dejaba texto claro sobre fondo claro en algunos estados.
    Ahora hay un solo bloque, alineado con la paleta de marca. */
 footer {
-  background: var(--clay-surface);
+  background: color-mix(in srgb, var(--surface) 62%, transparent);
   color: var(--clay-ink);
   margin-top: 72px;
   /* El header es sticky con margin-top:16px y se superpone al inicio del
@@ -1027,6 +1133,8 @@ footer {
   border-top: 1px solid var(--clay-line);
   box-shadow: 0 -18px 44px rgba(32, 48, 74, 0.07);
   scroll-margin-top: 96px;
+  backdrop-filter: blur(16px) saturate(1.15);
+  -webkit-backdrop-filter: blur(16px) saturate(1.15);
 }
 footer .brand, footer h4 { scroll-margin-top: 96px; }
 .footer-grid {
@@ -1117,8 +1225,7 @@ footer .privacy-note {
 }
 
 @media (max-width: 768px) {
-  .steps-grid { grid-template-columns: 1fr; gap: 32px; }
-  .steps-grid::before { display: none; }
+  .steps-grid { grid-template-columns: 1fr; gap: 18px; }
   .footer-grid { grid-template-columns: 1fr 1fr; gap: 28px; padding: 40px 24px 20px; }
   .social-strip-inner { flex-direction: column; align-items: flex-start; }
   .nav { padding: 10px 14px; }
@@ -1199,6 +1306,11 @@ footer .privacy-note {
 
 .gallery-item { position: relative; }
 .gallery-item a { display: block; width: 100%; height: 100%; }
+.gallery-item a:focus-visible {
+  outline: 3px solid var(--focus);
+  outline-offset: -6px;
+  border-radius: 22px;
+}
 .gallery-item::after {
   content: '';
   position: absolute; inset: 0; z-index: 2;
@@ -1206,8 +1318,12 @@ footer .privacy-note {
     url("data:image/svg+xml;utf8,<svg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 24 24' fill='none' stroke='white' stroke-width='2' stroke-linecap='round' stroke-linejoin='round'><rect x='2' y='2' width='20' height='20' rx='5' ry='5'/><path d='M16 11.37A4 4 0 1 1 12.63 8 4 4 0 0 1 16 11.37z'/><line x1='17.5' y1='6.5' x2='17.51' y2='6.5'/></svg>") center 38% / 32px no-repeat,
     linear-gradient(180deg, color-mix(in srgb, var(--accent) 0%, transparent) 45%, color-mix(in srgb, var(--accent) 55%, transparent) 100%);
   opacity: 0; transition: opacity 0.25s;
+  pointer-events: none;
 }
-.gallery-item:hover::after { opacity: 1; }
+.gallery-item:hover::after,
+.gallery-item:focus-within::after { opacity: 1; }
+/* Táctil: no hay hover, el overlay se queda visible siempre */
+@media (hover: none) { .gallery-item::after { opacity: 1; } }
 
 .combo-img-blob {
   position: absolute; inset: 0;
@@ -1227,6 +1343,14 @@ footer .privacy-note {
 </style>
 </head>
 <body>
+
+<!-- === React island: shader aurora ambiental de pagina completa (identidad v5) ===
+     Va PRIMERO en el body: el canvas vive en z-index 0 y el contenido en
+     z-index 1, asi la aurora queda detras de todo y las secciones
+     translucidas la dejan ver. Antes se montaba al final (z-index:-1) y
+     cualquier seccion opaca lo tapaba. Degradacion graciosa: sin WebGL o si
+     el bundle falla, la pagina queda identica (el fondo son halos CSS). -->
+<div class="page-shader" data-island="hero-bg" data-props='{"intensity":0.62,"colorA":"#FF8FB4","colorB":"#FFC24D","colorC":"#B08CF0"}' aria-hidden="true"></div>
 
 <header>
   <div class="nav">
@@ -1267,14 +1391,14 @@ footer .privacy-note {
           Armar mi pedido
         </a>
     <div class="hero-trust">
-      <span>🌿 Sin congelar</span>
-      <span>🍡 Hechos hoy</span>
-      <span>📍 Cocina oculta, Neiva</span>
+      <span><svg class="ico" viewBox="0 0 24 24" aria-hidden="true"><path d="M12 2v20M4.9 6.5l14.2 11M19.1 6.5L4.9 17.5"/><path d="M9.6 4.4 12 6.7l2.4-2.3M9.6 19.6 12 17.3l2.4 2.3"/></svg>Sin congelar</span>
+      <span><svg class="ico" viewBox="0 0 24 24" aria-hidden="true"><circle cx="12" cy="12" r="8.4"/><path d="M12 7.4V12l3.1 1.9"/></svg>Hechos hoy</span>
+      <span><svg class="ico" viewBox="0 0 24 24" aria-hidden="true"><path d="M12 21s7-5.4 7-11a7 7 0 1 0-14 0c0 5.6 7 11 7 11z"/><circle cx="12" cy="10" r="2.4"/></svg>Cocina oculta, Neiva</span>
     </div>
   </div>
   <div class="hero-visual-wrap">
     <div class="hero-visual">
-      <img id="hero-photo" src="img/instagram/mochi-06.jpg" alt="Mochis artesanales MyMochis — foto real de @my.mochiss" loading="eager">
+      <img id="hero-photo" src="img/instagram/mochi-09.jpg" width="640" height="640" alt="Mochis artesanales MyMochis — foto real de @my.mochiss" loading="eager" fetchpriority="high">
     </div>
     <div class="hero-badge"><span class="dot-live"></span> Pedidos abiertos</div>
     <div class="hero-sparkle hero-sparkle-1" aria-hidden="true"></div>
@@ -1294,7 +1418,7 @@ footer .privacy-note {
 <!-- Marquee de sabores — sale del catálogo del admin, se mueve solo -->
 <div class="flavors-marquee" aria-hidden="true"><div class="marquee-track" id="marquee-track"></div></div>
 
-<!-- 2026-10-14 — promos bar (admin-managed via /api/public → data.promos) -->
+<!-- 2026-10-14 — promos bar (admin-managed via /api/public ? data.promos) -->
 <div class="promos-bar" id="promos-bar"></div>
 
 <section class="how-it-works">
@@ -1304,23 +1428,23 @@ footer .privacy-note {
       <h2 class="section-title">Pide en 3 pasos</h2>
       <p class="section-sub">Somos una <strong>cocina oculta</strong>: hacemos lotes frescos cada semana. Tú eliges, nosotros cocinamos, recoges sin filas.</p>
     </div>
-    <div class="steps-grid">
-      <div class="step">
-        <div class="step-num">1</div>
+    <ol class="steps-grid">
+      <li class="step">
+        <span class="step-num" aria-hidden="true">01</span>
         <h3>Elige tus sabores</h3>
         <p>Revisa los sabores y combos de la semana. Decide unidades y día de recogida desde WhatsApp o la web.</p>
-      </div>
-      <div class="step">
-        <div class="step-num">2</div>
+      </li>
+      <li class="step">
+        <span class="step-num" aria-hidden="true">02</span>
         <h3>Cocinamos el mismo día</h3>
         <p>Producimos un lote nuevo por cada fecha abierta. Nada de congelado, nada de stock guardado.</p>
-      </div>
-      <div class="step">
-        <div class="step-num">3</div>
+      </li>
+      <li class="step">
+        <span class="step-num" aria-hidden="true">03</span>
         <h3>Recoge sin filas</h3>
         <p>Mar–Sáb · 3pm a 7pm en nuestra cocina oculta en Neiva. Te confirmamos el punto exacto por WhatsApp.</p>
-      </div>
-    </div>
+      </li>
+    </ol>
   </div>
 </section>
 
@@ -1362,7 +1486,7 @@ footer .privacy-note {
   </div>
 </section>
 
-<!-- 2026-10-14 — horarios de recogida (admin → /api/public → data.delivery_schedule) -->
+<!-- 2026-10-14 — horarios de recogida (admin ? /api/public ? data.delivery_schedule) -->
 <section class="horarios" id="horarios">
   <div class="container">
     <div class="section-head">
@@ -1413,25 +1537,29 @@ footer .privacy-note {
       <h2 class="section-title">Síguenos en Instagram</h2>
       <p class="section-sub">Cada semana un lote nuevo. Etiquétanos y te reposteamos.</p>
     </div>
-    <div class="gallery-grid" id="ig-gallery">
-      <div class="gallery-item"><a href="https://www.instagram.com/p/DWkUd6PlH76/" target="_blank" rel="noopener" title="Ver publicación en Instagram"><img src="img/instagram/mochi-02.jpg" alt="Mochis — última publicación @my.mochiss" loading="lazy"></a></div>
-      <div class="gallery-item"><a href="https://www.instagram.com/p/DDNptx7vnVL/" target="_blank" rel="noopener" title="Ver publicación en Instagram"><img src="img/instagram/mochi-06.jpg" alt="Mochis del día — @my.mochiss" loading="lazy"></a></div>
-      <div class="gallery-item"><a href="https://www.instagram.com/p/DDNppCAvxrK/" target="_blank" rel="noopener" title="Ver publicación en Instagram"><img src="img/instagram/mochi-09.jpg" alt="Lote artesanal — @my.mochiss" loading="lazy"></a></div>
-      <div class="gallery-item"><a href="https://www.instagram.com/p/DDNpgg7PFmn/" target="_blank" rel="noopener" title="Ver publicación en Instagram"><img src="img/instagram/mochi-10.jpg" alt="Sabores de la casa — @my.mochiss" loading="lazy"></a></div>
-      <div class="gallery-item"><a href="https://www.instagram.com/p/DClJUTfOsxW/" target="_blank" rel="noopener" title="Ver publicación en Instagram"><img src="img/instagram/mochi-11.jpg" alt="Mochis frescos — @my.mochiss" loading="lazy"></a></div>
-      <div class="gallery-item"><a href="https://www.instagram.com/p/DClHiJ5OOXn/" target="_blank" rel="noopener" title="Ver publicación en Instagram"><img src="img/instagram/mochi-12.jpg" alt="Especialidad — @my.mochiss" loading="lazy"></a></div>
-      <div class="gallery-item"><a href="https://www.instagram.com/p/DClHT6GOJYH/" target="_blank" rel="noopener" title="Ver publicación en Instagram"><img src="img/instagram/mochi-13.jpg" alt="Dulce artesanal — @my.mochiss" loading="lazy"></a></div>
-      <div class="gallery-item"><a href="https://www.instagram.com/p/DCY5PeHRiWB/" target="_blank" rel="noopener" title="Ver publicación en Instagram"><img src="img/instagram/mochi-08.jpg" alt="Nuestros mochis — @my.mochiss" loading="lazy"></a></div>
-      <div class="gallery-item gallery-item-insta">
-        <a href="https://instagram.com/my.mochiss/" target="_blank" rel="noopener">
+    <div class="ig-layout">
+      <aside class="ig-card">
+        <span class="ig-card__icon" aria-hidden="true">
           <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><rect x="2" y="2" width="20" height="20" rx="5" ry="5"/><path d="M16 11.37A4 4 0 1 1 12.63 8 4 4 0 0 1 16 11.37z"/><line x1="17.5" y1="6.5" x2="17.51" y2="6.5"/></svg>
-          <span>+ ver @my.mochiss</span>
+        </span>
+        <span class="ig-card__handle">@my.mochiss</span>
+        <h3 class="ig-card__title">El lote de esta semana, en tu feed</h3>
+        <p class="ig-card__text">Publicamos cada lote nuevo antes de que se agote. Etiquétanos en tu foto y te reposteamos.</p>
+        <a class="ig-card__cta" href="https://instagram.com/my.mochiss/" target="_blank" rel="noopener noreferrer">
+          Ver más en Instagram
+          <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.4" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M5 12h14"/><path d="m13 6 6 6-6 6"/></svg>
         </a>
+      </aside>
+      <div class="gallery-grid" id="ig-gallery">
+        <div class="gallery-item"><a href="https://www.instagram.com/p/DWkUd6PlH76/" target="_blank" rel="noopener" title="Ver publicación en Instagram"><img src="img/instagram/mochi-02.jpg" alt="Mochis — última publicación @my.mochiss" loading="lazy"></a></div>
+        <div class="gallery-item"><a href="https://www.instagram.com/p/DDNptx7vnVL/" target="_blank" rel="noopener" title="Ver publicación en Instagram"><img src="img/instagram/mochi-06.jpg" alt="Mochis del día — @my.mochiss" loading="lazy"></a></div>
+        <div class="gallery-item"><a href="https://www.instagram.com/p/DDNppCAvxrK/" target="_blank" rel="noopener" title="Ver publicación en Instagram"><img src="img/instagram/mochi-09.jpg" alt="Lote artesanal — @my.mochiss" loading="lazy"></a></div>
+        <div class="gallery-item"><a href="https://www.instagram.com/p/DDNpgg7PFmn/" target="_blank" rel="noopener" title="Ver publicación en Instagram"><img src="img/instagram/mochi-10.jpg" alt="Sabores de la casa — @my.mochiss" loading="lazy"></a></div>
+        <div class="gallery-item"><a href="https://www.instagram.com/p/DClJUTfOsxW/" target="_blank" rel="noopener" title="Ver publicación en Instagram"><img src="img/instagram/mochi-11.jpg" alt="Mochis frescos — @my.mochiss" loading="lazy"></a></div>
+        <div class="gallery-item"><a href="https://www.instagram.com/p/DClHiJ5OOXn/" target="_blank" rel="noopener" title="Ver publicación en Instagram"><img src="img/instagram/mochi-12.jpg" alt="Especialidad — @my.mochiss" loading="lazy"></a></div>
+        <div class="gallery-item"><a href="https://www.instagram.com/p/DClHT6GOJYH/" target="_blank" rel="noopener" title="Ver publicación en Instagram"><img src="img/instagram/mochi-13.jpg" alt="Dulce artesanal — @my.mochiss" loading="lazy"></a></div>
+        <div class="gallery-item"><a href="https://www.instagram.com/p/DCY5PeHRiWB/" target="_blank" rel="noopener" title="Ver publicación en Instagram"><img src="img/instagram/mochi-08.jpg" alt="Nuestros mochis — @my.mochiss" loading="lazy"></a></div>
       </div>
-    </div>
-    </div>
-    <div class="gallery-cta">
-      <a href="https://instagram.com/my.mochiss/" target="_blank" rel="noopener">Ver más en Instagram →</a>
     </div>
   </div>
 </section>
@@ -1475,10 +1603,10 @@ footer .privacy-note {
       <div>
         <h4>Información</h4>
         <ul>
-          <li>📍 Cocina oculta, Neiva</li>
-          <li>🕒 Mar–Sáb · 3pm a 7pm</li>
-          <li>💬 Pedidos por WhatsApp</li>
-          <li>📷 @my.mochiss</li>
+          <li><svg class="ico" viewBox="0 0 24 24" aria-hidden="true"><path d="M12 21s7-5.4 7-11a7 7 0 1 0-14 0c0 5.6 7 11 7 11z"/><circle cx="12" cy="10" r="2.4"/></svg>Cocina oculta, Neiva</li>
+          <li><svg class="ico" viewBox="0 0 24 24" aria-hidden="true"><circle cx="12" cy="12" r="8.4"/><path d="M12 7.4V12l3.1 1.9"/></svg>Mar–Sáb · 3pm a 7pm</li>
+          <li><svg class="ico" viewBox="0 0 24 24" aria-hidden="true"><path d="M20.5 3.5A11.8 11.8 0 0 0 3.2 8.9c0 4 3.7 7.4 8.6 8.4a1 1 0 0 0 1.1-1.2 1 1 0 0 0-.8-1 12.6 12.6 0 0 1-3-1.1 1 1 0 0 1 0-1.9l1.9-1.5a1 1 0 0 0 0-1.7l-2.5-2.6a1 1 0 0 0-1.5 0l-1.2 1a12.7 12.7 0 0 0-3.4-1.3 1 1 0 0 1-.6-1.7 1.3 1.3 0 0 1 1.5-.4 13 13 0 0 1 3.6 1.9 1 1 0 0 0 1.2-.2 1 1 0 0 0 .2-1.3 15 15 0 0 0-3.6-3.5 3 3 0 0 0-3.5.4 3 3 0 0 0-1.1 3.4 14 14 0 0 1 5.4 3.7 1 1 0 0 1-.2 1.4l-1 1.2a1 1 0 0 0 .3 1.6 12.7 12.7 0 0 0 3.5 2.1 1 1 0 0 0 1.4-.5 1 1 0 0 0 .2-1.5 12 12 0 0 0 1.2-1.6 1 1 0 0 0-.5-1.6 1 1 0 0 0-1.3.2l-1 1a13 13 0 0 1-3.1-1.4 1 1 0 0 1 0-1.8l1.8-1.4a1 1 0 0 0 0-1.7l-2.6-2.5a1 1 0 0 0-1.4 0l-1.3 1a12 12 0 0 0-2.6-1.2 1 1 0 0 1-.6-1.6 1.3 1.3 0 0 1 1.5-.3 13 13 0 0 1 4.3 2.4 1 1 0 0 0 1.3 0 1 1 0 0 0 .3-1.3 13 13 0 0 0-1.5-2.6 1 1 0 0 1 1.5-.4 3 3 0 0 0 3.6.4 3 3 0 0 0 1.1-3.5 3 3 0 0 0-1.1-1.6 14 14 0 0 0-6-3.1 3 3 0 0 0-3.5.4z"/></svg>Pedidos por WhatsApp</li>
+          <li><svg class="ico" viewBox="0 0 24 24" aria-hidden="true"><rect x="3" y="3" width="18" height="18" rx="5"/><circle cx="12" cy="12" r="4"/><circle cx="17.2" cy="6.8" r="1" fill="currentColor" stroke="none"/></svg>@my.mochiss</li>
         </ul>
       </div>
       <div>
@@ -1504,7 +1632,7 @@ footer .privacy-note {
     <div class="footer-bottom">
       <span>Cada semana, un lote nuevo · hecho con cariño en el Huila</span>
       <span class="footer-owner">Propiedad de <strong>NX-Studio</strong> · Estudio de desarrollo de software</span>
-      <a href="/tienda.html">Armar mi pedido →</a>
+        <a href="/tienda.html">Armar mi pedido →</a>
     </div>
     <p class="privacy-note"><strong>Tratamiento de datos personales:</strong> Al hacer tu pedido recopilamos tu nombre, número de WhatsApp y, para entregas a domicilio, tu dirección. Estos datos se usan únicamente para procesar, cobrar y entregar tu pedido, y avisarte cuando tu lote esté listo. No compartimos tu información con terceros. Puedes consultar, corregir o eliminar tus datos escribiéndonos por WhatsApp. Responsable: <strong>NX-Studio</strong>.</p>
   </div>
@@ -1532,7 +1660,7 @@ footer .privacy-note {
           </div>
         </div>
 
-        <!-- 2026-10-14 — payment methods step (admin → /api/public → data.payment_methods) -->
+        <!-- 2026-10-14 — payment methods step (admin ? /api/public ? data.payment_methods) -->
         <div class="modal-section" id="pay-methods-section">
           <h3><span class="step-num">3</span> Cómo pagas</h3>
           <div class="pay-methods" id="pay-methods-list">
@@ -1581,13 +1709,21 @@ async function loadConfig() {
 
       // G4-01: si el admin conectó Instagram, la galería se llena sola con
       // lo que publica (sincronizado por el worker ig-sync del server).
+      // Solo se reemplaza #ig-gallery: la tarjeta editorial y su CTA viven
+      // FUERA del grid, asi que la API nunca puede borrar el CTA.
       const igPosts = data.ig_posts || [];
       const igGrid = document.getElementById('ig-gallery');
       if (igGrid && igPosts.length) {
-        igGrid.innerHTML = igPosts.map(p => {
-          const alt = String(p.caption || 'Mochis — publicación de @my.mochiss').replace(/["<>&]/g, '').slice(0, 90);
-          return `<div class="gallery-item"><a href="${p.permalink || '#'}" target="_blank" rel="noopener" title="Ver publicación en Instagram"><img src="${p.media_url}" alt="${alt}" loading="lazy"></a></div>`;
-        }).join('');
+        const tiles = igPosts.map(p => {
+          const media = safeUrl(p.media_url, 'image');
+          if (!media) return '';
+          const link = safeUrl(p.permalink, 'instagram');
+          const caption = String(p.caption || 'Mochis — publicación de @my.mochiss').replace(/\s+/g, ' ').trim();
+          const alt = escapeAttr(caption.slice(0, 90));
+          const href = link ? escapeAttr(link) : 'https://instagram.com/my.mochiss/';
+          return `<div class="gallery-item"><a href="${href}" target="_blank" rel="noopener noreferrer" title="Ver publicación en Instagram"><img src="${escapeAttr(media)}" alt="${alt}" loading="lazy"></a></div>`;
+        }).filter(Boolean);
+        if (tiles.length) igGrid.innerHTML = tiles.join('');
       }
 
       // Marquee de sabores: pills salen del catálogo real, duplicadas para el
@@ -1644,6 +1780,26 @@ function getCssVar(name, fallback) {
   return v || fallback;
 }
 
+// readableOnAccent: el acento de cada sabor lo edita el admin (img/mochis/
+// mochis.config.json) y puede ser claro (crema #FFE8A8, durazno #F9D85E).
+// Con texto blanco encima el boton quedaba a 1.3:1. Aqui se elige el color
+// de etiqueta mas legible (blanco o tinta) contra el acento.
+function readableOnAccent(hex) {
+  const h = String(hex || '').replace('#', '').trim();
+  if (h.length !== 6) return '#FFFFFF';
+  const lin = (c) => {
+    c /= 255;
+    return c <= 0.03928 ? c / 12.92 : Math.pow((c + 0.055) / 1.055, 2.4);
+  };
+  const r = lin(parseInt(h.slice(0, 2), 16));
+  const g = lin(parseInt(h.slice(2, 4), 16));
+  const b = lin(parseInt(h.slice(4, 6), 16));
+  const L = 0.2126 * r + 0.7152 * g + 0.0722 * b;
+  const onWhite = 1.05 / (L + 0.05);
+  const onInk = (L + 0.05) / 0.0659;
+  return onWhite >= onInk ? '#FFFFFF' : '#15202E';
+}
+
 function renderFlavorCards() {
   const grid = document.getElementById('flavor-cards-grid');
   const section = document.getElementById('flavors');
@@ -1654,10 +1810,11 @@ function renderFlavorCards() {
     const cfg = MOCHIS_CONFIG[f.id] || {};
     const photo = (f.image_url && String(f.image_url).trim()) || cfg.photo || 'img/instagram/mochi-01.jpg';
     const accent = cfg.accent || getCssVar('--accent-ink');
+    const onAccent = readableOnAccent(accent);
     const ribbon = cfg.ribbon;
     const ribbonHtml = ribbon ? `<div class="ribbon">${escapeHtml(ribbon)}</div>` : '';
     return `
-      <article class="flavor-card" data-flavor-id="${f.id}" style="--flavor-accent: ${accent}">
+      <article class="flavor-card" data-flavor-id="${f.id}" style="--flavor-accent: ${accent}; --flavor-on-accent: ${onAccent}">
         ${ribbonHtml}
         <div class="accent-stripe"></div>
         <div class="photo"><img src="${escapeAttr(photo)}" alt="${escapeAttr(f.name)}" loading="lazy"></div>
@@ -1712,7 +1869,7 @@ function renderPromosBar() {
   if (!PROMOS.length) { bar.style.display = 'none'; return; }
   bar.style.display = '';
   bar.innerHTML = PROMOS.map(p => {
-    const tag = p.type === 'percent' ? `${p.value}% OFF` : p.type === 'fixed' ? `−$${p.value}` : p.type === 'bxgy' ? `${p.value}x${p.value}` : 'PROMO';
+    const tag = p.type === 'percent' ? `${p.value}% OFF` : p.type === 'fixed' ? `-$${p.value}` : p.type === 'bxgy' ? `${p.value}x${p.value}` : 'PROMO';
     return `<span class="promo-pill"><span class="pct">${tag}</span> ${p.name}</span>`;
   }).join('');
 }
@@ -1790,6 +1947,22 @@ function escapeHtml(s) {
 // Para valores dentro de atributos: escapa y ademas neutraliza comillas.
 function escapeAttr(s) {
   return escapeHtml(s);
+}
+
+// safeUrl: la API de Instagram devuelve URLs que el admin no controla de
+// forma directa. Solo pasan las que el navegador puede abrir sin riesgo:
+// imagenes en http(s) o rutas propias, y enlaces unicamente de instagram.com.
+// javascript:, data: y los esquemas raros se descartan.
+function safeUrl(value, kind) {
+  const s = String(value ?? '').trim();
+  if (!s) return '';
+  if (kind === 'image') {
+    if (/^https?:\/\/[^\s"'<>]+$/i.test(s)) return s;
+    if (s.startsWith('/') && !s.startsWith('//') && !/[\s"'<>]/.test(s)) return s;
+    return '';
+  }
+  if (/^https:\/\/([a-z0-9-]+\.)*instagram\.com\/[^\s"'<>]*$/i.test(s)) return s;
+  return '';
 }
 
 function renderCombos() {
@@ -1889,11 +2062,11 @@ function getWppTarget() {
 
 const FLAVORS = [];
 const COMBOS = [];
-let CATEGORIES = [];        // 2026-10-14 — admin → /api/public → data.categories
-let PROMOS = [];           // 2026-10-14 — admin → /api/public → data.promos
-let PAYMENT_METHODS = [];  // 2026-10-14 — admin → /api/public → data.payment_methods
-let DELIVERY_SCHEDULE = [];// 2026-10-14 — admin → /api/public → data.delivery_schedule
-let DELIVERY_CONFIG = null;// 2026-10-14 — admin → /api/public → data.delivery_config
+let CATEGORIES = [];        // 2026-10-14 — admin ? /api/public ? data.categories
+let PROMOS = [];           // 2026-10-14 — admin ? /api/public ? data.promos
+let PAYMENT_METHODS = [];  // 2026-10-14 — admin ? /api/public ? data.payment_methods
+let DELIVERY_SCHEDULE = [];// 2026-10-14 — admin ? /api/public ? data.delivery_schedule
+let DELIVERY_CONFIG = null;// 2026-10-14 — admin ? /api/public ? data.delivery_config
 let _selectedPayMethod = null;
 
 function applyServerConfig() {
@@ -1927,25 +2100,25 @@ function nextDateForWeekday(esDay) {
 // Mensaje de respaldo cuando la API no está disponible (mismo tono del server).
 function buildFallbackWspMessage(name, phone, dayLabel, items, combo, total) {
   const lines = [];
-  lines.push('🍡 ¡Hola! Me antojo de un pedido 🙌');
+  lines.push('¡Hola! Me antojo de un pedido.');
   lines.push('');
-  lines.push(`👤 Soy *${name}*`);
-  lines.push(`📞 Mi WhatsApp: ${phone}`);
-  lines.push(`📅 Quiero recogerlo el *${dayLabel}*`);
+  lines.push(`Soy *${name}*`);
+  lines.push(`Mi WhatsApp: ${phone}`);
+  lines.push(`Quiero recogerlo el *${dayLabel}*`);
   lines.push('');
   if (items.length) {
-    lines.push('🍦 Sabores:');
+    lines.push('Sabores:');
     items.forEach(([id, q]) => {
       const f = FLAVORS.find(x => x.id === id);
       lines.push(`  • ${f ? f.name : id} ×${q}`);
     });
   }
 
-  if (combo) lines.push(`🍱 ${combo.name}`);
+  if (combo) lines.push(`Combo: ${combo.name}`);
   lines.push('');
-  if (total > 0) lines.push(`💵 *Total: $${total.toLocaleString('es-CO')} COP*`);
+  if (total > 0) lines.push(`*Total: $${total.toLocaleString('es-CO')} COP*`);
   lines.push('');
-  lines.push('¿Me confirmás disponibilidad? ¡Gracias! 🏮');
+  lines.push('¿Me confirmás disponibilidad? ¡Gracias!');
   return lines.join('\n');
 }
 
@@ -1982,7 +2155,7 @@ function renderFlavors() {
     <div class="flavor-row">
       <div class="name">${f.name} <small>$${f.price.toLocaleString('es-CO')}/u</small></div>
       <div class="flavor-qty">
-        <button onclick="bumpFlavor('${f.id}',-1)" aria-label="Quitar">−</button>
+        <button onclick="bumpFlavor('${f.id}',-1)" aria-label="Quitar">-</button>
         <span class="q" id="qf-${f.id}">0</span>
         <button onclick="bumpFlavor('${f.id}',1)" aria-label="Agregar">+</button>
       </div>
@@ -2086,7 +2259,7 @@ async function sendWhatsApp() {
   window.open(url, '_blank');
   closeModal();
   setTimeout(() => {
-    alert('¡Pedido enviado! Te respondemos por WhatsApp para confirmar. 🏮');
+    alert('¡Pedido enviado! Te respondemos por WhatsApp para confirmar.');
   }, 600);
 }
 
@@ -2206,13 +2379,7 @@ document.addEventListener('click', (ev) => {
   <span class="badge" id="wspFabBadge" hidden></span>
 </a>
 
-<!-- === React island: shader aurora ambiental de pagina completa (identidad v5) ===
-     Antes aqui se montaba el hero-island de CONTENIDO al final del body: aparecia
-     como un segundo footer con shaders debajo del footer real. Ahora solo queda
-     el fondo WebGL fijo (z-index -1) detras de toda la pagina; el hero textual
-     es el de arriba, con la foto que el admin elige. Degracion graciosa: sin
-     WebGL o si el bundle falla, la pagina queda identica (el fondo son halos CSS). -->
-<div class="page-shader" data-island="hero-bg" data-props='{"intensity":0.85}' aria-hidden="true"></div>
+<!-- === El shader de aurora se monto al inicio del body (ver .page-shader) === -->
 
 <script type="module" src="/build/landing.js" defer></script>
 

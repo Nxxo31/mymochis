@@ -457,18 +457,53 @@ main { max-width: 1320px; margin: 0 auto; padding: 32px 24px 80px; }
 .cart-empty p { font-size: 13px; }
 
 .cart-total {
-  display: flex; justify-content: space-between; align-items: baseline;
+  display: flex; flex-direction: column; gap: 9px;
   padding: 16px 18px;
   background: var(--mochi-crema);
   border-radius: 18px;
   margin-bottom: 14px;
   box-shadow: var(--clay-shadow-xs), inset 1px -1px 2px rgba(255,255,255,0.7);
 }
+.cart-total .row {
+  display: flex; justify-content: space-between; align-items: baseline; gap: 12px;
+  font-size: 13.5px; color: var(--clay-ink-soft);
+}
+.cart-total .row .free {
+  color: #1B6B3A; font-weight: 800;
+}
+.cart-total-main {
+  display: flex; justify-content: space-between; align-items: baseline; gap: 12px;
+  padding-top: 10px; border-top: 1px dashed rgba(0,0,0,0.10);
+}
 .cart-total .lbl { font-size: 13px; color: var(--clay-ink-soft); font-weight: 700; text-transform: uppercase; letter-spacing: 1px; }
 .cart-total .val {
   font-family: 'Baloo 2', serif;
   font-size: 26px; font-weight: 700; color: var(--mochi-fresa-d);
 }
+
+/* ============ AVISO DE DOMICILIO GRATIS ============ */
+.free-delivery-banner {
+  display: none;
+  align-items: center;
+  gap: 14px;
+  margin: 0 0 18px;
+  padding: 14px 18px;
+  border-radius: 18px;
+  background: linear-gradient(135deg, #E8F7EE, #D4EFDF);
+  border: 1px solid rgba(27, 107, 58, 0.20);
+  box-shadow: var(--clay-shadow-xs), inset 1px -1px 2px rgba(255,255,255,0.7);
+  color: #1B6B3A;
+}
+.free-delivery-banner.visible { display: flex; }
+.free-delivery-pill {
+  flex-shrink: 0;
+  padding: 6px 12px;
+  border-radius: 999px;
+  background: #1B6B3A; color: #fff;
+  font-size: 11.5px; font-weight: 800; letter-spacing: 1px; text-transform: uppercase;
+}
+.free-delivery-banner .txt strong { display: block; font-size: 15px; line-height: 1.3; }
+.free-delivery-banner .txt span { display: block; font-size: 12.5px; opacity: 0.9; margin-top: 2px; }
 
 /* Forms (shared with cart sheet) */
 .form-block { margin-bottom: 14px; }
@@ -698,6 +733,14 @@ footer {
     <p class="sub">Elegí tus sabores y combos, día de recogida, y te lo confirmamos por WhatsApp.</p>
   </div>
 
+  <div class="free-delivery-banner" id="freeDeliveryBanner" role="status" aria-live="polite">
+    <span class="free-delivery-pill">Gratis</span>
+    <div class="txt">
+      <strong>Hoy el domicilio es gratis</strong>
+      <span id="freeDeliveryDetail">Sin costo de envío en tu pedido de hoy.</span>
+    </div>
+  </div>
+
   <div class="store-loading" id="storeLoading">
     <p>Cargando catálogo…</p>
   </div>
@@ -742,9 +785,20 @@ footer {
         <p>Agregá tus sabores favoritos desde el catálogo.</p>
       </div>
       <div class="cart-items" id="cartItems" style="display:none;"></div>
+      <div class="free-delivery-banner" id="freeDeliveryBannerCart" role="status" aria-live="polite">
+        <span class="free-delivery-pill">Gratis</span>
+        <div class="txt">
+          <strong>Hoy el domicilio es gratis</strong>
+          <span id="freeDeliveryDetailCart">Sin costo de envío en tu pedido de hoy.</span>
+        </div>
+      </div>
       <div class="cart-total" id="cartTotal" style="display:none;">
-        <span class="lbl">Total estimado</span>
-        <span class="val" id="cartTotalVal">$0</span>
+        <div class="row"><span>Productos</span><span id="cartSubtotalVal">$0</span></div>
+        <div class="row"><span>Domicilio</span><span id="cartDeliveryVal">$0</span></div>
+        <div class="cart-total-main">
+          <span class="lbl">Total</span>
+          <span class="val" id="cartTotalVal">$0</span>
+        </div>
       </div>
       <div class="form-block">
         <label for="customerName">Tu nombre</label>
@@ -1279,6 +1333,26 @@ footer {
       domBtn.disabled = true;
       domBtn.title = 'El domicilio no está disponible ahora';
     }
+    applyFreeDeliveryNotice();
+  }
+
+  function applyFreeDeliveryNotice() {
+    if (!catalog) return;
+    const deliveryOn = Boolean((catalog.delivery_config || {}).delivery_immediate_enabled);
+    const active = deliveryOn && catalog.today_free_delivery === true;
+    const rule = catalog.delivery_free_rule || null;
+    const minOrder = Number(rule && rule.min_order_cents) || 0;
+    let detail = 'Sin costo de envío en tu pedido de hoy.';
+    if (rule && rule.label) detail = rule.label;
+    if (minOrder > 0) detail = `En pedidos desde ${fmtPrice(minOrder)}. ` + detail;
+    for (const id of ['freeDeliveryBanner', 'freeDeliveryBannerCart']) {
+      const banner = document.getElementById(id);
+      if (!banner) continue;
+      banner.classList.toggle('visible', active);
+      const detailId = id === 'freeDeliveryBanner' ? 'freeDeliveryDetail' : 'freeDeliveryDetailCart';
+      const detailEl = document.getElementById(detailId);
+      if (detailEl) detailEl.textContent = detail;
+    }
   }
 
   function setDeliveryMode(mode) {
@@ -1315,7 +1389,10 @@ footer {
       if (r.ok && data.ok) {
         lastQuote = { ...data, address_input: address };
         out.className = 'quote-result ok';
-        out.textContent = `🛵 $${Number(data.fee_cents).toLocaleString('es-CO')} · ${data.distance_km} km · llega en ~${data.eta_minutes} min`;
+        const fee = Number(data.fee_cents) || 0;
+        const isFree = data.free_delivery === true && fee === 0;
+        const feeLabel = isFree ? 'Domicilio gratis' : `Domicilio ${fmtPrice(fee)}`;
+        out.textContent = `🛵 ${feeLabel} · ${data.distance_km} km · llega en ~${data.eta_minutes} min`;
       } else {
         lastQuote = null;
         out.className = 'quote-result error';
@@ -1333,8 +1410,24 @@ footer {
 
   function updateCartTotalDisplay() {
     const base = cartTotalCents();
-    const fee = _deliveryMode === 'domicilio' && lastQuote && lastQuote.ok ? Number(lastQuote.fee_cents) || 0 : 0;
+    const quote = _deliveryMode === 'domicilio' && lastQuote && lastQuote.ok ? lastQuote : null;
+    const fee = quote ? Number(quote.fee_cents) || 0 : 0;
     const total = base + fee;
+    const subtotalEl = $('#cartSubtotalVal');
+    const deliveryEl = $('#cartDeliveryVal');
+    if (subtotalEl) subtotalEl.textContent = fmtPrice(base);
+    if (deliveryEl) {
+      if (!quote) {
+        deliveryEl.textContent = _deliveryMode === 'domicilio' ? 'Cotizá tu dirección' : 'Recogida';
+        deliveryEl.classList.remove('free');
+      } else if (quote.free_delivery === true && fee === 0) {
+        deliveryEl.textContent = 'Gratis';
+        deliveryEl.classList.add('free');
+      } else {
+        deliveryEl.textContent = fmtPrice(fee);
+        deliveryEl.classList.remove('free');
+      }
+    }
     $('#cartTotalVal').textContent = fmtPrice(total);
     const label = $('#submitBtnLabel');
     if (label) label.textContent = 'Enviar pedido · ' + fmtPrice(total);

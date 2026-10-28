@@ -39,12 +39,17 @@
   --border-strong:       var(--neutral-300);
   --action-primary:      var(--brand-blue-600);
   --action-primary-hover: var(--brand-blue-500);
-  --focus-ring:          var(--brand-blue-400);
+  /* Anillo de foco: --focus de theme.css (#0E6E88 · 5.83:1 sobre blanco).
+     El azul de marca (#7BA8F0) daba 2.44:1 — insuficiente para un indicador
+     de foco (WCAG 2.2 · 1.4.11 pide >= 3:1 contra el fondo). */
+  --focus-ring:          var(--focus, #0B4A63);
 
-  /* === Status === */
-  --success: #10B981;
-  --warning: #F59E0B;
-  --danger:  #EF4444;
+  /* === Status · los mismos valores con contraste AA de theme.css ====
+     Los de esta capa (#10B981 / #F59E0B / #EF4444) no llegan a 4.5:1 sobre
+     blanco y pisaban los tokens con contraste de theme.css. */
+  --success: #146245;
+  --warning: #8A6208;
+  --danger:  #B3261E;
 
   /* === Typography === */
   --font-display: 'Inter', 'Baloo 2', system-ui, -apple-system, sans-serif;
@@ -121,9 +126,11 @@
   }
 }
 
-/* Focus visible consistente para todos los elementos interactivos */
+/* Focus visible consistente para todos los elementos interactivos.
+   Mismo anillo que theme.css (esta capa se carga despues y lo pisaba con un
+   azul de 2.44:1). Sin border-radius forzado: el contorno sigue la forma
+   real del elemento. */
 :focus-visible {
   outline: 2px solid var(--focus-ring);
   outline-offset: 2px;
-  border-radius: 4px;
 }
