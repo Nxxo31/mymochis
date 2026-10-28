@@ -118,9 +118,62 @@ test('DELETE insumo → el costo del lote baja', async () => {
   assert.equal(s.json.unit_cost_cents, 800);
 });
 
-test('summary contrasta con ventas: DB nueva sin pedidos → ticket null, margen null', async () => {
+test('summary contrasta con ventas y usa unidades coherentes', async () => {
   const s = await api('GET', '/api/production/summary', { token });
   assert.equal(s.json.paid_orders, 0);
   assert.equal(s.json.avg_ticket_cents, null);
-  assert.equal(s.json.margin_vs_avg_ticket_pct, null);
+  assert.equal(s.json.margin_vs_catalog_pct != null || s.json.catalog_products.length === 0, true);
+  assert.equal(s.json.sold_units_total, (s.json.sold_flavor_units || 0) + (s.json.sold_combo_units || 0));
+  assert.ok(Array.isArray(s.json.catalog_products));
+});
+
+test('PUT insumo actualiza costo y cantidad', async () => {
+  const list = await api('GET', '/api/production', { token });
+  const item = list.json.items[0];
+  const put = await api('PUT', `/api/production/${item.id}`, {
+    token,
+    body: { name: item.name, unit: item.unit, unit_cost_cents: 9000, qty_per_batch: 2 },
+  });
+  assert.equal(put.status, 200, JSON.stringify(put.json));
+  assert.equal(put.json.unit_cost_cents, 9000);
+  assert.equal(put.json.qty_per_batch, 2);
+  const s = await api('GET', '/api/production/summary', { token });
+  assert.equal(s.json.batch_cost_cents, 18000);
+});
+
+test('settings guarda referencia de mercado y summary la contrasta', async () => {
+  const put = await api('PUT', '/api/production/settings', {
+    token,
+    body: { units_per_batch: 10, target_margin_pct: 70, market_reference_cents: 9000, market_reference_date: '2026-10-24' },
+  });
+  assert.equal(put.status, 200, JSON.stringify(put.json));
+  assert.equal(put.json.production_market_reference_cents, 9000);
+  assert.equal(put.json.production_market_reference_date, '2026-10-24');
+  const s = await api('GET', '/api/production/summary', { token });
+  assert.equal(s.json.market_reference_cents, 9000);
+  assert.equal(s.json.market_reference_date, '2026-10-24');
+  assert.ok(s.json.market_position_pct === null || typeof s.json.market_position_pct === 'number');
+});
+
+test('apply-suggested exige confirmación y actualiza precios', async () => {
+  const noConfirm = await api('POST', '/api/production/apply-suggested', { token, body: {} });
+  assert.equal(noConfirm.status, 400);
+  const apply = await api('POST', '/api/production/apply-suggested', { token, body: { confirm: true } });
+  assert.equal(apply.status, 200, JSON.stringify(apply.json));
+  assert.ok(apply.json.updated >= 0);
+  assert.ok(apply.json.price_cents > 0);
+  const s = await api('GET', '/api/production/summary', { token });
+  const priced = s.json.catalog_products.filter(p => p.price_cents > 0);
+  assert.ok(priced.every(p => p.price_cents === apply.json.price_cents));
+});
+
+test('metrics analysis entrega rango, demanda y plan', async () => {
+  const r = await api('GET', '/api/metrics?days=7', { token });
+  assert.equal(r.status, 200);
+  assert.equal(r.json.analysis.range_days, 7);
+  assert.equal(r.json.analysis.daily_series.length, 7);
+  assert.equal(r.json.analysis.by_weekday.length, 7);
+  assert.ok(Array.isArray(r.json.analysis.product_demand));
+  assert.ok(Array.isArray(r.json.analysis.plan_vs_sold));
+  assert.ok(r.json.analysis.from_date <= r.json.analysis.to_date);
 });

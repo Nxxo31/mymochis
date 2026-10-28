@@ -73,6 +73,13 @@ export const PROVIDERS = {
     fields: ['access_token'],
     docs: 'https://developers.facebook.com/docs/instagram-platform/instagram-graph-api',
   },
+  google_maps: {
+    label: 'Google Maps (mapa del panel)',
+    hint: 'API key de Google Maps para elegir el centro de la zona de domicilio en el mapa del panel. Pasos: 1) En Google Cloud Console abre (o crea) el proyecto del negocio y activa la facturación. 2) En "APIs y servicios" > "Biblioteca" habilita "Maps JavaScript API" y, si quieres autocompletar direcciones, "Places API" (o "Geocoding API"). 3) En "APIs y servicios" > "Credenciales" > "Crear credenciales" > "Clave de API": en "Restricciones de aplicaciones" elige "Referentes HTTP" y agrega el dominio de este panel (https://tu-dominio.com/) y, si pruebas en local, http://localhost:3737/. 4) En "Restricciones de API" limita la clave a "Maps JavaScript API" (y "Places API" si la usas). 5) Copia la clave y guárdala aquí. Opcional: pega el ID del mapa (Google Cloud > Mapas > Crear mapa > Compartir > ID del mapa) para usar el pin avanzado arrastrable.',
+    fields: ['browser_key', 'map_id'],
+    optional: ['map_id'],
+    docs: 'https://developers.google.com/maps/documentation/javascript/get-api-key',
+  },
 };
 
 /** Clave maestra derivada. Lanza si falta: el vault falla cerrado, nunca abierto. */
@@ -234,10 +241,13 @@ export function auditLog(limit = 50) {
 export function readiness() {
   const have = new Set(db.prepare('SELECT provider, field FROM merchant_credentials WHERE is_active = 1').all().map(r => `${r.provider}.${r.field}`));
   return Object.entries(PROVIDERS).map(([id, spec]) => {
-    const missing = spec.fields.filter(f => !have.has(`${id}.${f}`));
+    const optional = new Set(spec.optional || []);
+    const missing = spec.fields.filter(f => !optional.has(f) && !have.has(`${id}.${f}`));
     return {
       provider: id, label: spec.label, hint: spec.hint, docs: spec.docs,
-      fields: spec.fields, configured: have.size ? missing.length === 0 : false,
+      fields: spec.fields,
+      optional_fields: spec.fields.filter(f => optional.has(f)),
+      configured: have.size ? missing.length === 0 : false,
       missing,
     };
   });
