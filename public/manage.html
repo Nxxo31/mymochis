@@ -413,6 +413,96 @@ tbody tr:hover { background: var(--clay-canvas); }
 }
 .cfg-group .hint { font-size: 12px; color: var(--clay-ink-soft); margin-top: 4px; }
 
+/* ============ MAPA DE ZONA (Google Maps) ============ */
+.maps-shell {
+  border-radius: 18px;
+  overflow: hidden;
+  box-shadow: var(--clay-shadow-sm), inset 2px -2px 4px rgba(255,255,255,0.6);
+  background: var(--clay-canvas);
+}
+.maps-frame {
+  position: relative;
+  width: 100%;
+  height: 320px;
+  min-height: 240px;
+  background:
+    repeating-linear-gradient(45deg, rgba(0,0,0,0.03) 0 10px, transparent 10px 20px),
+    var(--clay-canvas-2, #f0e6da);
+}
+.maps-frame.is-hidden { display: none; }
+.maps-placeholder {
+  position: absolute; inset: 0;
+  display: flex; flex-direction: column; justify-content: center; align-items: center;
+  gap: 8px; padding: 18px; text-align: center;
+  font-size: 13px; color: var(--clay-ink-soft);
+}
+.maps-toolbar {
+  display: flex; flex-wrap: wrap; gap: 10px; align-items: center;
+  padding: 12px 14px;
+  background: var(--clay-surface);
+  border-top: 1px solid var(--clay-line, rgba(0,0,0,0.06));
+}
+.maps-status {
+  font-size: 12.5px; font-weight: 600; color: var(--clay-ink-soft);
+  padding: 8px 12px; border-radius: 12px; background: var(--clay-canvas);
+  min-height: 18px;
+}
+.maps-status--loading { color: var(--mochi-cyan-d); }
+.maps-status--ok { color: #1B6B3A; background: #E8F7EE; }
+.maps-status--warn { color: #8A5A12; background: #FDF3E2; }
+.maps-status--error { color: #8C2F23; background: #FDECEA; }
+.map-toggle-row {
+  display: flex; align-items: center; gap: 8px;
+  font-size: 13px; color: var(--clay-ink);
+}
+.map-toggle-row input[type="checkbox"] {
+  width: 18px; height: 18px; accent-color: var(--mochi-fresa-d); cursor: pointer;
+}
+
+/* ============ DÍAS GRATIS ============ */
+.dayfree-row {
+  display: grid;
+  grid-template-columns: 22px 1fr;
+  gap: 4px 12px;
+  align-items: center;
+  padding: 12px 0;
+  border-bottom: 1px dashed var(--clay-line, rgba(0,0,0,0.08));
+}
+.dayfree-row:last-child { border-bottom: 0; }
+.dayfree-row input[type="checkbox"] {
+  width: 20px; height: 20px; accent-color: var(--mochi-fresa-d); cursor: pointer;
+}
+.dayfree-day { font-weight: 700; font-size: 14px; }
+.dayfree-fields {
+  grid-column: 2;
+  display: grid;
+  grid-template-columns: minmax(0, 2fr) minmax(0, 1fr);
+  gap: 10px;
+  margin-top: 8px;
+}
+.dayfree-fields input {
+  width: 100%;
+  padding: 10px 12px;
+  border: 0; border-radius: 12px;
+  font-family: 'Inter', sans-serif; font-size: 13px;
+  background: var(--clay-surface); color: var(--clay-ink);
+  box-shadow: var(--clay-shadow-xs), inset 1px -1px 2px rgba(255,255,255,0.7);
+}
+.dayfree-fields input:focus {
+  outline: 3px solid color-mix(in srgb, var(--cyan) 70%, transparent);
+  outline-offset: 2px;
+}
+.dayfree-fields label {
+  font-size: 11px; font-weight: 700; color: var(--clay-ink-soft);
+  letter-spacing: 0.6px; text-transform: uppercase;
+  display: block; margin-bottom: 4px;
+}
+.dayfree-disabled .dayfree-fields { opacity: 0.5; }
+@media (max-width: 640px) {
+  .dayfree-fields { grid-template-columns: 1fr; }
+  .maps-frame { height: 260px; }
+}
+
 .payout-row {
   display: flex; gap: 8px; align-items: center;
   padding: 10px 0;
@@ -518,6 +608,7 @@ tbody tr:hover { background: var(--clay-canvas); }
   box-shadow: var(--clay-shadow-sm), inset 2px -2px 4px rgba(255,255,255,0.7);
 }
 .empty .icon { font-size: 36px; margin-bottom: 8px; }
+.empty .icon svg { width: 34px; height: 34px; display: block; margin: 0 auto; }
 
 /* ============ ORDER DETAIL ============ */
 .order-items { font-size: 12px; color: var(--clay-ink-soft); max-width: 320px; }
@@ -737,6 +828,7 @@ tbody tr:hover { background: var(--clay-canvas); }
   transform: scale(1.01);
 }
 .drop-zone .icon { font-size: 38px; line-height: 1; margin-bottom: 8px; }
+.drop-zone .icon svg { width: 36px; height: 36px; display: block; margin: 0 auto; }
 .drop-zone .label { font-weight: 700; color: var(--navy); }
 .drop-zone .hint { font-size: 12px; color: var(--clay-ink-soft); margin-top: 4px; }
 .drop-zone .progress {
@@ -896,6 +988,28 @@ tbody tr:hover { background: var(--clay-canvas); }
 .btn-sm { padding: 6px 10px; font-size: 12px; border-radius: 8px; }
 .btn-danger { background: var(--clay-canvas); color: #b00020; box-shadow: var(--clay-shadow-xs), inset 1px -1px 2px rgba(255,255,255,0.7); }
 .btn-danger:hover { background: #fdecea; box-shadow: var(--clay-shadow-sm); }
+.prod-layout { display: grid; grid-template-columns: minmax(0, 1.6fr) minmax(280px, .8fr); gap: 16px; align-items: start; }
+.prod-metric { border-radius: 18px; padding: 14px 16px; background: var(--clay-canvas); border: 1px solid var(--line); box-shadow: var(--clay-shadow-xs); }
+.prod-metric .label { font-size: 11px; text-transform: uppercase; letter-spacing: 1px; color: var(--clay-ink-soft); }
+.prod-metric .value { font-size: 25px; font-weight: 800; color: var(--clay-ink); margin-top: 4px; font-variant-numeric: tabular-nums; }
+.prod-metric .hint { font-size: 12px; color: var(--clay-ink-soft); margin-top: 3px; }
+.prod-metric.good .value { color: #1B6B3A; }
+.prod-metric.warn .value { color: #8A5A12; }
+.prod-metric.bad .value { color: #8C2F23; }
+.prod-toolbar { display: flex; flex-wrap: wrap; gap: 8px; justify-content: space-between; align-items: center; }
+.pill-row { display: flex; gap: 8px; flex-wrap: wrap; }
+.pill-btn { border: 1px solid var(--line-strong); background: var(--clay-canvas); border-radius: 999px; padding: 7px 12px; font-size: 12px; font-weight: 700; color: var(--clay-ink); cursor: pointer; }
+.pill-btn.active { background: var(--mochi-fresa); border-color: var(--mochi-fresa-d); color: #fff; box-shadow: var(--clay-shadow-xs); }
+.chart-shell { position: relative; height: 230px; }
+.chart-shell.sm { height: 190px; }
+.analysis-grid { display: grid; grid-template-columns: repeat(auto-fit, minmax(210px, 1fr)); gap: 12px; }
+.analysis-panel { overflow: auto; }
+.mini-list { display: grid; gap: 6px; }
+.mini-row { display: flex; justify-content: space-between; gap: 12px; font-size: 13px; padding: 7px 0; border-bottom: 1px solid var(--line); }
+.tag-mini { font-size: 11px; font-weight: 700; border-radius: 999px; padding: 3px 8px; background: #EFF6F3; color: #1B6B3A; }
+.tag-mini.warn { background: #FDF3E2; color: #8A5A12; }
+.tag-mini.bad { background: #FDECEA; color: #8C2F23; }
+@media (max-width: 1000px) { .prod-layout { grid-template-columns: 1fr; } }
 
 /* ============ TOUR DE BIENVENIDA ============ */
 .tour-blocker { position: fixed; inset: 0; z-index: 299; }
@@ -982,6 +1096,10 @@ tbody tr:hover { background: var(--clay-canvas); }
     <div class="nav-item" data-section="produccion">
       <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><rect x="2" y="3" width="20" height="7"/><rect x="2" y="12" width="8" height="7"/><rect x="14" y="12" width="8" height="7"/><line x1="6" y1="19" x2="6" y2="23"/><line x1="18" y1="19" x2="18" y2="23"/></svg>
       Producción
+    </div>
+    <div class="nav-item" data-section="analisis">
+      <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M3 3v18h18"/><path d="M7 15l4-5 3 3 5-7"/></svg>
+      Análisis
     </div>
 
     <div class="nav-section">Catálogo</div>
@@ -1111,8 +1229,8 @@ tbody tr:hover { background: var(--clay-canvas); }
           <div style="margin-top:10px;font-size:11px;color:var(--clay-ink-soft);display:flex;gap:8px;flex-wrap:wrap" id="chart-legend"></div>
         </div>
         <div class="card">
-          <h3>Por estado (distribución)</h3>
-          <div style="position:relative;height:180px;display:flex;align-items:center;justify-content:center">
+          <h3>Pedidos por estado</h3>
+          <div style="position:relative;height:180px">
             <canvas id="chart-status-pie"></canvas>
           </div>
         </div>
@@ -1194,7 +1312,7 @@ tbody tr:hover { background: var(--clay-canvas); }
         </div>
       </div>
       <div class="drop-zone" id="flavor-drop">
-        <div class="icon">📁</div>
+        <div class="icon"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.6" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M3 7.5A1.5 1.5 0 0 1 4.5 6h4l2 2.5h7A1.5 1.5 0 0 1 19 10v7a1.5 1.5 0 0 1-1.5 1.5h-13A1.5 1.5 0 0 1 3 17z"/></svg></div>
         <div class="label">Arrastra imágenes aquí</div>
         <div class="hint">o haz clic · JPG, PNG, WebP, GIF, AVIF · MP4, WebM, MOV · PDF · máx 25MB c/u · 8 archivos</div>
         <div class="progress"><div class="bar"></div></div>
@@ -1266,12 +1384,14 @@ tbody tr:hover { background: var(--clay-canvas); }
 
       <div class="subtabs" id="entregas-tabs">
         <button class="pill active" data-sub="inmediato">Inmediato</button>
+        <button class="pill" data-sub="dias-gratis">Días gratis</button>
         <button class="pill" data-sub="horarios">Horarios</button>
         <button class="pill" data-sub="ventanas">Ventanas</button>
         <button class="pill" data-sub="pagos">Métodos de pago</button>
       </div>
 
       <div id="entregas-inmediato" class="subtab-panel active"></div>
+      <div id="entregas-dias-gratis" class="subtab-panel"></div>
       <div id="entregas-horarios" class="subtab-panel"></div>
       <div id="entregas-ventanas" class="subtab-panel"></div>
       <div id="entregas-pagos" class="subtab-panel"></div>
@@ -1365,52 +1485,111 @@ tbody tr:hover { background: var(--clay-canvas); }
       <div class="page-head">
         <div>
           <h1>Producción</h1>
-          <div class="sub">Cuánto cuesta producir un lote, cuánto te deja cada unidad y qué precio cobrar para cumplir tu margen objetivo.</div>
+          <div class="sub">Costos, precio de venta y margen real explicados en el orden en que los necesitás decidir.</div>
         </div>
         <div class="actions"><button class="btn btn-primary" onclick="openProductionModal()">+ Nuevo insumo</button></div>
       </div>
 
-      <div class="prod-grid" style="display:grid;grid-template-columns:repeat(auto-fit,minmax(260px,1fr));gap:16px;margin-top:12px">
-        <div class="card prod-card" style="grid-column:1 / -1">
-          <div class="prod-summary" style="flex-wrap:wrap;gap:24px">
-            <div>
-              <div class="big" id="prod-total-cost">$0</div>
-              <div class="sub" style="margin-top:4px">Costo del lote</div>
+      <div class="analysis-grid" style="margin-top:14px">
+        <div class="prod-metric">
+          <div class="label">Costo del lote</div>
+          <div class="value" id="prod-total-cost">$0</div>
+          <div class="hint" id="prod-total-hint">Suma de los insumos</div>
+        </div>
+        <div class="prod-metric">
+          <div class="label">Costo por unidad</div>
+          <div class="value" id="prod-unit-cost">$0</div>
+          <div class="hint" id="prod-unit-hint">Lote completo</div>
+        </div>
+        <div class="prod-metric good">
+          <div class="label">Precio sugerido</div>
+          <div class="value" id="prod-suggested">—</div>
+          <div class="hint" id="prod-suggested-hint">Para tu margen objetivo</div>
+        </div>
+        <div class="prod-metric" id="prod-margin-card">
+          <div class="label">Margen vs catálogo</div>
+          <div class="value" id="prod-margin">—</div>
+          <div class="hint" id="prod-margin-hint">Precio real del menú</div>
+        </div>
+      </div>
+
+      <div class="prod-layout" style="margin-top:16px">
+        <div style="display:grid;gap:16px">
+          <div class="card">
+            <div class="prod-toolbar">
+              <h3>Receta del lote</h3>
+              <button class="btn btn-sm" onclick="applySuggestedPrices()">Aplicar precio sugerido al catálogo</button>
             </div>
-            <div>
-              <div class="big" id="prod-unit-cost">$0</div>
-              <div class="sub" style="margin-top:4px">Costo por unidad</div>
+            <div class="table-wrap" style="max-height:320px;overflow:auto">
+              <table>
+                <thead><tr><th>Insumo</th><th>Unidad</th><th>Costo por unidad</th><th>Usado por lote</th><th>Costo en el lote</th><th></th></tr></thead>
+                <tbody id="production-table-body"></tbody>
+              </table>
             </div>
-            <div>
-              <div class="big" id="prod-suggested">—</div>
-              <div class="sub" style="margin-top:4px">Precio sugerido (tu margen objetivo)</div>
-            </div>
-            <div>
-              <div class="big" id="prod-margin">—</div>
-              <div class="sub" style="margin-top:4px">Margen real sobre el ticket promedio</div>
+            <div class="prod-hint" id="prod-hint"></div>
+          </div>
+
+          <div class="card">
+            <h3>Precios y margen por producto</h3>
+            <div class="table-wrap" style="max-height:360px;overflow:auto">
+              <table>
+                <thead><tr><th>Producto</th><th>Precio actual</th><th>Margen real</th><th>Objetivo</th><th>Diferencia</th><th>Vendidas</th><th>Acción</th></tr></thead>
+                <tbody id="prod-products-body"></tbody>
+              </table>
             </div>
           </div>
         </div>
 
-        <div class="card">
-          <h3>Insumos del lote</h3>
-          <div class="table-wrap" style="max-height:340px;overflow:auto">
-            <table>
-              <thead><tr><th>Insumo</th><th>Unidad</th><th>Costo por unidad</th><th>Usado por lote</th><th>Costo en el lote</th><th></th></tr></thead>
-              <tbody id="production-table-body"></tbody>
-            </table>
+        <div style="display:grid;gap:16px">
+          <div class="card">
+            <h3>Lote, margen y mercado</h3>
+            <div class="form-group"><label>Unidades por lote</label><input type="number" id="prod-units" value="50" min="1" step="1"></div>
+            <div class="form-group"><label>Margen objetivo (%)</label><input type="number" id="prod-target" value="70" min="1" max="99" step="1"></div>
+            <div class="form-group"><label>Referencia de mercado por unidad (COP)</label><input type="number" id="prod-market" value="0" min="0" step="500"><div class="hint">Precio promedio que ves en el mercado. Opcional.</div></div>
+            <div class="form-group"><label>Fecha de la referencia</label><input type="date" id="prod-market-date"></div>
+            <button class="btn btn-primary btn-block" onclick="saveProduccionSettings()">Guardar</button>
+            <div class="prod-hint" id="prod-hint2"></div>
           </div>
-          <div class="prod-hint" id="prod-hint" style="margin-top:8px"></div>
-        </div>
 
-        <div class="card">
-          <h3>Lote y margen</h3>
-          <div class="form-group" style="margin-bottom:10px"><label>Unidades por lote</label><input type="number" id="prod-units" value="50" min="1" step="1"></div>
-          <div class="form-group" style="margin-bottom:10px"><label>Margen objetivo (%)</label><input type="number" id="prod-target" value="70" min="1" max="99" step="1"><div class="hint">Con 70%, el precio sugerido deja 70 centavos de cada peso como ganancia.</div></div>
-          <button class="btn btn-primary" onclick="saveProduccionSettings()">Guardar lote y margen</button>
-          <div class="prod-hint" id="prod-hint2" style="margin-top:10px"></div>
-          <div style="position:relative;height:190px;margin-top:14px"><canvas id="prod-chart"></canvas></div>
+          <div class="card">
+            <h3>Costo vs precio</h3>
+            <div class="chart-shell sm"><canvas id="prod-chart" role="img" aria-label="Comparación entre costo por unidad, precio sugerido y precio promedio del catálogo"></canvas></div>
+          </div>
         </div>
+      </div>
+    </section>
+
+    <!-- ============== ANÁLISIS DE DEMANDA ============== -->
+    <section id="section-analisis" class="section">
+      <div class="page-head">
+        <div>
+          <h1>Análisis</h1>
+          <div class="sub">Demanda, días fuertes y plan de producción. Datos reales de tu tienda.</div>
+        </div>
+      </div>
+      <div class="pill-row" id="analysis-range">
+        <button class="pill-btn" data-days="7">7 días</button>
+        <button class="pill-btn active" data-days="30">30 días</button>
+        <button class="pill-btn" data-days="90">90 días</button>
+      </div>
+      <div class="analysis-grid" id="analysis-kpis" style="margin-top:14px"></div>
+      <div class="card" style="margin-top:16px">
+        <h3>Ventas y unidades</h3>
+        <div class="chart-shell"><canvas id="analysis-chart" role="img" aria-label="Serie de ventas y unidades del periodo seleccionado"></canvas></div>
+      </div>
+      <div class="grid grid-2" style="margin-top:16px">
+        <div class="card analysis-panel">
+          <h3>Días fuertes</h3>
+          <div class="mini-list" id="analysis-weekdays"></div>
+        </div>
+        <div class="card analysis-panel">
+          <h3>Productos más pedidos</h3>
+          <div class="table-wrap"><table><thead><tr><th>Producto</th><th>Unidades</th><th>Ingreso estimado</th></tr></thead><tbody id="analysis-products-body"></tbody></table></div>
+        </div>
+      </div>
+      <div class="card analysis-panel" style="margin-top:16px">
+        <h3>Plan de producción vs ventas</h3>
+        <div class="table-wrap"><table><thead><tr><th>Día</th><th>Producto</th><th>Plan</th><th>Reservado</th><th>Vendido</th><th>Por producir</th></tr></thead><tbody id="analysis-plan-body"></tbody></table></div>
       </div>
     </section>
 
@@ -1469,6 +1648,7 @@ tbody tr:hover { background: var(--clay-canvas); }
 
 <div id="toast" class="toast"></div>
 
+<script src="/js/maps-picker.js"></script>
 <script>
 const API = '/api';
 const TOKEN_KEY = 'mymochis_token';
@@ -1684,6 +1864,7 @@ function showSection(name) {
   if (name === 'flavors' || name === 'combos') renderUploadGallery();
   if (name === 'flavors') render.galeria();
   if (name === 'produccion') render.produccion();
+  if (name === 'analisis') render.analisis();
 }
 
 // ============ RENDER ============
@@ -1766,30 +1947,45 @@ const render = {
     });
     document.getElementById('chart-legend').innerHTML = `<span>0 <span class="dot" style="color:#FFB8C8">●</span> venta / día</span>`;
 
-    // Chart.js: status pie
+    // Chart.js: distribucion por estado — barras horizontales ordenadas.
+    // Regla de percepcion (agency-agents/data-viz): comparar magnitudes con un
+    // pie obliga al ojo a comparar angulos; con barras la lectura es inmediata
+    // y el cero del eje no miente. Sin datos -> estado vacio, no un circulo.
     const ctxPie = document.getElementById('chart-status-pie');
     if (_chartStatus) { _chartStatus.destroy(); }
     const st = m.by_status || {};
-    const stLabels = Object.keys(st);
-    const stData = Object.values(st);
+    const stOrder = Object.entries(st)
+      .filter(([, v]) => Number(v) > 0)
+      .sort((a, b) => Number(b[1]) - Number(a[1]));
+    const stLabels = stOrder.map(([k]) => k);
+    const stData = stOrder.map(([, v]) => Number(v));
     const stColors = {
       pending: '#FFB8C8', confirmed: '#FBD773', ready: '#C9DC8A',
       delivered: '#9DDDEC', cancelled: '#ECDFC9'
     };
     _chartStatus = new Chart(ctxPie, {
-      type: 'doughnut',
+      type: 'bar',
       data: {
         labels: stLabels,
         datasets: [{
           data: stData,
           backgroundColor: stLabels.map(l => stColors[l] || '#FFB8C8'),
-          borderWidth: 2, borderColor: '#FAF3EA'
+          borderRadius: 6,
+          maxBarThickness: 22
         }]
       },
       options: {
+        indexAxis: 'y',
         responsive: true,
         maintainAspectRatio: false,
-        plugins: { legend: { position: 'bottom', labels: { boxWidth: 12, font: { size: 11 } } } }
+        plugins: {
+          legend: { display: false },
+          tooltip: { callbacks: { label: (c) => ` ${c.parsed.x} pedido${c.parsed.x === 1 ? '' : 's'}` } }
+        },
+        scales: {
+          x: { beginAtZero: true, ticks: { precision: 0, font: { size: 10 } }, grid: { color: 'rgba(120,80,40,0.08)' } },
+          y: { grid: { display: false }, ticks: { font: { size: 11 } } }
+        }
       }
     });
 
@@ -1815,7 +2011,7 @@ const render = {
     document.getElementById('orders-count').textContent = `${filtered.length} de ${_orders.length} pedidos`;
     const tbody = document.getElementById('orders-body');
     if (!filtered.length) {
-      tbody.innerHTML = `<tr><td colspan="8"><div class="empty"><div class="icon">📦</div>Sin pedidos</div></td></tr>`;
+      tbody.innerHTML = `<tr><td colspan="8"><div class="empty"><div class="icon"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.6" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M3 8.5 12 4l9 4.5v7L12 20l-9-4.5z"/><path d="M3 8.5 12 13l9-4.5M12 13v7"/></svg></div>Sin pedidos</div></td></tr>`;
       return;
     }
     const flavorNames = Object.fromEntries(_flavors.map(f => [f.id, f.name]));
@@ -2408,16 +2604,37 @@ render.entregas = function() {
 
 render.entregasSub = function(sub) {
   if (sub === 'inmediato') render.entregasInmediato();
+  else if (sub === 'dias-gratis') render.entregasDiasGratis();
   else if (sub === 'horarios') render.entregasHorarios();
   else if (sub === 'ventanas') render.entregasVentanas();
   else if (sub === 'pagos') render.entregasPagos();
 };
 
+let _mapsPicker = null;
+
+function coordAttr(value) {
+  if (value === null || value === undefined || value === '') return '';
+  return String(value);
+}
+
 render.entregasInmediato = async function() {
   const el = document.getElementById('entregas-inmediato');
+  if (_mapsPicker) { _mapsPicker.destroy(); _mapsPicker = null; }
+  let cfg;
+  let mapsCfg;
   try {
-    const cfg = await api('/delivery-config');
-    el.innerHTML = `
+    cfg = await api('/delivery-config');
+  } catch (e) {
+    el.innerHTML = `<div class="card">Error: ${escapeHtml(e.message)}</div>`;
+    return;
+  }
+  try {
+    mapsCfg = await api('/credentials/maps-config');
+  } catch (e) {
+    mapsCfg = { ready: false, browser_key: null, map_id: null, reason: 'No pudimos consultar la configuración de Google Maps.' };
+  }
+  const mapsReady = Boolean(mapsCfg && mapsCfg.ready && mapsCfg.browser_key);
+  el.innerHTML = `
       <form id="delivery-config-form">
         <div class="cfg-group">
           <h3>Estado del servicio</h3>
@@ -2442,38 +2659,322 @@ render.entregasInmediato = async function() {
         <div class="cfg-group">
           <h3>Centro de la zona</h3>
           <div class="form-group"><label>Etiqueta</label><input type="text" id="dc-label" value="${escapeHtml(cfg.delivery_zone_label || '')}" placeholder="ej: Neiva urbana"></div>
-          <div class="modal-row">
-            <div class="form-group"><label>Latitud</label><input type="number" id="dc-lat" value="${cfg.delivery_zone_center_lat || ''}" step="0.0001"></div>
-            <div class="form-group"><label>Longitud</label><input type="number" id="dc-lng" value="${cfg.delivery_zone_center_lng || ''}" step="0.0001"></div>
+          <div class="form-group"><label>Dirección de referencia</label><input type="text" id="dc-address" value="${escapeHtml(cfg.delivery_zone_address || '')}" placeholder="Ej: Carrera 12 #34-56, Neiva" maxlength="300"><div class="hint">Texto para identificar el punto. Opcional.</div></div>
+          <div class="maps-shell">
+            <div class="maps-frame" id="dc-map">
+              <div class="maps-placeholder" id="dc-map-placeholder">
+                <strong>Aún no abriste el mapa</strong>
+                <span id="dc-map-placeholder-text">${mapsReady ? 'Tocá "Elegir en Google Maps" para marcar el centro de la zona.' : 'No hay API key de Google Maps. Podés escribir la ubicación a mano.'}</span>
+              </div>
+            </div>
+            <div class="maps-toolbar">
+              <button type="button" class="btn btn-primary" id="dc-map-btn">Elegir en Google Maps</button>
+              <label class="map-toggle-row"><input type="checkbox" id="dc-map-autoaddress" checked><span>Completar la dirección con el mapa</span></label>
+            </div>
           </div>
+          <div class="maps-status" id="dc-map-status" role="status" aria-live="polite"></div>
+          <div class="modal-row">
+            <div class="form-group"><label>Latitud</label><input type="number" id="dc-lat" value="${coordAttr(cfg.delivery_zone_center_lat)}" step="0.000001" inputmode="decimal" placeholder="2.927300"></div>
+            <div class="form-group"><label>Longitud</label><input type="number" id="dc-lng" value="${coordAttr(cfg.delivery_zone_center_lng)}" step="0.000001" inputmode="decimal" placeholder="-75.289600"></div>
+          </div>
+          <div class="hint">Si el mapa no abre, escribí la latitud y la longitud a mano. Dejarlas vacías significa "sin centro definido": el domicilio queda igual, pero el cálculo por distancia no puede aplicarse.</div>
           <div class="form-group"><label>Cutoff por defecto (horas)</label><input type="number" id="dc-cutoff" value="${cfg.delivery_default_cutoff_hours || 8}" min="0" max="168"><div class="hint">Horas antes del cierre para hacer pedidos programados</div></div>
         </div>
           <div class="modal-actions">
           <button type="submit" class="btn btn-imediato">Guardar cambios</button>
         </div>
       </form>`;
-    document.getElementById('delivery-config-form').onsubmit = async (e) => {
-      e.preventDefault();
-      const body = {
-        delivery_immediate_enabled: document.getElementById('dc-enabled').checked ? 1 : 0,
-        delivery_immediate_fee_cents: Number(document.getElementById('dc-fee').value),
-        delivery_immediate_base_fare_cents: Number(document.getElementById('dc-base').value),
-        delivery_immediate_price_per_km_cents: Number(document.getElementById('dc-perkm').value),
-        delivery_immediate_min_order_cents: Number(document.getElementById('dc-min').value),
-        delivery_immediate_radius_km: Number(document.getElementById('dc-radius').value),
-        delivery_immediate_eta_minutes: Number(document.getElementById('dc-eta').value),
-        delivery_zone_label: document.getElementById('dc-label').value.trim(),
-        delivery_zone_center_lat: Number(document.getElementById('dc-lat').value),
-        delivery_zone_center_lng: Number(document.getElementById('dc-lng').value),
-        delivery_default_cutoff_hours: Number(document.getElementById('dc-cutoff').value)
-      };
-      try {
-        await api('/delivery-config', { method: 'PUT', body: JSON.stringify(body) });
-        toast('Config guardada', 'success');
-        render.entregasInmediato();
-      } catch (err) { toast('Error: ' + err.message, 'error'); }
+
+  const statusEl = document.getElementById('dc-map-status');
+  const placeholderEl = document.getElementById('dc-map-placeholder');
+  const placeholderTextEl = document.getElementById('dc-map-placeholder-text');
+  const mapBtn = document.getElementById('dc-map-btn');
+  const latInput = document.getElementById('dc-lat');
+  const lngInput = document.getElementById('dc-lng');
+  const addressInput = document.getElementById('dc-address');
+  const autoAddressInput = document.getElementById('dc-map-autoaddress');
+
+  const setStatus = (kind, text) => {
+    statusEl.textContent = text;
+    statusEl.className = 'maps-status' + (kind ? ' maps-status--' + kind : '');
+  };
+
+  if (mapsReady) {
+    setStatus('', 'Tenés Google Maps listo. Tocá "Elegir en Google Maps" para marcar el centro de la zona.');
+  } else {
+    setStatus('error', mapsCfg.reason || 'No hay API key de Google Maps configurada. Podés guardar la ubicación escribiéndola a mano.');
+    if (placeholderTextEl) placeholderTextEl.textContent = mapsCfg.reason || 'No hay API key de Google Maps.';
+  }
+
+  mapBtn.onclick = async () => {
+    if (!mapsReady) {
+      setStatus('error', (mapsCfg.reason || 'Falta la API key de Google Maps.') + ' Configurala en Credenciales > Google Maps.');
+      if (placeholderTextEl) placeholderTextEl.textContent = 'Falta la API key de Google Maps. Configurala en Credenciales.';
+      return;
+    }
+    mapBtn.disabled = true;
+    mapBtn.textContent = 'Abriendo el mapa…';
+    try {
+      if (!_mapsPicker) {
+        _mapsPicker = window.MapsPicker.create({
+          container: document.getElementById('dc-map'),
+          latInput,
+          lngInput,
+          addressInput,
+          status: statusEl,
+          apiKey: mapsCfg.browser_key,
+          mapId: mapsCfg.map_id || '',
+          autoAddress: autoAddressInput.checked,
+        });
+        const ok = await _mapsPicker.start();
+        if (ok && placeholderEl) placeholderEl.style.display = 'none';
+        if (!ok && placeholderEl) placeholderEl.style.display = '';
+        if (!ok) return;
+      } else {
+        await _mapsPicker.start();
+        if (placeholderEl) placeholderEl.style.display = 'none';
+      }
+      const lat = latInput.value.trim();
+      const lng = lngInput.value.trim();
+      if (!lat || !lng) {
+        setStatus('warn', 'Mapa listo. Tocá el mapa para poner el primer pin.');
+      }
+    } catch (e) {
+      setStatus('error', 'No pudimos abrir el mapa. Podés escribir la latitud y la longitud a mano.');
+    } finally {
+      mapBtn.disabled = false;
+      mapBtn.textContent = 'Elegir en Google Maps';
+    }
+  };
+
+  autoAddressInput.onchange = () => {
+    if (_mapsPicker) _mapsPicker.autoAddress = autoAddressInput.checked;
+  };
+
+  const onManualEdit = () => {
+    if (_mapsPicker) _mapsPicker.syncFromInputs();
+  };
+  latInput.addEventListener('change', onManualEdit);
+  lngInput.addEventListener('change', onManualEdit);
+
+  document.getElementById('delivery-config-form').onsubmit = async (e) => {
+    e.preventDefault();
+    const latRaw = latInput.value.trim();
+    const lngRaw = lngInput.value.trim();
+    if ((latRaw && !lngRaw) || (!latRaw && lngRaw)) {
+      toast('Escribí la latitud y la longitud juntas, o dejá las dos vacías.', 'error');
+      return;
+    }
+    const body = {
+      delivery_immediate_enabled: document.getElementById('dc-enabled').checked ? 1 : 0,
+      delivery_immediate_fee_cents: Number(document.getElementById('dc-fee').value),
+      delivery_immediate_base_fare_cents: Number(document.getElementById('dc-base').value),
+      delivery_immediate_price_per_km_cents: Number(document.getElementById('dc-perkm').value),
+      delivery_immediate_min_order_cents: Number(document.getElementById('dc-min').value),
+      delivery_immediate_radius_km: Number(document.getElementById('dc-radius').value),
+      delivery_immediate_eta_minutes: Number(document.getElementById('dc-eta').value),
+      delivery_zone_label: document.getElementById('dc-label').value.trim(),
+      delivery_zone_center_lat: latRaw,
+      delivery_zone_center_lng: lngRaw,
+      delivery_zone_address: addressInput.value.trim(),
+      delivery_default_cutoff_hours: Number(document.getElementById('dc-cutoff').value)
     };
-  } catch (e) { el.innerHTML = `<div class="card">Error: ${escapeHtml(e.message)}</div>`; }
+    try {
+      await api('/delivery-config', { method: 'PUT', body: JSON.stringify(body) });
+      toast('Config guardada', 'success');
+      render.entregasInmediato();
+    } catch (err) {
+      toast('Error: ' + err.message, 'error');
+    }
+  };
+};
+
+let _diasGratisMensaje = '';
+
+function primaryRuleOf(list) {
+  if (!list || !list.length) return null;
+  const active = list.filter(r => Number(r.active) === 1);
+  return active.length ? active[0] : list[0];
+}
+
+function formatCents(cents) {
+  const value = Number(cents) || 0;
+  return '$' + value.toLocaleString('es-CO');
+}
+
+render.entregasDiasGratis = async function() {
+  const el = document.getElementById('entregas-dias-gratis');
+  let rules = [];
+  try {
+    rules = await api('/delivery-rules?include_inactive=1');
+  } catch (e) {
+    el.innerHTML = `<div class="card">Error: ${escapeHtml(e.message)}</div>`;
+    return;
+  }
+  let hoy = null;
+  try {
+    const pub = await api('/public/');
+    hoy = {
+      date: pub.business_date,
+      tz: pub.business_tz,
+      free: Boolean(pub.today_free_delivery),
+      rule: pub.delivery_free_rule || null,
+    };
+  } catch {}
+
+  const byDay = {};
+  for (const r of rules) {
+    const day = Number(r.day_of_week);
+    if (!byDay[day]) byDay[day] = [];
+    byDay[day].push(r);
+  }
+  for (const key of Object.keys(byDay)) {
+    byDay[key].sort((a, b) => Number(a.id) - Number(b.id));
+  }
+
+  const activeRules = rules.filter(r => Number(r.active) === 1);
+
+  el.innerHTML = `
+    <div class="cfg-group">
+      <h3>Días con domicilio gratis</h3>
+      <div class="hint" style="margin-bottom:14px">
+        Activá los días en que querés que el domicilio salga gratis. El beneficio lo decide
+        <strong>el servidor</strong> con la fecha y la hora de Colombia
+        (<strong>America/Bogota</strong>), no el navegador del cliente: si alguien abre la tienda
+        con la hora cambiada, igual se cobra o no se cobra como corresponde.
+        El cliente solo ve el aviso cuando la regla realmente aplica ese día.
+      </div>
+      <div id="df-days">
+        ${ENTREGAS_DAYS.map((dayName, day) => {
+          const list = byDay[day] || [];
+          const primary = primaryRuleOf(list);
+          const extras = list.filter(r => !primary || Number(r.id) !== Number(primary.id));
+          const on = Boolean(primary && Number(primary.active) === 1);
+          const label = primary ? (primary.label || '') : '';
+          const minOrder = primary ? Math.round(Number(primary.min_order_cents) || 0) / 100 : 0;
+          const window = primary && primary.starts_at
+            ? `${primary.starts_at}${primary.ends_at ? ' – ' + primary.ends_at : ''}`
+            : '';
+          return `
+          <div class="dayfree-row${on ? '' : ' dayfree-disabled'}" data-day="${day}">
+            <input type="checkbox" id="df-on-${day}" data-day="${day}" ${on ? 'checked' : ''}>
+            <label class="dayfree-day" for="df-on-${day}">${dayName}</label>
+            <div class="dayfree-fields">
+              <div>
+                <label for="df-label-${day}">Aviso para el cliente</label>
+                <input type="text" id="df-label-${day}" data-day="${day}" value="${escapeHtml(label)}" placeholder="Ej: Hoy el domicilio es gratis" maxlength="120">
+              </div>
+              <div>
+                <label for="df-min-${day}">Pedido mínimo (COP)</label>
+                <input type="number" id="df-min-${day}" data-day="${day}" value="${minOrder || ''}" min="0" step="500" placeholder="0">
+              </div>
+            </div>
+            <div class="hint" style="grid-column: 2;margin-top:6px">
+              ${window ? `Horario de esta regla: ${escapeHtml(window)}. ` : ''}
+              ${extras.length ? `Hay ${extras.length} regla(s) más para este día; al guardar se desactivan para que el día tenga un solo criterio.` : ''}
+            </div>
+          </div>`;
+        }).join('')}
+      </div>
+      <div class="modal-actions">
+        <button type="button" class="btn btn-imediato" id="df-save">Guardar días gratis</button>
+        <button type="button" class="btn btn-ghost" id="df-reload">Recargar</button>
+      </div>
+      <div class="maps-status" id="df-message" role="status" aria-live="polite" style="margin-top:12px"></div>
+    </div>
+
+    <div class="cfg-group">
+      <h3>Reglas activas ahora</h3>
+      ${activeRules.length ? `
+      <div class="table-wrap"><table>
+        <thead><tr><th>Día</th><th>Aviso</th><th>Pedido mínimo</th><th>Horario</th><th>Desde</th></tr></thead>
+        <tbody>
+          ${activeRules.map(r => `<tr>
+            <td><strong>${ENTREGAS_DAYS[Number(r.day_of_week)] || '—'}</strong></td>
+            <td>${escapeHtml(r.label || '')}</td>
+            <td>${Number(r.min_order_cents) > 0 ? formatCents(r.min_order_cents) : 'Sin mínimo'}</td>
+            <td>${r.starts_at ? escapeHtml(r.starts_at + (r.ends_at ? ' – ' + r.ends_at : '')) : 'Todo el día'}</td>
+            <td>${escDate(r.created_at)}</td>
+          </tr>`).join('')}
+        </tbody>
+      </table></div>` : `<div class="hint">No hay ningún día con domicilio gratis activo. Activá uno arriba y guardá.</div>`}
+      <div class="hint" style="margin-top:12px">
+        ${hoy ? `Hoy es <strong>${escapeHtml(hoy.date)}</strong> (${escapeHtml(hoy.tz)}). ${hoy.free ? 'El domicilio sale gratis hoy.' : 'Hoy el domicilio se cobra normalmente.'}` : 'No pudimos leer el estado de hoy.'}
+      </div>
+    </div>`;
+
+  const messageEl = document.getElementById('df-message');
+  if (_diasGratisMensaje) {
+    messageEl.textContent = _diasGratisMensaje;
+    messageEl.className = 'maps-status maps-status--ok';
+    _diasGratisMensaje = '';
+  }
+
+  document.getElementById('df-reload').onclick = () => render.entregasDiasGratis();
+
+  document.querySelectorAll('#df-days input[type="checkbox"]').forEach(box => {
+    box.onchange = () => {
+      const row = box.closest('.dayfree-row');
+      if (row) row.classList.toggle('dayfree-disabled', !box.checked);
+    };
+  });
+
+  document.getElementById('df-save').onclick = async () => {
+    const btn = document.getElementById('df-save');
+    btn.disabled = true;
+    const original = btn.textContent;
+    btn.textContent = 'Guardando…';
+    try {
+      for (let day = 0; day <= 6; day++) {
+        const enabled = document.getElementById(`df-on-${day}`).checked;
+        const rawLabel = document.getElementById(`df-label-${day}`).value.trim();
+        const rawMin = document.getElementById(`df-min-${day}`).value.trim();
+        const label = rawLabel || `Domicilio gratis los ${ENTREGAS_DAYS[day].toLowerCase()}`;
+        const minOrderCents = rawMin ? Math.round(Number(rawMin) * 100) : 0;
+        if (Number.isNaN(minOrderCents) || minOrderCents < 0) {
+          throw new Error(`El pedido mínimo de ${ENTREGAS_DAYS[day]} no es un número válido.`);
+        }
+        const list = byDay[day] || [];
+        const primary = primaryRuleOf(list);
+        if (enabled) {
+          if (primary) {
+            await api(`/delivery-rules/${primary.id}`, {
+              method: 'PUT',
+              body: JSON.stringify({ active: 1, free_delivery: 1, label, min_order_cents: minOrderCents }),
+            });
+          } else {
+            await api('/delivery-rules', {
+              method: 'POST',
+              body: JSON.stringify({
+                day_of_week: day, free_delivery: 1, label,
+                min_order_cents: minOrderCents, active: 1,
+              }),
+            });
+          }
+          for (const extra of list) {
+            if (primary && Number(extra.id) === Number(primary.id)) continue;
+            if (Number(extra.active) === 1) {
+              await api(`/delivery-rules/${extra.id}`, { method: 'PUT', body: JSON.stringify({ active: 0 }) });
+            }
+          }
+        } else {
+          for (const r of list) {
+            if (Number(r.active) === 1) {
+              await api(`/delivery-rules/${r.id}`, { method: 'PUT', body: JSON.stringify({ active: 0 }) });
+            }
+          }
+        }
+      }
+      _diasGratisMensaje = 'Días gratis guardados. El beneficio se decide en el servidor con la fecha y la hora de Colombia (America/Bogota).';
+      toast('Días gratis guardados', 'success');
+      render.entregasDiasGratis();
+    } catch (err) {
+      messageEl.textContent = 'No pudimos guardar: ' + (err.message || 'revisa los datos e intenta de nuevo.');
+      messageEl.className = 'maps-status maps-status--error';
+      btn.disabled = false;
+      btn.textContent = original;
+    }
+  };
 };
 
 render.entregasHorarios = async function() {
@@ -3391,15 +3892,19 @@ render.users = function () {
 };
 
 let _prodChart = null;
+let _analysisChart = null;
+let _analysisDays = 30;
 
 render.produccion = async function () {
   const body = document.getElementById('production-table-body');
-  if (!body) return;
+  const productBody = document.getElementById('prod-products-body');
+  if (!body || !productBody) return;
   let list, sum;
   try {
     [list, sum] = await Promise.all([api('/production'), api('/production/summary')]);
   } catch (e) {
     body.innerHTML = `<tr><td colspan="6" style="opacity:.6">No pudimos cargar la producción: ${escapeHtml(e.message)}</td></tr>`;
+    productBody.innerHTML = '';
     return;
   }
   const items = (list && list.items) || [];
@@ -3407,16 +3912,35 @@ render.produccion = async function () {
 
   document.getElementById('prod-units').value = s.units_per_batch ?? 50;
   document.getElementById('prod-target').value = s.target_margin_pct ?? 70;
+  document.getElementById('prod-market').value = s.market_reference_cents || 0;
+  document.getElementById('prod-market-date').value = s.market_reference_date || '';
+
   document.getElementById('prod-total-cost').textContent = fmt(s.batch_cost_cents || 0);
+  document.getElementById('prod-total-hint').textContent = `${s.items_count || 0} insumos · ${s.units_per_batch || 0} unidades`;
   document.getElementById('prod-unit-cost').textContent = fmt(s.unit_cost_cents || 0);
+  document.getElementById('prod-unit-hint').textContent = 'Costo de producir una unidad';
   document.getElementById('prod-suggested').textContent = s.suggested_price_cents ? fmt(s.suggested_price_cents) : '—';
-  document.getElementById('prod-margin').textContent = s.margin_vs_avg_ticket_pct != null ? s.margin_vs_avg_ticket_pct + '%' : '—';
-  document.getElementById('prod-hint').textContent = s.avg_ticket_cents
-    ? `Tus ventas reales: ticket promedio ${fmt(s.avg_ticket_cents)} · ${s.paid_orders} pedidos · ${s.sold_units_total} unidades vendidas.`
-    : 'Todavía no hay ventas para contrastar con tus costos.';
-  document.getElementById('prod-hint2').textContent = s.unit_cost_cents
-    ? `Cada unidad te cuesta ${fmt(s.unit_cost_cents)}. Para ganarte el ${s.target_margin_pct}% de cada peso, cobrá ${s.suggested_price_cents ? fmt(s.suggested_price_cents) : '—'}.`
-    : 'Agregá insumos para calcular el costo del lote.';
+  document.getElementById('prod-suggested-hint').textContent = `Margen objetivo ${s.target_margin_pct || 0}%`;
+  document.getElementById('prod-margin').textContent = s.margin_vs_catalog_pct != null ? s.margin_vs_catalog_pct + '%' : '—';
+  document.getElementById('prod-margin-hint').textContent = s.catalog_avg_price_cents
+    ? `Precio promedio del catálogo ${fmt(s.catalog_avg_price_cents)}`
+    : 'Agregá precios al catálogo';
+
+  const marginCard = document.getElementById('prod-margin-card');
+  marginCard.classList.remove('good', 'warn', 'bad');
+  const marginValue = s.margin_vs_catalog_pct;
+  const target = s.target_margin_pct || 0;
+  if (marginValue == null) marginCard.classList.add('warn');
+  else if (marginValue >= target) marginCard.classList.add('good');
+  else if (marginValue >= target - 5) marginCard.classList.add('warn');
+  else marginCard.classList.add('bad');
+
+  document.getElementById('prod-hint').textContent = s.paid_orders
+    ? `Ventas pagadas: ${s.paid_orders} pedidos · ${fmt(s.gross_revenue_cents)} · ticket ${fmt(s.avg_ticket_cents || 0)} · ${s.sold_units_total || 0} unidades.`
+    : 'Todavía no hay ventas pagadas para contrastar.';
+  document.getElementById('prod-hint2').textContent = s.market_position_pct == null
+    ? 'Guardá una referencia de mercado si querés comparar tu precio promedio.'
+    : `Tu precio promedio está ${s.market_position_pct > 0 ? 'por encima' : s.market_position_pct < 0 ? 'por debajo' : 'igual'} del mercado (${Math.abs(s.market_position_pct)}%).`;
 
   body.innerHTML = items.map(it => `<tr>
     <td>${escapeHtml(it.name)}</td>
@@ -3424,8 +3948,30 @@ render.produccion = async function () {
     <td>${fmt(it.unit_cost_cents)}</td>
     <td>${Number(it.qty_per_batch)}</td>
     <td>${fmt(Math.round(Number(it.unit_cost_cents) * Number(it.qty_per_batch)))}</td>
-    <td style="text-align:right"><button class="btn btn-sm btn-danger" onclick="removeInsumo(${it.id})" title="Quitar">🗑</button></td>
+    <td style="text-align:right;white-space:nowrap">
+      <button class="btn btn-sm" onclick="openProductionModal(${it.id})">Editar</button>
+      <button class="btn btn-sm btn-danger" onclick="removeInsumo(${it.id})">Quitar</button>
+    </td>
   </tr>`).join('') || '<tr><td colspan="6" style="opacity:.6">Sin insumos. Agregá el primero con el botón de arriba.</td></tr>';
+
+  const products = s.catalog_products || [];
+  productBody.innerHTML = products.map(p => {
+    const delta = p.delta_margin_pct;
+    const actionClass = p.action === 'ok' ? '' : p.action === 'increase_price' ? 'bad' : 'warn';
+    const actionText = p.action === 'ok' ? 'Bien'
+      : p.action === 'increase_price' ? 'Subir precio'
+      : p.action === 'review_price' ? 'Revisar precio'
+      : 'Falta precio';
+    return `<tr>
+      <td>${escapeHtml(p.name)}</td>
+      <td>${p.price_cents ? fmt(p.price_cents) : '—'}</td>
+      <td>${p.margin_pct != null ? p.margin_pct + '%' : '—'}</td>
+      <td>${p.target_margin_pct}%</td>
+      <td>${delta != null ? (delta > 0 ? '+' : '') + delta + ' pp' : '—'}</td>
+      <td>${p.units_sold}</td>
+      <td><span class="tag-mini ${actionClass}">${actionText}</span></td>
+    </tr>`;
+  }).join('') || '<tr><td colspan="7" style="opacity:.6">Sin productos publicados.</td></tr>';
 
   if (typeof Chart !== 'undefined') {
     const ctx = document.getElementById('prod-chart');
@@ -3434,14 +3980,92 @@ render.produccion = async function () {
       _prodChart = new Chart(ctx, {
         type: 'bar',
         data: {
-          labels: ['Costo por unidad', 'Precio sugerido', 'Ticket promedio real'],
+          labels: ['Costo unidad', 'Precio sugerido', 'Precio promedio'],
           datasets: [{
-            data: [s.unit_cost_cents || 0, s.suggested_price_cents || 0, s.avg_ticket_cents || 0],
+            data: [s.unit_cost_cents || 0, s.suggested_price_cents || 0, s.catalog_avg_price_cents || 0],
             backgroundColor: ['#F9B8CE', '#9DDDEC', '#62D3EC'],
             borderRadius: 8,
           }]
         },
         options: { responsive: true, maintainAspectRatio: false, plugins: { legend: { display: false } }, scales: { y: { beginAtZero: true } } }
+      });
+    }
+  }
+};
+
+render.analisis = async function () {
+  const kpis = document.getElementById('analysis-kpis');
+  const weekdays = document.getElementById('analysis-weekdays');
+  const products = document.getElementById('analysis-products-body');
+  const plan = document.getElementById('analysis-plan-body');
+  if (!kpis || !weekdays || !products || !plan) return;
+  document.querySelectorAll('#analysis-range .pill-btn').forEach(btn => {
+    btn.classList.toggle('active', Number(btn.dataset.days) === _analysisDays);
+    btn.onclick = () => { _analysisDays = Number(btn.dataset.days); render.analisis(); };
+  });
+
+  let metrics;
+  try {
+    metrics = await api(`/metrics?days=${_analysisDays}`);
+  } catch (e) {
+    kpis.innerHTML = `<div class="card">No pudimos cargar el análisis: ${escapeHtml(e.message)}</div>`;
+    return;
+  }
+  const a = metrics.analysis || {};
+  kpis.innerHTML = `
+    <div class="prod-metric"><div class="label">Pedidos activos</div><div class="value">${a.orders || 0}</div><div class="hint">${a.from_date || ''} → ${a.to_date || ''}</div></div>
+    <div class="prod-metric good"><div class="label">Ventas</div><div class="value">${fmt(a.gross || 0)}</div><div class="hint">Sin pedidos cancelados</div></div>
+    <div class="prod-metric"><div class="label">Ticket promedio</div><div class="value">${fmt(a.avg_ticket || 0)}</div><div class="hint">Por pedido activo</div></div>
+    <div class="prod-metric warn"><div class="label">Cancelados</div><div class="value">${a.cancelled_orders || 0}</div><div class="hint">Histórico completo</div></div>
+  `;
+
+  weekdays.innerHTML = (a.by_weekday || []).map(w => `<div class="mini-row">
+    <span>${escapeHtml(w.weekday)}</span>
+    <strong>${w.orders} · ${fmt(w.gross)}</strong>
+  </div>`).join('') || '<div class="sub">Sin datos.</div>';
+
+  products.innerHTML = (a.product_demand || []).map(p => `<tr>
+    <td>${escapeHtml(p.name)}</td>
+    <td>${p.units}</td>
+    <td>${fmt(p.gross || 0)}</td>
+  </tr>`).join('') || '<tr><td colspan="3" style="opacity:.6">Sin pedidos en el periodo.</td></tr>';
+
+  plan.innerHTML = (a.plan_vs_sold || []).map(p => {
+    const remaining = Math.max(0, Number(p.planned || 0) - Number(p.sold || 0) - Number(p.reserved || 0));
+    return `<tr>
+      <td>${escapeHtml(p.release_date)}</td>
+      <td>${escapeHtml(p.flavor_name)}</td>
+      <td>${p.planned}</td>
+      <td>${p.reserved}</td>
+      <td>${p.sold}</td>
+      <td><span class="tag-mini ${remaining > 0 ? 'warn' : ''}">${remaining}</span></td>
+    </tr>`;
+  }).join('') || '<tr><td colspan="6" style="opacity:.6">No hay ventanas futuras con plan.</td></tr>';
+
+  if (typeof Chart !== 'undefined') {
+    const ctx = document.getElementById('analysis-chart');
+    if (ctx) {
+      if (_analysisChart) _analysisChart.destroy();
+      const series = a.daily_series || [];
+      _analysisChart = new Chart(ctx, {
+        type: 'bar',
+        data: {
+          labels: series.map(d => d.date.slice(5)),
+          datasets: [
+            { label: 'Ventas', data: series.map(d => d.total || 0), backgroundColor: '#F9B8CE', borderRadius: 7, yAxisID: 'y' },
+            { label: 'Unidades', data: series.map(d => d.units || 0), backgroundColor: '#9DDDEC', borderRadius: 7, yAxisID: 'y1' }
+          ]
+        },
+        options: {
+          responsive: true,
+          maintainAspectRatio: false,
+          plugins: { legend: { position: 'bottom', labels: { boxWidth: 12 } } },
+          scales: {
+            y: { position: 'left', beginAtZero: true, grid: { color: 'rgba(120,80,40,0.08)' } },
+            y1: { position: 'right', beginAtZero: true, grid: { display: false } },
+            x: { grid: { display: false } }
+          }
+        }
       });
     }
   }
@@ -3488,19 +4112,26 @@ window.setHero = async function (url) {
   } catch (e) { toast('Error: ' + e.message, 'error'); }
 };
 
-function openProductionModal() {
+async function openProductionModal(id) {
+  let item = null;
+  if (id != null) {
+    try {
+      const list = await api('/production');
+      item = (list.items || []).find(x => Number(x.id) === Number(id)) || null;
+    } catch {}
+  }
   document.getElementById('modal-content').innerHTML = `
-    <h2>Nuevo insumo</h2>
+    <h2>${item ? 'Editar insumo' : 'Nuevo insumo'}</h2>
     <form id="entity-form">
-      <div class="form-group"><label>Nombre del insumo</label><input type="text" id="pi-name" placeholder="Ej: harina de arroz" required maxlength="80"></div>
+      <div class="form-group"><label>Nombre del insumo</label><input type="text" id="pi-name" value="${item ? escapeHtml(item.name) : ''}" placeholder="Ej: harina de arroz" required maxlength="80"></div>
       <div class="modal-row">
-        <div class="form-group"><label>Unidad</label><input type="text" id="pi-unit" placeholder="kg, litro, unidad" maxlength="24"></div>
-        <div class="form-group"><label>Costo por unidad (COP)</label><input type="number" id="pi-cost" min="1" step="100" required></div>
+        <div class="form-group"><label>Unidad</label><input type="text" id="pi-unit" value="${item ? escapeHtml(item.unit || 'unidad') : ''}" placeholder="kg, litro, unidad" maxlength="24"></div>
+        <div class="form-group"><label>Costo por unidad (COP)</label><input type="number" id="pi-cost" value="${item ? Number(item.unit_cost_cents) : ''}" min="1" step="100" required></div>
       </div>
-      <div class="form-group"><label>Cantidad usada por lote</label><input type="number" id="pi-qty" min="0.1" step="0.1" required placeholder="Ej: 2.5"></div>
+      <div class="form-group"><label>Cantidad usada por lote</label><input type="number" id="pi-qty" value="${item ? Number(item.qty_per_batch) : ''}" min="0.1" step="0.1" required placeholder="Ej: 2.5"></div>
       <div class="modal-actions">
         <button type="button" class="btn btn-ghost" onclick="closeModal()">Cancelar</button>
-        <button type="submit" class="btn btn-primary">Guardar insumo</button>
+        <button type="submit" class="btn btn-primary">${item ? 'Guardar cambios' : 'Guardar insumo'}</button>
       </div>
     </form>`;
   document.getElementById('modal-back').classList.add('visible');
@@ -3513,8 +4144,9 @@ function openProductionModal() {
       qty_per_batch: Number(document.getElementById('pi-qty').value),
     };
     try {
-      await api('/production', { method: 'POST', body: JSON.stringify(payload) });
-      toast('Insumo agregado al lote', 'success');
+      if (item) await api('/production/' + item.id, { method: 'PUT', body: JSON.stringify(payload) });
+      else await api('/production', { method: 'POST', body: JSON.stringify(payload) });
+      toast(item ? 'Insumo actualizado' : 'Insumo agregado al lote', 'success');
       closeModal();
       render.produccion();
     } catch (err) { toast('Error: ' + err.message, 'error'); }
@@ -3534,10 +4166,22 @@ window.saveProduccionSettings = async function () {
   const payload = {
     units_per_batch: Number(document.getElementById('prod-units').value),
     target_margin_pct: Number(document.getElementById('prod-target').value),
+    market_reference_cents: Number(document.getElementById('prod-market').value),
+    market_reference_date: document.getElementById('prod-market-date').value || null,
   };
   try {
     await api('/production/settings', { method: 'PUT', body: JSON.stringify(payload) });
-    toast('Lote y margen guardados', 'success');
+    toast('Producción guardada', 'success');
+    render.produccion();
+  } catch (e) { toast('Error: ' + e.message, 'error'); }
+};
+
+window.applySuggestedPrices = async function () {
+  if (!confirm('Vas a cambiar el precio de todos los productos del catálogo al precio sugerido. ¿Continuar?')) return;
+  try {
+    const out = await api('/production/apply-suggested', { method: 'POST', body: JSON.stringify({ confirm: true }) });
+    await loadAll();
+    toast(`Precios actualizados: ${out.updated} productos`, 'success');
     render.produccion();
   } catch (e) { toast('Error: ' + e.message, 'error'); }
 };
