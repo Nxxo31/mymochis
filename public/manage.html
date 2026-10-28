@@ -598,6 +598,13 @@ tbody tr:hover { background: var(--clay-canvas); }
 .toast.success { background: var(--mochi-matcha-d); color: #fff; }
 
 /* ============ EMPTY STATE ============ */
+/** Solo para screen readers: oculta visualmente pero accesible. */
+.visually-hidden {
+  position: absolute; width: 1px; height: 1px; padding: 0;
+  margin: -1px; overflow: hidden; clip: rect(0, 0, 0, 0);
+  white-space: nowrap; border: 0;
+}
+
 .empty {
   text-align: center;
   padding: 64px 24px;
@@ -1197,10 +1204,14 @@ tbody tr:hover { background: var(--clay-canvas); }
       </div>
 
       <!-- Estado rápido: pedidos pending + releases abiertos -->
-      <div class="grid grid-2" id="dash-status-row">
-        <div class="kpi mochi"><div class="label">Pedidos pendientes</div><div class="value" id="kpi-pending">—</div><div class="hint" id="kpi-pending-hint">requieren acción</div></div>
-        <div class="kpi mint"><div class="label">Ventanas abiertas</div><div class="value" id="kpi-open-windows">—</div><div class="hint" id="kpi-open-windows-hint">días de recogida</div></div>
-      </div>
+            <div class="grid grid-2" id="dash-status-row">
+              <div class="kpi mochi" style="cursor:pointer" onclick="showSection('orders'); filterOrdersByStatus('pending');" title="Ir a pedidos pendientes">
+                <div class="label">Pedidos pendientes</div>
+                <div class="value" id="kpi-pending">—</div>
+                <div class="hint" id="kpi-pending-hint">requieren acción</div>
+              </div>
+              <div class="kpi mint"><div class="label">Ventanas abiertas</div><div class="value" id="kpi-open-windows">—</div><div class="hint" id="kpi-open-windows-hint">días de recogida</div></div>
+            </div>
 
       <!-- Stock retenido: pedidos hechos que nadie ha pagado. Las unidades NO se
            liberan solas (decisión del operador 2026-10-21): hay que cancelar el
@@ -2031,8 +2042,9 @@ const render = {
         <td><strong>${fmt(o.total)}</strong></td>
         <td><span class="tag ${o.status}">${STATUS_ES[o.status] || o.status}</span></td>
         <td><span class="tag ${o.payment_status === 'paid' ? 'paid' : 'pending'}">${o.payment_status === 'paid' ? 'Pagado' : 'Pendiente'}</span></td>
-        <td>${o.payment_status !== 'paid' ? `<button class="btn btn-sm btn-imediato" onclick="confirmOrderPayment('${o.id}')" title="Confirmar que el pago llegó">💰 Cobrar</button>` : ''}
-        <select onchange="updateOrderStatus('${o.id}', this.value)" style="padding:5px 8px;font-size:12px;border-radius:6px;border:1px solid var(--line);background:#fff">
+        <td>${o.payment_status !== 'paid' ? `<button class="btn btn-sm btn-imediato" onclick="confirmOrderPayment('${o.id}')" aria-label="Confirmar que el pago llegó" title="Confirmar que el pago llegó">💰 Cobrar</button>` : ''}
+        <label for="order-status-${o.id}" class="visually-hidden">Cambiar estado del pedido</label>
+        <select id="order-status-${o.id}" onchange="updateOrderStatus('${o.id}', this.value)" aria-label="Cambiar estado del pedido" style="padding:5px 8px;font-size:12px;border-radius:6px;border:1px solid var(--line);background:#fff">
           <option value="">cambiar estado...</option>
           <option value="pending">Pendiente</option>
           <option value="confirmed">Confirmado</option>
@@ -2040,7 +2052,7 @@ const render = {
           <option value="delivered">Entregado</option>
           <option value="cancelled">Cancelado</option>
         </select>
-          <button class="btn btn-sm btn-danger" onclick="deleteOrder('${o.id}')" title="Eliminar">🗑</button></td>
+          <button class="btn btn-sm btn-danger" onclick="deleteOrder('${o.id}')" aria-label="Eliminar pedido" title="Eliminar">🗑</button></td>
       </tr>`;
     }).join('');
   },
@@ -2189,6 +2201,13 @@ async function deleteOrder(id) {
 ['filter-status', 'filter-day', 'filter-q'].forEach(id => {
   document.getElementById(id).oninput = render.orders;
 });
+
+// Filtra pedidos por estado y navega a la sección (usado desde el dashboard)
+function filterOrdersByStatus(status) {
+  document.getElementById('filter-status').value = status;
+  render.orders();
+  showSection('orders');
+}
 
 // ============ FLAVORS CRUD ============
 function openFlavorModal(flavor) {
