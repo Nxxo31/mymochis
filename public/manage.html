@@ -338,6 +338,68 @@ tbody tr:hover { background: var(--clay-canvas); }
 .tag.failed     { background: var(--mochi-fresa); color: var(--mochi-fresa-d); }
 .tag.on         { background: var(--mochi-matcha); color: var(--mochi-matcha-d); }
 .tag.off        { background: rgba(120,80,40,0.12); color: rgba(120,80,40,0.55); }
+/* Chips de entrega: el operador tiene que ver de un vistazo si el pedido es
+   para recoger o a domicilio. Antes esa info viajaba en la API y no se
+   mostraba en ninguna parte de la tabla. */
+.tag.dom        { background: var(--mochi-cyan); color: var(--mochi-cyan-d); }
+.tag.pick       { background: var(--mochi-ube); color: var(--mochi-ube-d); }
+.tag.src        { background: var(--mochi-crema); color: var(--mocha-3); }
+.tag.free       { background: var(--mochi-matcha); color: var(--mochi-matcha-d); }
+
+/* ============ DETALLE DE PEDIDO ============ */
+.order-detail-list { display: flex; flex-direction: column; gap: 0; margin: 4px 0 8px; }
+.order-detail-list .od-row {
+  display: flex; justify-content: space-between; align-items: baseline; gap: 14px;
+  padding: 9px 0; border-bottom: 1px dashed var(--clay-line);
+  font-size: 13.5px;
+}
+.order-detail-list .od-row:last-child { border-bottom: 0; }
+.order-detail-list .od-row .od-k {
+  color: var(--clay-ink-soft); font-weight: 700; font-size: 11px;
+  letter-spacing: 0.8px; text-transform: uppercase; flex-shrink: 0;
+}
+.order-detail-list .od-row .od-v { text-align: right; word-break: break-word; }
+.order-detail-list .od-row .od-v.big {
+  font-family: 'Baloo 2', serif; font-size: 20px; font-weight: 700;
+  color: var(--mochi-fresa-d);
+}
+.od-block-title {
+  font-size: 11px; font-weight: 700; letter-spacing: 0.8px; text-transform: uppercase;
+  color: var(--clay-ink-soft); margin: 14px 0 4px;
+}
+
+/* Lineas del pedido dentro del modal de detalle */
+.od-lines { display: flex; flex-direction: column; gap: 6px; margin: 6px 0 2px; }
+.od-line {
+  display: flex; justify-content: space-between; gap: 10px;
+  padding: 8px 12px; border-radius: 12px;
+  background: var(--clay-canvas-2);
+  font-size: 13px;
+}
+.od-line .od-qty { font-weight: 800; color: var(--mochi-fresa-d); }
+
+/* Selector multiple de productos (pedido manual) */
+.multi-select {
+  border: 1px solid var(--line); border-radius: 12px; overflow: hidden;
+  max-height: 220px; overflow-y: auto;
+}
+.multi-select .ms-item {
+  display: flex; align-items: center; gap: 10px;
+  padding: 8px 12px; border-bottom: 1px solid var(--clay-line);
+  font-size: 13px;
+}
+.multi-select .ms-item:last-child { border-bottom: 0; }
+.multi-select .ms-item .ms-name { flex: 1; min-width: 0; }
+.multi-select .ms-item input[type="number"] {
+  width: 66px; flex-shrink: 0; padding: 6px 8px; text-align: center;
+}
+.ms-qty { display: flex; align-items: center; gap: 6px; }
+.ms-qty button {
+  width: 30px; height: 30px; border-radius: 8px; border: 0; cursor: pointer;
+  background: var(--clay-surface); color: var(--clay-ink); font-weight: 800;
+  box-shadow: var(--clay-shadow-xs);
+}
+.ms-empty { padding: 14px; text-align: center; color: var(--clay-ink-soft); font-size: 13px; }
 .tag.cancelled  { background: var(--clay-canvas-2); color: var(--clay-ink-soft); }
 .tag.available  { background: var(--mochi-matcha); color: var(--mochi-matcha-d); }
 .tag.status-draft     { background: var(--clay-canvas-2); color: var(--clay-ink-soft); }
@@ -676,7 +738,12 @@ tbody tr:hover { background: var(--clay-canvas); }
 
   /* Tablas: contenedor propio de scroll en vez de empujar la pagina entera */
   .table-wrap, .table-scroll { overflow-x: auto; -webkit-overflow-scrolling: touch; }
-  table { min-width: 560px; }
+  /* `position: relative` en la tabla: con la tabla en `static` y las `th`
+     sticky, el ancho minimo de la tabla se ESCAPA del clip de .table-wrap y
+     el scroll horizontal se va a la pagina entera (852px de documento en un
+     viewport de 375). Con la tabla posicionada, el overflow queda dentro del
+     contenedor y la pagina no se desplaza. Verificado 2026-10-28. */
+  table { min-width: 560px; position: relative; }
   /* Contenedor de scroll que se adapta al padre: sin min-width:0 hereda
      min-content y la tabla de 746px vuelve a estirar la pagina. */
   .table-wrap, .table-scroll { min-width: 0; max-width: 100%; }
@@ -692,6 +759,11 @@ tbody tr:hover { background: var(--clay-canvas); }
   .card, .kpi { padding: 14px; }
   .modal { padding: 16px; }
   .btn { padding: 9px 14px; font-size: 13px; }
+  /* La tabla de pedidos lleva direccion, notas y chips de entrega: sin
+     permitir cortes de palabra, una direccion larga sola empujaba la tabla a
+     865px. Con cortes, el texto se parte y la tabla cabe en su tarjeta. */
+  table { min-width: 460px; }
+  tbody td { overflow-wrap: anywhere; }
   /* Filtros y acciones a ancho completo: con 375px un boton de 2 palabras
      al lado de un input deja el input en ~120px, insuficiente. */
   .modal-actions { flex-direction: column-reverse; }
@@ -1267,7 +1339,10 @@ tbody tr:hover { background: var(--clay-canvas); }
           <h1>Pedidos</h1>
           <div class="sub" id="orders-count">—</div>
         </div>
-        <div class="actions"><button class="btn btn-ghost" onclick="showSection('cobros')">💰 Cobros y caja</button></div>
+        <div class="actions">
+          <button class="btn btn-primary" onclick="openNewOrderModal()">➕ Nuevo pedido</button>
+          <button class="btn btn-ghost" onclick="showSection('cobros')">💰 Cobros y caja</button>
+        </div>
       </div>
 
       <div class="toolbar">
@@ -1674,7 +1749,7 @@ const FLAVOR_PALETTE = {
 
 let _token = localStorage.getItem(TOKEN_KEY);
 let _user = null;
-let _orders = [], _flavors = [], _combos = [], _promos = [], _social = [], _config = null, _metrics = null;
+let _orders = [], _flavors = [], _combos = [], _promos = [], _social = [], _config = null, _metrics = null, _paymentMethods = [];
 let _recipients = [], _users = [];
 let _openWindows = [];
 let _editingItem = null;
@@ -1820,7 +1895,7 @@ async function enterApp() {
 
 async function loadAll() {
   try {
-    const [me, orders, flavors, combos, promos, social, config, metrics, windows, recipients, users] = await Promise.all([
+    const [me, orders, flavors, combos, promos, social, config, metrics, windows, recipients, users, payMethods] = await Promise.all([
       api('/me'),
       api('/orders'),
       api('/flavors'),
@@ -1831,7 +1906,8 @@ async function loadAll() {
       api('/metrics'),
       api('/release-windows'),
       api('/recipients'),
-      api('/users')
+      api('/users'),
+      api('/payment-methods?include_inactive=1').catch(() => [])
     ]);
     _user = me.user;
     _orders = orders;
@@ -1844,6 +1920,7 @@ async function loadAll() {
     _openWindows = (windows || []).filter(w => w.status === 'open');
     _recipients = (recipients && recipients.recipients) || [];
     _users = (users && users.users) || [];
+    _paymentMethods = (payMethods && payMethods.methods) || [];
   } catch (e) {
     if (e.status === 401) {
       document.getElementById('logout-btn').click();
@@ -1886,6 +1963,15 @@ let _chartStatus = null;
 // server siguen siendo los ingleses (pending|confirmed|...) — solo cambia lo
 // que la persona ve en pantalla.
 const STATUS_ES = { pending: 'Pendiente', confirmed: 'Confirmado', ready: 'Listo', delivered: 'Entregado', cancelled: 'Cancelado' };
+// Origen del pedido: lo manda el cliente (tienda web) o el operador (dashboard).
+const SOURCE_ES = { marketplace: 'Tienda web', web: 'Web', phone: 'Teléfono', whatsapp: 'WhatsApp', manual: 'Manual', admin: 'Dashboard' };
+// Metodos de pago: se cargan una vez para poder nombrar el metodo que eligio
+// el cliente en la tabla de pedidos (antes solo se veia pagado/pendiente).
+function paymentMethodName(id) {
+  if (id == null || id === '') return '';
+  const m = (_paymentMethods || []).find(x => String(x.id) === String(id));
+  return m ? (m.label || m.code || '') : '';
+}
 
 const render = {
   dashboard() {
@@ -2034,15 +2120,41 @@ const render = {
         return `${name} × ${qty}`;
       }).filter(Boolean).join(', ');
       const itemsHtml = [items, combos].filter(Boolean).join(' · ') || '—';
+      // Chips de entrega: "recoger" vs "domicilio" + la direccion cuando
+      // aplica. La API ya devolvia delivery_mode/delivery_address; sin esto
+      // el operador tenia que abrir el pedido para saber quien recibe.
+      const isDom = o.delivery_mode === 'immediate';
+      const modeChip = isDom
+        ? '<span class="tag dom" title="Entrega a domicilio">🛵 Domicilio</span>'
+        : '<span class="tag pick" title="Recogida en la cocina">🏪 Recogida</span>';
+      const addrHtml = isDom && o.delivery_address
+        ? `<br><small style="color:var(--ink-soft)">📍 ${escapeHtml(o.delivery_address)}</small>`
+        : '';
+      const feeCents = Number(o.delivery_fee_cents) || 0;
+      const feeHtml = isDom
+        ? (feeCents > 0
+            ? `<br><small style="color:var(--ink-soft)">🛵 domicilio ${fmt(feeCents)}</small>`
+            : (Number(o.delivery_free_applied) > 0
+                ? '<br><span class="tag free">domicilio gratis</span>'
+                : ''))
+        : '';
+      const srcHtml = o.source
+        ? ` <span class="tag src" title="Origen del pedido">${escapeHtml(SOURCE_ES[o.source] || o.source)}</span>`
+        : '';
+      const payMethodLabel = paymentMethodName(o.payment_method_id);
+      const payHtml = payMethodLabel
+        ? `<br><small style="color:var(--ink-soft)">💳 ${escapeHtml(payMethodLabel)}</small>`
+        : '';
       return `<tr>
         <td><small>${(o.created_at || '').slice(0, 16).replace('T', ' ')}</small></td>
         <td><strong>${escapeHtml(o.customer_name)}</strong><br><small style="color:var(--ink-soft)">${escapeHtml(o.customer_phone)}</small></td>
-        <td><small>${o.pickup_day}</small></td>
-        <td class="order-items">${escapeHtml(itemsHtml)}${o.notes ? `<br><em style="color:var(--gold)">📝 ${escapeHtml(o.notes)}</em>` : ''}</td>
-        <td><strong>${fmt(o.total)}</strong></td>
+        <td><small>${o.pickup_day}</small><br>${modeChip}${srcHtml}</td>
+        <td class="order-items">${escapeHtml(itemsHtml)}${addrHtml}${feeHtml}${o.notes ? `<br><em style="color:var(--gold)">📝 ${escapeHtml(o.notes)}</em>` : ''}</td>
+        <td><strong>${fmt(o.total)}</strong>${payHtml}</td>
         <td><span class="tag ${o.status}">${STATUS_ES[o.status] || o.status}</span></td>
         <td><span class="tag ${o.payment_status === 'paid' ? 'paid' : 'pending'}">${o.payment_status === 'paid' ? 'Pagado' : 'Pendiente'}</span></td>
-        <td>${o.payment_status !== 'paid' ? `<button class="btn btn-sm btn-imediato" onclick="confirmOrderPayment('${o.id}')" aria-label="Confirmar que el pago llegó" title="Confirmar que el pago llegó">💰 Cobrar</button>` : ''}
+        <td><button class="btn btn-sm btn-ghost" onclick="openOrderDetail('${o.id}')" aria-label="Ver detalle del pedido" title="Ver detalle">🔎</button>
+        ${o.payment_status !== 'paid' ? `<button class="btn btn-sm btn-imediato" onclick="confirmOrderPayment('${o.id}')" aria-label="Confirmar que el pago llegó" title="Confirmar que el pago llegó">💰 Cobrar</button>` : ''}
         <label for="order-status-${o.id}" class="visually-hidden">Cambiar estado del pedido</label>
         <select id="order-status-${o.id}" onchange="updateOrderStatus('${o.id}', this.value)" aria-label="Cambiar estado del pedido" style="padding:5px 8px;font-size:12px;border-radius:6px;border:1px solid var(--line);background:#fff">
           <option value="">cambiar estado...</option>
@@ -3827,6 +3939,314 @@ document.getElementById('config-form').onsubmit = async (e) => {
     await loadAll();
   } catch (err) { toast('Error: ' + err.message, 'error'); }
 };
+
+// ============ DETALLE DE PEDIDO ============
+// El back-end ya devolvia delivery_mode, delivery_address, delivery_fee_cents,
+// delivery_distance_km, source y payment_method_id: la API los tenia, la
+// tabla no los mostraba. Este modal los expone todos, que es lo que el
+// operador necesita para despachar sin abrir el pedido en otro lado.
+function openOrderDetail(id) {
+  const o = _orders.find(x => x.id === id);
+  if (!o) { toast('Pedido no encontrado', 'error'); return; }
+  const flavorNames = Object.fromEntries(_flavors.map(f => [f.id, f.name]));
+  const flavorPrice = Object.fromEntries(_flavors.map(f => [f.id, Number(f.price) || 0]));
+  const comboPrice = Object.fromEntries(_combos.map(c => [c.id, Number(c.price) || 0]));
+  const isDom = o.delivery_mode === 'immediate';
+
+  const lines = [];
+  for (const [fid, qty] of Object.entries(o.items || {})) {
+    const q = Number(qty) || 0;
+    if (q <= 0) continue;
+    lines.push({ name: flavorNames[fid] || fid, qty: q, price: flavorPrice[fid] || 0 });
+  }
+  for (const c of (o.combos || [])) {
+    const q = Number(c.qty || 1);
+    if (q <= 0) continue;
+    lines.push({ name: c.name || `Combo ${c.id}`, qty: q, price: comboPrice[c.id] || 0 });
+  }
+  const subtotal = lines.reduce((a, l) => a + l.price * l.qty, 0);
+  const fee = Number(o.delivery_fee_cents) || 0;
+
+  const row = (k, v, big) => `<div class="od-row"><span class="od-k">${k}</span><span class="od-v${big ? ' big' : ''}">${v}</span></div>`;
+
+  const deliveryRows = isDom
+    ? row('Dirección', escapeHtml(o.delivery_address || '—'))
+      + (o.delivery_distance_km != null ? row('Distancia', `${Number(o.delivery_distance_km).toFixed(1)} km`) : '')
+      + row('Costo del domicilio', fee > 0 ? fmt(fee) : (Number(o.delivery_free_applied) > 0 ? '<span class="tag free">gratis</span>' : '—'))
+      + (o.delivery_lat != null ? row('Coordenadas', `${Number(o.delivery_lat).toFixed(5)}, ${Number(o.delivery_lng).toFixed(5)}`) : '')
+    : row('Punto de recogida', escapeHtml((_config && (_config.pickup_address || _config.pickup_schedule)) || 'Cocina Mochi\'s Land'));
+
+  document.getElementById('modal-content').innerHTML = `
+    <h2>Pedido ${escapeHtml(o.customer_name || '')}</h2>
+    <div class="od-block-title">Resumen</div>
+    <div class="order-detail-list">
+      ${row('Cliente', escapeHtml(o.customer_name || '—'))}
+      ${row('WhatsApp', escapeHtml(o.customer_phone || '—'))}
+      ${row('Día de recogida', escapeHtml(o.pickup_day || '—'))}
+      ${row('Entrega', isDom ? '🛵 Domicilio' : '🏪 Recoger en la cocina')}
+      ${row('Origen', escapeHtml(SOURCE_ES[o.source] || o.source || '—'))}
+      ${row('Método de pago', escapeHtml(paymentMethodName(o.payment_method_id) || '—'))}
+      ${row('Estado del pago', o.payment_status === 'paid' ? '✅ Pagado' : '⏳ Pendiente')}
+      ${deliveryRows}
+      ${o.release_window_id ? row('Ventana de producción', `#${o.release_window_id}`) : ''}
+      ${o.notes ? row('Notas', escapeHtml(o.notes)) : ''}
+    </div>
+    <div class="od-block-title">Productos</div>
+    <div class="od-lines">
+      ${lines.length ? lines.map(l => `<div class="od-line"><span>${escapeHtml(l.name)} <span class="od-qty">× ${l.qty}</span></span><span>${fmt(l.price * l.qty)}</span></div>`).join('') : '<div class="ms-empty">Sin productos</div>'}
+    </div>
+    <div class="order-detail-list" style="margin-top:10px">
+      ${row('Subtotal', fmt(subtotal))}
+      ${row('Total', fmt(o.total), true)}
+    </div>
+    <div class="modal-actions">
+      <button type="button" class="btn btn-ghost" onclick="closeModal()">Cerrar</button>
+      <button type="button" class="btn btn-primary" onclick="closeModal(); showSection('cobros')">💰 Ir a cobros</button>
+    </div>`;
+  document.getElementById('modal-back').classList.add('visible');
+}
+
+// ============ PEDIDO MANUAL (formulario de compra del operador) ============
+// El canal real del negocio es WhatsApp: el cliente pide por chat y el
+// operador lo carga a mano. Antes no habia forma de registrar ese pedido en
+// el back-end, asi que quedaba fuera de las metricas, del stock y de la caja.
+// Este formulario usa el MISMO endpoint que la tienda (/api/orders), asi que
+// el pedido entra por la misma tuberia: reserva stock, valida la ventana,
+// recalcula el total en el servidor y dispara el WhatsApp.
+function openNewOrderModal() {
+  const windows = (_openWindows || []).slice().sort((a, b) => String(a.release_date).localeCompare(String(b.release_date)));
+  const dayNames = ['Dom', 'Lun', 'Mar', 'Mié', 'Jue', 'Vie', 'Sáb'];
+  const fmtDay = (iso) => {
+    const d = new Date(iso + 'T12:00:00');
+    return `${dayNames[d.getDay()]} ${d.getDate()} ${d.toLocaleString('es-CO', { month: 'short' })}`;
+  };
+
+  document.getElementById('modal-content').innerHTML = `
+    <h2>Nuevo pedido</h2>
+    <form id="manual-order-form">
+      <div class="modal-row">
+        <div class="form-group"><label>Nombre del cliente</label><input type="text" id="mo-name" maxlength="80" required placeholder="Ej: Laura"></div>
+        <div class="form-group"><label>WhatsApp</label><input type="tel" id="mo-phone" maxlength="20" required placeholder="573001234567"><div class="hint">Con prefijo de país</div></div>
+      </div>
+      <div class="modal-row">
+        <div class="form-group">
+          <label>Entrega</label>
+          <select id="mo-mode">
+            <option value="scheduled">🏪 Recoger en la cocina</option>
+            <option value="immediate">🛵 Domicilio</option>
+          </select>
+        </div>
+        <div class="form-group" id="mo-day-wrap">
+          <label>Día de recogida</label>
+          <select id="mo-day" required>
+            ${windows.length ? windows.map(w => `<option value="${escapeHtml(w.release_date)}">${escapeHtml(fmtDay(w.release_date))}</option>`).join('') : '<option value="">Sin ventanas abiertas</option>'}
+          </select>
+          <div class="hint">Solo días con ventana de producción abierta</div>
+        </div>
+      </div>
+      <div class="form-group" id="mo-addr-wrap" style="display:none">
+        <label>Dirección de entrega</label>
+        <input type="text" id="mo-address" maxlength="200" placeholder="Barrio + calle o referencia">
+        <div class="hint">Se geocodifica con la misma regla que la tienda</div>
+      </div>
+      <div class="form-group">
+        <label>Sabores</label>
+        <div class="multi-select" id="mo-flavors"><div class="ms-empty">Elegí un día para ver los sabores disponibles</div></div>
+      </div>
+      <div class="form-group">
+        <label>Combos</label>
+        <div class="multi-select" id="mo-combos"><div class="ms-empty">Sin combos disponibles</div></div>
+      </div>
+      <div class="modal-row">
+        <div class="form-group">
+          <label>Método de pago</label>
+          <select id="mo-pay">
+            <option value="">Sin especificar</option>
+            ${(_paymentMethods || []).filter(m => m.active !== 0).map(m => `<option value="${m.id}">${escapeHtml(m.label)}</option>`).join('')}
+          </select>
+        </div>
+        <div class="form-group">
+          <label>Total estimado</label>
+          <input type="text" id="mo-total" value="$0" readonly>
+          <div class="hint">El servidor lo recalcula al guardar</div>
+        </div>
+      </div>
+      <div class="form-group"><label>Notas</label><textarea id="mo-notes" rows="2" maxlength="300" placeholder="Referencia de la dirección, sabor especial, etc."></textarea></div>
+      <div class="modal-actions">
+        <button type="button" class="btn btn-ghost" onclick="closeModal()">Cancelar</button>
+        <button type="submit" class="btn btn-primary">Guardar pedido</button>
+      </div>
+    </form>`;
+
+  document.getElementById('modal-back').classList.add('visible');
+
+  const state = { flavors: {}, combos: {} };
+
+  function currentWindow() {
+    const day = document.getElementById('mo-day').value;
+    return windows.find(w => w.release_date === day) || null;
+  }
+
+  function renderFlavors() {
+    const box = document.getElementById('mo-flavors');
+    const w = currentWindow();
+    if (!w || !w.items || !w.items.length) {
+      box.innerHTML = '<div class="ms-empty">Ese día no tiene ventana con sabores</div>';
+      return;
+    }
+    box.innerHTML = w.items.map(it => {
+      const remaining = Number(it.units_available) - Number(it.units_sold || 0) - Number(it.units_reserved || 0);
+      const qty = state.flavors[it.flavor_id] || 0;
+      const disabled = remaining <= 0 ? 'disabled' : '';
+      // El id viaja en data-*, NO interpolado en un onclick: un flavor_id con
+      // apostrofe cerraba el atributo y permitia inyectar HTML (mismo bug que
+      // se corrigio en los botones de edicion).
+      return `<div class="ms-item">
+        <span class="ms-name">${escapeHtml(it.flavor_name || it.flavor_id)} <small style="color:var(--ink-soft)">${fmt(it.flavor_price)} · ${remaining} disp.</small></span>
+        <div class="ms-qty">
+          <button type="button" data-mo="dec" data-kind="flavors" data-id="${esc(it.flavor_id)}" aria-label="Quitar uno">−</button>
+          <input type="number" min="0" max="${remaining}" value="${qty}" ${disabled} data-mo="qty" data-kind="flavors" data-id="${esc(it.flavor_id)}" aria-label="Cantidad de ${escapeHtml(it.flavor_name || it.flavor_id)}">
+          <button type="button" data-mo="inc" data-kind="flavors" data-id="${esc(it.flavor_id)}" aria-label="Agregar uno">+</button>
+        </div>
+      </div>`;
+    }).join('');
+  }
+
+  function renderCombos() {
+    const box = document.getElementById('mo-combos');
+    const list = (_combos || []).filter(c => c.available !== false);
+    if (!list.length) { box.innerHTML = '<div class="ms-empty">Sin combos en el catálogo</div>'; return; }
+    box.innerHTML = list.map(c => {
+      const remaining = Number(c.units_available) < 0 ? 99 : (Number(c.units_available) - Number(c.units_sold || 0) - Number(c.units_reserved || 0));
+      const qty = state.combos[c.id] || 0;
+      return `<div class="ms-item">
+        <span class="ms-name">${escapeHtml(c.name)} <small style="color:var(--ink-soft)">${fmt(c.price)} · ${remaining} disp.</small></span>
+        <div class="ms-qty">
+          <button type="button" data-mo="dec" data-kind="combos" data-id="${esc(c.id)}" aria-label="Quitar uno">−</button>
+          <input type="number" min="0" max="${remaining}" value="${qty}" data-mo="qty" data-kind="combos" data-id="${esc(c.id)}" aria-label="Cantidad de ${escapeHtml(c.name)}">
+          <button type="button" data-mo="inc" data-kind="combos" data-id="${esc(c.id)}" aria-label="Agregar uno">+</button>
+        </div>
+      </div>`;
+    }).join('');
+  }
+
+  function computeTotal() {
+    const w = currentWindow();
+    let t = 0;
+    if (w) {
+      for (const [fid, qty] of Object.entries(state.flavors)) {
+        const it = (w.items || []).find(x => x.flavor_id === fid);
+        if (it) t += (Number(it.flavor_price) || 0) * Number(qty);
+      }
+    }
+    for (const [cid, qty] of Object.entries(state.combos)) {
+      const c = (_combos || []).find(x => String(x.id) === String(cid));
+      if (c) t += (Number(c.price) || 0) * Number(qty);
+    }
+    const el = document.getElementById('mo-total');
+    if (el) el.value = fmt(t);
+    return t;
+  }
+
+  // Un solo listener delegado para los +/- y las cantidades: los ids viajan
+  // en data-attributes, nunca interpolados en un onclick (un apostrofe en el
+  // id cerraba el atributo y allowaba inyectar HTML).
+  const modalEl = document.getElementById('modal-content');
+  const onMoClick = (ev) => {
+    const btn = ev.target.closest('[data-mo="inc"],[data-mo="dec"]');
+    if (!btn) return;
+    ev.preventDefault();
+    const map = state[btn.dataset.kind];
+    if (!map) return;
+    const id = btn.dataset.id;
+    const cur = Number(map[id] || 0);
+    const next = Math.max(0, cur + (btn.dataset.mo === 'inc' ? 1 : -1));
+    if (next === 0) delete map[id]; else map[id] = next;
+    renderFlavors(); renderCombos(); computeTotal();
+  };
+  const onMoChange = (ev) => {
+    const input = ev.target.closest('[data-mo="qty"]');
+    if (!input) return;
+    const map = state[input.dataset.kind];
+    if (!map) return;
+    const id = input.dataset.id;
+    const n = Math.max(0, Number(input.value) || 0);
+    if (n === 0) delete map[id]; else map[id] = n;
+    computeTotal();
+  };
+  modalEl.addEventListener('click', onMoClick);
+  modalEl.addEventListener('change', onMoChange);
+
+  document.getElementById('mo-day').onchange = () => { state.flavors = {}; renderFlavors(); computeTotal(); };
+  document.getElementById('mo-mode').onchange = (e) => {
+    const dom = e.target.value === 'immediate';
+    document.getElementById('mo-day-wrap').style.display = dom ? 'none' : '';
+    document.getElementById('mo-addr-wrap').style.display = dom ? '' : 'none';
+    document.getElementById('mo-day').required = !dom;
+  };
+  if (windows.length) renderFlavors();
+  renderCombos();
+  computeTotal();
+
+  document.getElementById('manual-order-form').onsubmit = async (e) => {
+    e.preventDefault();
+    const name = document.getElementById('mo-name').value.trim();
+    let phone = document.getElementById('mo-phone').value.replace(/\D/g, '');
+    // Mismo criterio que la tienda: si el operador escribe los 10 digitos
+    // locales se completa el 57, para que el numero sea comparable con el
+    // que llega desde la web y con el despacho de WhatsApp.
+    if (phone.length === 10 && !phone.startsWith('57')) phone = '57' + phone;
+    const mode = document.getElementById('mo-mode').value;
+    const day = document.getElementById('mo-day').value;
+    const address = document.getElementById('mo-address').value.trim();
+    const notes = document.getElementById('mo-notes').value.trim();
+    const payId = document.getElementById('mo-pay').value;
+
+    if (!name) { toast('Falta el nombre del cliente', 'error'); return; }
+    if (phone.length < 10) { toast('WhatsApp inválido (mínimo 10 dígitos)', 'error'); return; }
+    if (mode === 'scheduled' && !day) { toast('Elegí el día de recogida', 'error'); return; }
+    if (mode === 'immediate' && address.length < 5) { toast('Falta la dirección de entrega', 'error'); return; }
+
+    const items = {};
+    for (const [k, v] of Object.entries(state.flavors)) if (Number(v) > 0) items[k] = Number(v);
+    const combos = Object.entries(state.combos)
+      .filter(([, v]) => Number(v) > 0)
+      .map(([id, qty]) => {
+        const c = (_combos || []).find(x => String(x.id) === String(id));
+        return { id: Number(id), qty: Number(qty), name: c ? c.name : `Combo ${id}` };
+      });
+    if (!Object.keys(items).length && !combos.length) { toast('Agregá al menos un producto', 'error'); return; }
+
+    const body = {
+      id: 'ord-' + Date.now().toString(36) + '-' + Math.random().toString(36).slice(2, 8),
+      customer_name: name,
+      customer_phone: phone,
+      pickup_day: mode === 'scheduled' ? day : new Date().toISOString().slice(0, 10),
+      items, combos,
+      total: computeTotal(),
+      notes: notes || undefined,
+      source: 'manual',
+      delivery_mode: mode,
+      delivery_address: mode === 'immediate' ? address : undefined,
+      payment_method_id: payId ? Number(payId) : null
+    };
+
+    const btn = e.target.querySelector('button[type="submit"]');
+    const label = btn.textContent;
+    btn.disabled = true; btn.textContent = 'Guardando…';
+    try {
+      const out = await api('/orders', { method: 'POST', body: JSON.stringify(body) });
+      toast('Pedido ' + String(out.id || '').slice(0, 8) + ' creado', 'success');
+      closeModal();
+      await loadAll();
+      showSection('orders');
+    } catch (err) {
+      toast(err.message || 'No se pudo crear el pedido', 'error');
+    } finally {
+      btn.disabled = false; btn.textContent = label;
+    }
+  };
+}
 
 function closeModal() {
   document.getElementById('modal-back').classList.remove('visible');
