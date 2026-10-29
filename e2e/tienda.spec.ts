@@ -80,4 +80,32 @@ test.describe('tienda', () => {
       expect(box?.height ?? 0, `boton ${i} alto`).toBeGreaterThanOrEqual(44);
     }
   });
+
+  test('la aurora se monta y el fondo deja ver el shader', async ({ page }) => {
+    await page.goto('/tienda.html');
+    await page.waitForTimeout(2500);
+
+    const info = await page.evaluate(() => {
+      const shader = document.querySelector('.page-shader');
+      const canvas = shader?.querySelector('canvas');
+      const card = document.querySelector('.product-card');
+      return {
+        hayShader: !!shader,
+        hayCanvas: !!canvas,
+        bodyBg: getComputedStyle(document.body).backgroundColor,
+        cardFilter: card ? getComputedStyle(card).backdropFilter : '',
+      };
+    });
+
+    // El shader es ambiente, no contenido: si falla, la pagina debe seguir
+    // legible por el fallback CSS. Por eso el test exige el nodo, no el canvas.
+    expect(info.hayShader, 'falta el nodo .page-shader').toBe(true);
+    expect(info.hayCanvas, 'el bundle no montó la aurora').toBe(true);
+
+    // El body tiene que ser translucido: es lo que deja ver la aurora.
+    expect(info.bodyBg, 'el body es opaco: la aurora no se vera').toMatch(/0\.\d+|0\s*\)/);
+
+    // Las tarjetas de producto son de cristal (backdrop-filter).
+    expect(info.cardFilter, 'las tarjetas no dejan ver el shader').toContain('blur');
+  });
 });
