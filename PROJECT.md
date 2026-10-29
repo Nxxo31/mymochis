@@ -1969,3 +1969,86 @@ esperado de `/api/payments` (fail-closed de la pasarela).
 (Credenciales→Instagram), credenciales Nequi reales, DEPLOY OCI (§18/§19) y
 limpiar las dos `release_windows` sembradas en dev para QA (2026-10-25 domingo
 y 2026-10-30 viernes, 50 unidades de `clasico-fresa`).
+
+## 27. Onda visual 2026-10-28 — tienda clay, panel responsive y compra al back-end
+
+Cierra el pedido de rediseño: la tienda deja de ser una página "del sistema" y
+comparte el lenguaje visual de la landing (aurora + superficies de cristal), el
+panel deja de empujar la página en móvil, y el formulario de compra alimenta el
+back-end con los datos que el operador necesita.
+
+### 27.1 Tienda: la aurora y el cristal
+
+La tienda tenía su propio fondo opaco (`--clay-canvas` al 100 %) y tarjetas
+opacas, así que se veía plana frente a la landing. Ahora:
+
+- `body` a `color-mix(in srgb, var(--clay-canvas) 70%, transparent)` + los
+  cuatro halos de color, igual que la landing.
+- `.page-shader` con el island `hero-bg` (mismo bundle `/build/landing.js`) y
+  **fallback CSS**: sin WebGL o sin bundle la página sigue teniendo ambiente.
+- `main`/`footer` en `z-index: 1` y el shader en `0` — sin esto el contenido
+  in-flow queda por debajo del shader.
+- Rejilla de puntos (`body::after`) como textura fina sobre la aurora.
+- `.product-card`, `.cart-sheet` y `.success-card` pasan a superficie de
+  cristal (`backdrop-filter: blur() saturate()` + borde claro + fondo al 82 %).
+- El destacado conserva su tinte crema, también translúcido: opaco tapaba la
+  aurora justo en la tarjeta que más se mira.
+
+### 27.2 Formulario de compra → back-end
+
+Dos huecos reales entre la tienda y el panel:
+
+- **Teléfono.** La tienda mandaba los 10 dígitos locales; el panel y el
+  despacho de WhatsApp trabajan con números completos. Ahora la tienda (y el
+  pedido manual del panel) completan el `57` cuando el número es local de 10
+  dígitos.
+- **Punto de referencia.** El domiciliario no tenía forma de saber la
+  referencia ("portón azul") porque `orders` no tiene columna para eso. Viaja en
+  `notes` con el prefijo `Referencia:` y el operador lo ve en la tabla y en el
+  detalle del pedido.
+
+### 27.3 Panel: lo que la API ya traía y la tabla no mostraba
+
+`rowToOrder` ya devolvía `delivery_mode`, `delivery_address`,
+`delivery_fee_cents`, `delivery_distance_km`, `delivery_free_applied`,
+`source`, `payment_method_id` y `release_window_id`. Nada de eso se veía.
+
+- La fila ahora lleva el chip de entrega (🏪 Recogida / 🛵 Domicilio), el chip
+  de origen, la dirección, el costo del domicilio y el método de pago.
+- Botón 🔎 que abre el **detalle del pedido**: cliente, WhatsApp, día, entrega,
+  origen, método de pago, estado del pago, dirección, distancia, costo,
+  coordenadas, ventana de producción, notas y productos con precios.
+- Botón **➕ Nuevo pedido**: el canal real del negocio es WhatsApp y el
+  operador no tenía forma de registrar ese pedido — quedaba fuera de las
+  métricas, del stock y de la caja. El formulario usa el **mismo endpoint que
+  la tienda** (`POST /api/orders`), así que el pedido entra por la misma
+  tubería: valida la ventana, reserva stock, recalcula el total en el server y
+  dispara el WhatsApp.
+
+Los ids viajan en `data-*` con un listener delegado, nunca interpolados en un
+`onclick`: un `flavor_id` con apostrofe cerraba el atributo (el mismo bug que
+ya se corrigió en los botones de edición).
+
+### 27.4 Bug de responsive: la tabla estiraba la página
+
+Con la fila real (dirección, notas y chips), `documentElement.scrollWidth` daba
+**852 px en un viewport de 375**. Causa: con la `<table>` en `static` y las
+`th` en `sticky`, el ancho mínimo de la tabla se escapa del clip de
+`.table-wrap` y el scroll horizontal se va a la página entera. Con
+`position: relative` en la tabla el overflow queda dentro del contenedor. A
+≤560 px además `table { min-width: 460px }` y `overflow-wrap: anywhere`, para
+que una dirección larga no estire la tabla.
+
+### 27.5 Verificación
+
+- `npm test` → **131/131**.
+- `npx playwright test` → **54/54** en 3 viewports (375 / 768 / 1440):
+  - `e2e/tienda.spec.ts`: la aurora se monta (`canvas` dentro de
+    `.page-shader`), el body es translúcido y las tarjetas tienen
+    `backdrop-filter`.
+  - `e2e/dashboard.spec.ts` (nuevo): login, el formulario de compra abre con
+    los días de la ventana y sus productos, el total se calcula, el pedido
+    creado aparece en la tabla con sus chips, el detalle lo muestra y el
+    panel no desborda en móvil.
+- `npm run build:web` verde; el dev server sirve `/`, `/tienda.html` y
+  `/manage.html` con 200 y `/api/health` = `{"ok":true}`.
