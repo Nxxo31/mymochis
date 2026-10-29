@@ -4,6 +4,7 @@
 <meta charset="UTF-8">
 <meta name="viewport" content="width=device-width,initial-scale=1,viewport-fit=cover">
 <link rel="stylesheet" href="/theme.css">
+<link rel="stylesheet" href="/build/assets/islands.css">
 <meta name="theme-color" content="#FAF3EA">
 <title>Tienda · Mochi's Land — Neiva</title>
 <meta name="description" content="Catálogo de mochis artesanales y combos. Arma tu pedido, recoge en Neiva.">
@@ -20,12 +21,14 @@ html { scroll-behavior: smooth; }
 
 body {
   font-family: 'Quicksand', 'Baloo 2', system-ui, sans-serif;
-  background-color: var(--clay-canvas);
+  /* Mismo fondo que la landing: semi-transparente para que la aurora del
+     shader se vea a traves de la pagina, con los halos de color encima. */
+  background-color: color-mix(in srgb, var(--clay-canvas) 70%, transparent);
   background-image:
-    radial-gradient(circle at 12% 8%, color-mix(in srgb, var(--fresa) 22%, transparent) 0%, transparent 26%),
-    radial-gradient(circle at 88% 14%, color-mix(in srgb, var(--cyan) 20%, transparent) 0%, transparent 28%),
-    radial-gradient(circle at 14% 82%, color-mix(in srgb, var(--matcha) 18%, transparent) 0%, transparent 24%),
-    radial-gradient(circle at 88% 78%, color-mix(in srgb, var(--durazno) 20%, transparent) 0%, transparent 26%);
+    radial-gradient(circle at 12% 8%, color-mix(in srgb, var(--fresa) 26%, transparent) 0%, transparent 34%),
+    radial-gradient(circle at 88% 14%, color-mix(in srgb, var(--ube) 20%, transparent) 0%, transparent 32%),
+    radial-gradient(circle at 14% 82%, color-mix(in srgb, var(--durazno) 18%, transparent) 0%, transparent 30%),
+    radial-gradient(circle at 90% 82%, color-mix(in srgb, var(--accent) 16%, transparent) 0%, transparent 30%);
   background-attachment: fixed;
   color: var(--clay-ink);
   line-height: 1.55;
@@ -33,6 +36,48 @@ body {
   -webkit-font-smoothing: antialiased;
   overflow-x: hidden;
   min-height: 100vh;
+  position: relative;
+}
+
+/* La aurora (canvas WebGL) vive en z-index 0 y el contenido en z-index 1:
+   asi se ve DETRAS de las tarjetas translucidas, igual que en la landing. */
+.page-shader {
+  position: absolute;
+  top: 0; left: 0; right: 0;
+  height: min(100vh, 880px);
+  z-index: 0;
+  pointer-events: none;
+  overflow: hidden;
+  /* Fallback CSS: sin WebGL o sin bundle, la aurora sigue estando. */
+  background:
+    radial-gradient(120% 90% at 12% 8%,  rgba(255,143,180,.38) 0%, transparent 58%),
+    radial-gradient(100% 80% at 88% 18%, rgba(176,140,240,.30) 0%, transparent 60%),
+    radial-gradient(90% 70% at 26% 78%, rgba(255,194,77,.24) 0%, transparent 60%);
+  -webkit-mask-image: linear-gradient(to bottom, #000 0%, #000 52%, transparent 100%);
+  mask-image: linear-gradient(to bottom, #000 0%, #000 52%, transparent 100%);
+}
+.shader-canvas { display: block; width: 100%; height: 100%; }
+
+/* Todo el contenido va por encima del shader. Ojo: NO se toca `position` en
+   los overlays (.cart-bar / .cart-sheet-back / .success-back) porque son
+   `fixed`; aqui solo se les asigna z-index. */
+main, footer { position: relative; z-index: 1; }
+header { z-index: 100; }
+.cart-bar { z-index: 90; }
+.cart-sheet-back { z-index: 120; }
+.success-back { z-index: 200; }
+
+/* Rejilla de puntos (textura fina) sobre la aurora, debajo del contenido */
+body::after {
+  content: '';
+  position: fixed; inset: 0;
+  z-index: 0;
+  pointer-events: none;
+  background-image: radial-gradient(rgba(32, 48, 74, 0.075) 1px, transparent 1.2px);
+  background-size: 24px 24px;
+  opacity: .6;
+  -webkit-mask-image: radial-gradient(130% 100% at 50% 10%, #000 25%, transparent 82%);
+  mask-image: radial-gradient(130% 100% at 50% 10%, #000 25%, transparent 82%);
 }
 
 .serif { font-family: 'Baloo 2', serif; }
@@ -186,7 +231,12 @@ main { max-width: 1320px; margin: 0 auto; padding: 32px 24px 80px; }
 }
 
 .product-card {
-  background: var(--clay-surface);
+  /* Superficie de cristal: translucida para que la aurora se vea por detrás
+     de cada tarjeta, igual que las secciones de la landing. */
+  background: color-mix(in srgb, var(--clay-surface) 82%, transparent);
+  backdrop-filter: blur(14px) saturate(1.25);
+  -webkit-backdrop-filter: blur(14px) saturate(1.25);
+  border: 1px solid rgba(255, 255, 255, 0.6);
   border-radius: 28px;
   overflow: hidden;
   display: flex; flex-direction: column;
@@ -285,7 +335,9 @@ main { max-width: 1320px; margin: 0 auto; padding: 32px 24px 80px; }
 }
 
 .product-card.featured {
-  background: var(--mochi-crema);
+  /* El destacado mantiene su tinte crema pero translucido: si fuera opaco
+     taparia la aurora justo en la tarjeta que mas se mira. */
+  background: color-mix(in srgb, var(--mochi-crema) 82%, transparent);
 }
 .product-card.featured .ribbon {
   position: absolute; top: 14px; right: 14px; z-index: 3;
@@ -368,7 +420,9 @@ main { max-width: 1320px; margin: 0 auto; padding: 32px 24px 80px; }
 }
 .cart-sheet-back.visible { display: flex; }
 .cart-sheet {
-  background: var(--clay-canvas);
+  background: color-mix(in srgb, var(--clay-canvas) 88%, transparent);
+  backdrop-filter: blur(18px) saturate(1.3);
+  -webkit-backdrop-filter: blur(18px) saturate(1.3);
   border-radius: 36px 36px 0 0;
   width: 100%; max-width: 620px;
   max-height: 92vh;
@@ -573,7 +627,10 @@ main { max-width: 1320px; margin: 0 auto; padding: 32px 24px 80px; }
 }
 .success-back.visible { display: flex; }
 .success-card {
-  background: var(--clay-canvas); border-radius: 32px;
+  background: color-mix(in srgb, var(--clay-canvas) 90%, transparent);
+  backdrop-filter: blur(18px) saturate(1.3);
+  -webkit-backdrop-filter: blur(18px) saturate(1.3);
+  border-radius: 32px;
   padding: 36px 32px; max-width: 480px; width: 100%;
   box-shadow: var(--clay-shadow-hover), inset 4px -4px 8px rgba(255,255,255,0.85);
   text-align: center;
@@ -726,6 +783,11 @@ footer {
 </head>
 <body>
 
+<!-- ============ AURORA · shader WebGL (mismo montaje que la landing) ============
+     Si el bundle no carga o no hay WebGL, el fallback CSS de .page-shader
+     mantiene el ambiente: la pagina nunca queda en blanco. -->
+<div class="page-shader" data-island="hero-bg" data-props='{"intensity":0.58,"colorA":"#FF8FB4","colorB":"#FFC24D","colorC":"#B08CF0"}' aria-hidden="true"></div>
+
 <header>
   <div class="nav">
     <a href="/" class="brand">
@@ -825,7 +887,7 @@ footer {
       <div class="form-block">
         <label for="customerPhone">WhatsApp</label>
         <input type="tel" id="customerPhone" maxlength="20" autocomplete="tel" placeholder="3123456789">
-        <div class="hint">Te escribimos para confirmar disponibilidad.</div>
+        <div class="hint">Te escribimos para confirmar. Si escribes los 10 dígitos locales, agregamos el 57 automáticamente.</div>
       </div>
       <div class="form-block">
         <label>Cómo lo recibís</label>
@@ -848,7 +910,10 @@ footer {
       </div>
       <div class="form-block" id="deliveryBlock" style="display:none">
         <label for="deliveryAddress">Dirección de entrega</label>
-        <input type="text" id="deliveryAddress" maxlength="140" placeholder="Barrio + calle o referencia (ej: Cándido, cra 12 #34-56)">
+        <input type="text" id="deliveryAddress" maxlength="140" placeholder="Barrio + calle (ej: Cándido, cra 12 #34-56)">
+        <label for="deliveryReference" style="margin-top:10px">Punto de referencia</label>
+        <input type="text" id="deliveryReference" maxlength="90" placeholder="Ej: frente a la panadería, portón azul">
+        <div class="hint">Ayuda al domiciliario a llegar. Se guarda con el pedido y la ve el operador en el dashboard.</div>
         <button type="button" class="quote-btn" id="quoteBtn">Cotizar domicilio 🛵</button>
         <div class="quote-result" id="quoteResult" style="display:none"></div>
       </div>
@@ -1459,12 +1524,19 @@ footer {
     const name = ($('#customerName').value || '').trim();
     const phoneRaw = ($('#customerPhone').value || '').trim();
     const notes = ($('#orderNotes').value || '').trim();
+    const reference = ($('#deliveryReference')?.value || '').trim();
 
     if (cartIsEmpty()) return showErr('Tu carrito está vacío.');
     if (!name || name.length < 2) return showErr('Decinos tu nombre para confirmar.');
     if (!/^[\d\s\-+()]{7,20}$/.test(phoneRaw)) return showErr('Ingresá un WhatsApp válido.');
 
-    const phone = phoneRaw.replace(/[^\d]/g, '');
+    // Telefono en formato internacional. El dashboard y el despacho de
+    // WhatsApp trabajan con numeros completos (57...); antes la tienda
+    // mandaba solo los 10 digitos locales y el operador tenia que completarlos
+    // a mano en cada pedido.
+    let phone = phoneRaw.replace(/[^\d]/g, '');
+    if (phone.length === 10 && !phone.startsWith('57')) phone = '57' + phone;
+    if (phone.length < 10) return showErr('Ingresá un WhatsApp válido (con código de país si aplica).');
     const items = {};
     for (const [id, qty] of Object.entries(cart.items)) {
       const n = Number(qty);
@@ -1500,6 +1572,13 @@ footer {
     const paySel = $('#payMethod');
     const payment_method_id = paySel && paySel.value ? Number(paySel.value) : null;
 
+    // La referencia de entrega no tiene columna propia en `orders`: viaja en
+    // las notas con prefijo fijo para que el operador la lea de un vistazo en
+    // el dashboard (y para que no se mezcle con la nota del cliente).
+    const notesFinal = reference
+      ? [notes, `Referencia: ${reference}`].filter(Boolean).join('\n')
+      : notes;
+
     const payload = {
       id: uuid(),
       customer_name: name,
@@ -1507,9 +1586,10 @@ footer {
       pickup_day: pickup,
       items, combos,
       total,
-      notes: notes || undefined,
+      notes: notesFinal || undefined,
       source: 'marketplace',
       delivery_mode,
+      delivery_provider: 'own',
       delivery_address,
       delivery_lat,
       delivery_lng,
@@ -1556,7 +1636,10 @@ footer {
       saveCart();
       showSuccess(data, payInfo);
       afterCartChange();
-      ['customerName', 'customerPhone', 'orderNotes', 'deliveryAddress'].forEach(id => { $('#' + id).value = ''; });
+      ['customerName', 'customerPhone', 'orderNotes', 'deliveryAddress', 'deliveryReference'].forEach(id => {
+        const el = document.getElementById(id);
+        if (el) el.value = '';
+      });
       setDeliveryMode('recoger');
     } catch (e) {
       showErr('No pudimos enviar el pedido. Probá de nuevo.');
@@ -1674,6 +1757,10 @@ footer {
   }
 })();
 </script>
+
+<!-- Shader de aurora (mismo bundle que la landing). Si falla, el fallback CSS
+     de .page-shader deja la pagina igual de bonita. -->
+<script type="module" src="/build/landing.js" defer></script>
 
 </body>
 </html>
