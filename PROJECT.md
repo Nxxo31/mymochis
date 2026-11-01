@@ -2052,3 +2052,68 @@ que una dirección larga no estire la tabla.
     panel no desborda en móvil.
 - `npm run build:web` verde; el dev server sirve `/`, `/tienda.html` y
   `/manage.html` con 200 y `/api/health` = `{"ok":true}`.
+
+## 28. Onda 2026-10-29 (cerrada el 2026-11-01) — base compartida, modal de pedido y el panel clay
+
+Cierra el trabajo visual que quedó sin commitear el 2026-10-29, con la auditoría
+real del panel del 2026-10-31 como filtro. Siete commits atómicos, del más general
+al más puntual: `ui.css` → onda de las páginas públicas → fix del overlay → onda
+del panel → fix de checkbox y KPI → test del CTA → documentos.
+
+### 28.1 La base visual sale de las páginas (`public/ui.css`)
+
+Las cuatro páginas (landing, tienda, cocina, panel) tenían su propia copia de
+superficie, botones, campos, tablas y badges. Ahora la base vive en
+`public/ui.css` y cada página conserva solo lo suyo. El panel mantiene su
+densidad de herramienta (14 px); la landing y la tienda, su aire.
+
+`theme.css` queda como la fuente de tokens: la paleta clara y la oscura, con
+los alias `--mochi-*` y `--clay-*` que usa el código.
+
+### 28.2 Landing: el modal de pedido
+
+El hero ya no lleva a la tienda: abre un modal de 2 pasos (qué te antoja →
+datos, tipo de entrega, método de pago). Es la primera vez que la landing
+crea pedidos contra el back-end sin salir de la página.
+
+### 28.3 Tres bugs de render (y por qué la auditoría mattered)
+
+- **El overlay del modal tapaba la landing entera.** El modal se muestra con el
+  atributo `hidden`, pero su `style` inline traía `display:flex`, que le gana al
+  `[hidden]` del navegador: el overlay (`inset:0`, `z-index:1000`) quedaba
+  siempre encima y **nada era pulsable**. El layout del modal pasa a una regla
+  de autor que respeta `[hidden]`.
+- **El checkbox clay caía encima de su texto.** `.form-group label::before`
+  dibujaba una caja y además `span.check-text` —el elemento que *contiene* el
+  texto— se forzaba a 20×20 con borde y fondo. Ahora la caja la dibuja
+  `span.check-text::before` y el texto conserva su caja.
+- **El KPI de pedidos pendientes flotaba sobre el panel.** Usaba
+  `class="kpi mochi"` y `.mochi` es la mascota flotante de 48 px con su
+  animación: la tarjeta se quedaba en 48×48, flotando, y el grid del panel
+  repartía mal sus columnas. El acento pasa a `.kpi crema`.
+
+Los tres eran **collisiones de nombre o de cascada**, no fallos de lógica: el
+código hacía lo correcto, el CSS decidía otra cosa.
+
+### 28.4 Lo que NO se hizo (decisión de arquitectura)
+
+`EVALUACION_ARQUITECTURA.md` (sin commitear hasta esta onda) propone
+PostgreSQL + Drizzle + Astro + Tailwind. **No es la arquitectura vigente.** El
+MVP del panel se queda en el stack actual —Express + `node:sqlite` + HTML/CSS/JS
+con islas Vite— porque el backend ya tiene outbox transaccional, idempotencia,
+ledger de doble entrada y reconciliación, verificados con 153 tests, y
+reescribir 97 endpoints para el MVP de administración es riesgo sin beneficio.
+`MVP_ARQUITECTURA_OPENSOURCE.md` sí es compatible con esa decisión (SQLite +
+Node + JS/HTML/CSS, sin build step obligatorio).
+
+### 28.5 Verificación
+
+- `npm test` → **131/131**.
+- `npx playwright test` → **54/54** en 3 viewports (375 / 768 / 1440).
+- El test del CTA del hero se reescribió: esperaba la navegación a la tienda y
+  el hero ya abre el modal; ahora comprueba que el modal arranca oculto, que el
+  CTA lo abre con su panel y que se cierra.
+- Revisión visual con login real en el panel (375/768/1440): los 12 secciones
+  renderizan, el checkbox se ve en los dos estados y el dashboard ya no tiene
+  tarjetas pisadas.
+- `gitleaks` limpio en los 7 commits.
