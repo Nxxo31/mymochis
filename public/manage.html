@@ -2106,7 +2106,7 @@ const render = {
         <td><button class="btn btn-sm btn-ghost" onclick="openOrderDetail('${o.id}')" aria-label="Ver detalle del pedido" title="Ver detalle">🔎</button>
         ${o.payment_status !== 'paid' ? `<button class="btn btn-sm btn-imediato" onclick="confirmOrderPayment('${o.id}')" aria-label="Confirmar que el pago llegó" title="Confirmar que el pago llegó">💰 Cobrar</button>` : ''}
         <label for="order-status-${o.id}" class="visually-hidden">Cambiar estado del pedido</label>
-        <select id="order-status-${o.id}" onchange="updateOrderStatus('${o.id}', this.value)" aria-label="Cambiar estado del pedido" style="padding:5px 8px;font-size:12px;border-radius:6px;border:1px solid var(--line);background:#fff">
+        <select id="order-status-${o.id}" data-status="${esc(String(o.status || ''))}" onchange="updateOrderStatus('${o.id}', this.value, this.dataset.status)" aria-label="Cambiar estado del pedido" style="padding:5px 8px;font-size:12px;border-radius:6px;border:1px solid var(--line);background:#fff">
           <option value="">cambiar estado...</option>
           <option value="pending">Pendiente</option>
           <option value="confirmed">Confirmado</option>
@@ -2240,8 +2240,19 @@ document.addEventListener('click', (ev) => {
 });
 
 // ============ ORDERS ACTIONS ============
-async function updateOrderStatus(id, status) {
+async function updateOrderStatus(id, status, prevStatus) {
   if (!status) return;
+  const label = STATUS_ES[status] || status;
+  // Cancelar devuelve el stock reservado a la ventana: sin confirmacion, un
+  // cambio accidental en el select deja el pedido sin stock en la cocina.
+  const aviso = status === 'cancelled'
+    ? '¿Cancelar el pedido? Se devuelve el stock reservado a la ventana de producción.'
+    : `¿Cambiar el estado del pedido a "${label}"?`;
+  if (!confirm(aviso)) {
+    const sel = document.getElementById('order-status-' + id);
+    if (sel && prevStatus) sel.value = prevStatus;
+    return;
+  }
   try {
     await api(`/orders/${id}`, { method: 'PATCH', body: JSON.stringify({ status }) });
     toast('Estado actualizado', 'success');
