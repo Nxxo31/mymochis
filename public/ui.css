@@ -1,0 +1,703 @@
+/* ============================================================================
+ * MyMochis · Sistema de componentes compartido
+ * ----------------------------------------------------------------------------
+ * theme.css = TOKENS (color, radio, sombra, tipografia, movimiento).
+ * ui.css    = COMPONENTES (lo que se dibuja con esos tokens).
+ *
+ * Razon de existir (2026-10-29): cada pagina traia su propio <style> inline
+ * con 400-1300 lineas, y cuatro copias de los mismos primitivos se
+ * desincronizaron. Los <select> de la tienda no tenian NI UNA regla de CSS
+ * (el navegador los pintaba como dropdowns nativos junto a los inputs clay),
+ * el boton principal era sakura-ink en la landing y fresa-claro en la tienda
+ * y el panel, y la tipografia era tres pares distintos.
+ *
+ * REGLA: si un componente aparece en mas de una pagina, vive aqui. Si solo
+ * aparece en una, vive en el <style> de esa pagina.
+ *
+ * Indice:
+ *   1. Base · tipografia y elementos de formulario
+ *   2. Botones
+ *   3. Campos · .form-group / .form-block (alias del mismo bloque)
+ *   4. Superficies · tarjetas, chips, tags, pills
+ *   5. Modales y hojas (sheet)
+ *   6. Tablas
+ *   7. Utilidades
+ * ========================================================================== */
+
+/* ============================================================================
+ * 1. BASE
+ * ========================================================================== */
+
+body {
+  font-family: var(--font-body);
+  color: var(--ink);
+}
+
+h1, h2, h3, h4,
+.serif,
+.brand-name {
+  font-family: var(--font-display);
+  letter-spacing: -0.5px;
+}
+
+a { color: var(--sakura-ink); }
+
+::selection {
+  background: var(--sakura-ink);
+  color: #fff;
+}
+
+/* ============================================================================
+ * 2. BOTONES
+ * ----------------------------------------------------------------------------
+ * Un solo CTA principal en las 4 paginas: sakura-ink solido con texto
+ * blanco. El rosa palido (fresa) queda como superficie/decorado, no como
+ * boton de accion: sobre texto blanco daba 3.1:1 y leia como un chip, no
+ * como algo pulsable.
+ * ========================================================================== */
+
+.btn,
+.btn-primary,
+.btn-secondary,
+.btn-ghost,
+.btn-danger,
+.btn-send,
+.btn-cancel,
+.submit-btn,
+.nav-cta,
+.hero-cta {
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  gap: 8px;
+  min-height: var(--btn-height);
+  padding: var(--btn-pad-y) var(--btn-pad-x);
+  border: 0;
+  border-radius: var(--btn-radius);
+  font-family: var(--font-body);
+  font-weight: 700;
+  font-size: 15px;
+  line-height: 1.2;
+  text-decoration: none;
+  cursor: pointer;
+  white-space: nowrap;
+  transition: transform var(--dur-fast) var(--ease-out),
+              box-shadow var(--dur-fast) var(--ease-out),
+              background-color var(--dur-fast) var(--ease-out);
+}
+
+.btn:hover,
+.btn-primary:hover,
+.btn-secondary:hover,
+.btn-ghost:hover,
+.btn-danger:hover,
+.btn-send:hover,
+.submit-btn:hover,
+.nav-cta:hover,
+.hero-cta:hover {
+  transform: translateY(-2px);
+}
+
+.btn:active,
+.btn-primary:active,
+.btn-secondary:active,
+.btn-ghost:active,
+.btn-danger:active,
+.btn-send:active,
+.submit-btn:active,
+.nav-cta:active,
+.hero-cta:active {
+  transform: translateY(0);
+}
+
+/* --- Primario · el CTA de las 4 paginas --- */
+.btn-primary,
+.btn-send,
+.submit-btn,
+.nav-cta,
+.hero-cta {
+  background: var(--btn-primary-bg);
+  color: var(--btn-primary-fg);
+  box-shadow: var(--clay-shadow-sm),
+              inset 2px -2px 4px rgba(255, 255, 255, 0.28),
+              0 6px 18px var(--btn-primary-ring);
+}
+.btn-primary:hover,
+.btn-send:hover,
+.submit-btn:hover,
+.nav-cta:hover,
+.hero-cta:hover {
+  background: var(--btn-primary-bg-hover);
+  box-shadow: var(--clay-shadow-md),
+              inset 2px -2px 4px rgba(255, 255, 255, 0.28),
+              0 10px 26px var(--btn-primary-ring);
+}
+.btn-primary:active,
+.btn-send:active,
+.submit-btn:active,
+.nav-cta:active,
+.hero-cta:active {
+  background: var(--btn-primary-bg-active);
+  box-shadow: var(--clay-inset-sm);
+}
+
+/* --- Secundario · superficie con relieve, texto de tinta --- */
+.btn-secondary {
+  background: var(--btn-secondary-bg);
+  color: var(--btn-secondary-fg);
+  box-shadow: var(--clay-shadow-xs),
+              inset 1px -1px 2px rgba(255, 255, 255, 0.7);
+}
+
+/* --- Ghost · sin relleno, para acciones terciarias --- */
+.btn-ghost,
+.btn-cancel {
+  background: transparent;
+  color: var(--btn-ghost-fg);
+  box-shadow: none;
+  border: 1px solid var(--line);
+}
+.btn-ghost:hover,
+.btn-cancel:hover {
+  background: var(--surface-2);
+  color: var(--ink);
+  box-shadow: none;
+}
+
+/* --- Peligro --- */
+.btn-danger {
+  background: var(--btn-danger-bg);
+  color: var(--btn-danger-fg);
+  box-shadow: var(--clay-shadow-xs);
+}
+
+/* --- Variantes --- */
+.btn-sm {
+  min-height: 34px;
+  padding: 6px 14px;
+  font-size: 13px;
+}
+.btn-block {
+  display: flex;
+  width: 100%;
+}
+
+/* --- Estados --- */
+.btn:disabled,
+.btn-primary:disabled,
+.btn-secondary:disabled,
+.btn-danger:disabled,
+.submit-btn:disabled,
+.nav-cta:disabled,
+.hero-cta:disabled {
+  opacity: 0.5;
+  cursor: not-allowed;
+  transform: none;
+  box-shadow: var(--clay-shadow-xs);
+}
+
+.btn:focus-visible,
+.btn-primary:focus-visible,
+.btn-secondary:focus-visible,
+.btn-ghost:focus-visible,
+.btn-danger:focus-visible,
+.submit-btn:focus-visible,
+.nav-cta:focus-visible,
+.hero-cta:focus-visible {
+  outline: 2px solid var(--focus);
+  outline-offset: 2px;
+}
+
+/* El submit del checkout ocupa todo el ancho: es la accion del formulario. */
+.submit-btn {
+  width: 100%;
+  min-height: 52px;
+  font-size: 16px;
+}
+.submit-btn svg { width: 18px; height: 18px; flex: none; }
+
+/* ============================================================================
+ * 3. CAMPOS · .form-group y .form-block son el MISMO bloque
+ * ----------------------------------------------------------------------------
+ * Antes: la landing usaba .form-group, la tienda .form-block y el panel
+ * .form-group — tres nombres para lo mismo, con radios y paddings distintos.
+ * Ahora los dos nombres resuelven al mismo bloque, asi que una pagina puede
+ * migrar a .form-block sin romper nada.
+ * ========================================================================== */
+
+.form-group,
+.form-block {
+  display: flex;
+  flex-direction: column;
+  gap: 6px;
+  margin-bottom: 16px;
+}
+
+.form-group > label,
+.form-block > label,
+label.form-label {
+  display: block;
+  font-family: var(--font-body);
+  font-size: 11.5px;
+  font-weight: 700;
+  color: var(--field-label-fg);
+  letter-spacing: 0.9px;
+  text-transform: uppercase;
+  margin: 0;
+}
+
+.form-group input,
+.form-group select,
+.form-group textarea,
+.form-block input,
+.form-block select,
+.form-block textarea,
+.field-control {
+  width: 100%;
+  min-height: var(--field-height);
+  padding: var(--field-pad-y) var(--field-pad-x);
+  border: var(--field-border);
+  border-radius: var(--field-radius);
+  background: var(--field-bg);
+  color: var(--field-fg);
+  font-family: var(--font-body);
+  font-size: 15px;
+  line-height: 1.4;
+  box-shadow: var(--field-shadow);
+  transition: box-shadow var(--dur-fast) var(--ease-out),
+              border-color var(--dur-fast) var(--ease-out);
+  -webkit-appearance: none;
+  appearance: none;
+}
+
+.form-group textarea,
+.form-block textarea {
+  min-height: 76px;
+  resize: vertical;
+  line-height: 1.5;
+}
+
+.form-group input::placeholder,
+.form-block input::placeholder,
+.form-block textarea::placeholder,
+.field-control::placeholder {
+  color: var(--field-placeholder);
+  opacity: 1;
+}
+
+.form-group input:focus,
+.form-group select:focus,
+.form-group textarea:focus,
+.form-block input:focus,
+.form-block select:focus,
+.form-block textarea:focus,
+.field-control:focus {
+  outline: none;
+  border-color: var(--sakura-mid);
+  box-shadow: var(--field-shadow-focus), 0 0 0 3px rgba(239, 127, 179, 0.18);
+}
+
+/* El <select> con flecha propia. Sin esto el navegador pinta el control
+   con el chrome del sistema operativo (cuadro gris plano) y el formulario
+   se ve roto al lado de los inputs. */
+.form-group select,
+.form-block select,
+select.field-control {
+  padding-right: 40px;
+  background-image: url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 24 24' fill='none' stroke='%234A5C78' stroke-width='2.4' stroke-linecap='round' stroke-linejoin='round'%3E%3Cpolyline points='6 9 12 15 18 9'/%3E%3C/svg%3E");
+  background-repeat: no-repeat;
+  background-position: right 14px center;
+  background-size: 16px 16px;
+  cursor: pointer;
+}
+
+.form-group select:disabled,
+.form-block select:disabled {
+  opacity: 0.55;
+  cursor: not-allowed;
+}
+
+.form-group .hint,
+.form-block .hint,
+.hint {
+  font-size: 12.5px;
+  line-height: 1.45;
+  color: var(--field-hint-fg);
+  margin: 0;
+}
+
+/* Dos campos en fila (nombre + telefono, entrega + pago). */
+.form-row {
+  display: grid;
+  grid-template-columns: 1fr 1fr;
+  gap: 14px;
+}
+@media (max-width: 560px) {
+  .form-row { grid-template-columns: 1fr; gap: 0; }
+}
+
+/* Grupo con titulo · usado para separar bloques de un formulario largo. */
+.field-group {
+  border: 0;
+  padding: 0;
+  margin: 0 0 22px;
+}
+.field-group__title {
+  display: flex;
+  align-items: center;
+  gap: 9px;
+  font-family: var(--font-display);
+  font-size: 15px;
+  font-weight: 700;
+  color: var(--ink);
+  margin: 0 0 12px;
+}
+.field-group__num {
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  width: 24px;
+  height: 24px;
+  flex: none;
+  border-radius: 50%;
+  background: var(--sakura-ink);
+  color: #fff;
+  font-family: var(--font-body);
+  font-size: 12px;
+  font-weight: 800;
+}
+.field-group__hint {
+  font-size: 12.5px;
+  color: var(--field-hint-fg);
+  margin: -6px 0 12px;
+}
+
+/* ============================================================================
+ * 4. SUPERFICIES
+ * ========================================================================== */
+
+.card {
+  background: var(--surface);
+  border: 1px solid var(--line);
+  border-radius: var(--r-lg);
+  box-shadow: var(--clay-shadow-xs),
+              inset 1px -1px 2px rgba(255, 255, 255, 0.7);
+}
+
+/* Superficie de cristal: deja ver la aurora del fondo. */
+.card-glass {
+  background: color-mix(in srgb, var(--surface) 82%, transparent);
+  backdrop-filter: blur(18px) saturate(1.3);
+  -webkit-backdrop-filter: blur(18px) saturate(1.3);
+  border: 1px solid rgba(255, 255, 255, 0.65);
+  border-radius: var(--r-xl);
+  box-shadow: var(--clay-shadow-hover),
+              inset 4px -4px 8px rgba(255, 255, 255, 0.85);
+}
+/* ============================================================================
+ * 4b. PRODUCT CARD (tarjeta unificada de sabor / combo)
+ * ---------------------------------------------------------------------------
+ * Una sola tarjeta para sabores (landing, tienda) y combos (landing).
+ * Evita duplicar .flavor-card / .combo-card con ligeras diferencias.
+ * ========================================================================== */
+.product-card {
+  background: color-mix(in srgb, var(--surface) 88%, transparent);
+  backdrop-filter: blur(14px) saturate(1.2);
+  -webkit-backdrop-filter: blur(14px) saturate(1.2);
+  border: 1px solid rgba(255, 255, 255, 0.6);
+  border-radius: 24px;
+  overflow: hidden;
+  position: relative;
+  transition: transform 0.25s cubic-bezier(.34, 1.56, .64, 1), box-shadow 0.25s;
+  box-shadow: var(--clay-shadow-md), inset 3px -3px 6px rgba(255, 255, 255, 0.85);
+  display: flex;
+  flex-direction: column;
+}
+.product-card:hover {
+  transform: translateY(-6px);
+  box-shadow: var(--clay-shadow-hover), inset 3px -3px 6px rgba(255, 255, 255, 0.85);
+}
+.product-card.featured {
+  background: var(--mochi-crema);
+  box-shadow: var(--clay-shadow-md), inset 3px -3px 6px rgba(255, 255, 255, 0.85);
+}
+
+/* Ribbon / badge (novedad, destacado, etc.) */
+.product-card .ribbon,
+.product-card .badge {
+  position: absolute;
+  top: 12px;
+  right: 12px;
+  z-index: 3;
+  background: var(--btn-primary-bg-hover);
+  color: #fff;
+  padding: 5px 12px;
+  border-radius: 999px;
+  font-size: 10px;
+  font-weight: 700;
+  letter-spacing: 0.6px;
+  text-transform: uppercase;
+  box-shadow: var(--clay-shadow-xs);
+}
+
+/* Imagen del producto (aspect-ratio 1:1) */
+.product-card .photo {
+  aspect-ratio: 1 / 1;
+  overflow: hidden;
+  background: var(--mochi-crema);
+}
+.product-card .photo img {
+  width: 100%;
+  height: 100%;
+  object-fit: cover;
+  display: block;
+  transition: transform 0.4s;
+}
+.product-card:hover .photo img {
+  transform: scale(1.05);
+}
+
+/* Cuerpo con textos y boton */
+.product-card .body {
+  padding: 16px 18px 20px;
+  flex: 1;
+  display: flex;
+  flex-direction: column;
+}
+.product-card .name {
+  font-family: var(--font-display);
+  font-size: 20px;
+  font-weight: 700;
+  margin-bottom: 3px;
+  color: var(--ink);
+}
+.product-card .desc {
+  color: var(--ink-soft);
+  font-size: 12.5px;
+  line-height: 1.5;
+  margin-bottom: 12px;
+  flex: 1;
+}
+
+/* Fila de precio (precio + unidad) */
+.product-card .price-row {
+  display: flex;
+  align-items: baseline;
+  justify-content: space-between;
+  margin-bottom: 14px;
+  flex-wrap: wrap;
+  gap: 10px;
+}
+.product-card .price {
+  font-family: var(--font-display);
+  font-size: 26px;
+  font-weight: 700;
+  color: var(--clay-ink);
+  letter-spacing: -0.5px;
+}
+.product-card .unit {
+  color: var(--clay-ink-soft);
+  font-size: 12px;
+}
+
+/* Precio tachado y ahorro (para combos con descuento) */
+.product-card .price-was {
+  font-size: 13px;
+  color: var(--ink-soft);
+  text-decoration: line-through;
+}
+.product-card .price-save {
+  font-size: 11px;
+  font-weight: 700;
+  color: var(--fresa-ink);
+  background: var(--mochi-crema);
+  padding: 5px 12px;
+  border-radius: 999px;
+  margin-left: auto;
+  letter-spacing: 0.5px;
+  box-shadow: var(--clay-shadow-xs), inset 1px -1px 2px rgba(255, 255, 255, 0.7);
+}
+
+/* Boton de agregar */
+.product-card .add-btn {
+  width: 100%;
+  background: var(--btn-primary-bg-hover);
+  color: #fff;
+  border: 0;
+  padding: 14px;
+  border-radius: 18px;
+  font-family: var(--font-display);
+  font-weight: 700;
+  font-size: 14px;
+  cursor: pointer;
+  letter-spacing: 0.3px;
+  box-shadow: var(--clay-shadow-sm), inset 2px -2px 4px rgba(255, 255, 255, 0.3);
+  transition: all 0.2s;
+}
+.product-card .add-btn:hover {
+  transform: translateY(-2px);
+  box-shadow: var(--clay-shadow-md);
+}
+.product-card .add-btn:active {
+  transform: scale(0.97);
+  box-shadow: var(--clay-inset-sm);
+}
+
+/* Chip de filtro / categoria */
+.chip {
+  display: inline-flex;
+  align-items: center;
+  gap: 7px;
+  padding: 9px 16px;
+  border-radius: var(--r-pill);
+  background: var(--surface);
+  color: var(--ink);
+  border: 1px solid var(--line);
+  font-family: var(--font-body);
+  font-weight: 700;
+  font-size: 13px;
+  cursor: pointer;
+  box-shadow: var(--clay-shadow-xs),
+              inset 2px -2px 4px rgba(255, 255, 255, 0.7);
+  transition: transform var(--dur-fast) var(--ease-out),
+              background-color var(--dur-fast) var(--ease-out),
+              color var(--dur-fast) var(--ease-out);
+}
+.chip:hover { transform: translateY(-1px); }
+.chip.active,
+.chip[aria-pressed="true"] {
+  background: var(--btn-primary-bg);
+  color: var(--btn-primary-fg);
+  border-color: transparent;
+  box-shadow: var(--clay-shadow-sm);
+}
+
+/* Pill de estado (mismo lenguaje que los chips, sin cursor) */
+.pill {
+  display: inline-flex;
+  align-items: center;
+  gap: 6px;
+  padding: 5px 12px;
+  border-radius: var(--r-pill);
+  font-size: 12px;
+  font-weight: 700;
+  background: var(--surface-2);
+  color: var(--ink-soft);
+}
+
+/* ============================================================================
+ * 5. MODALES Y HOJAS
+ * ========================================================================== */
+
+.modal-back {
+  position: fixed;
+  inset: 0;
+  z-index: 200;
+  display: none;
+  align-items: center;
+  justify-content: center;
+  padding: 20px;
+  background: rgba(32, 48, 74, 0.45);
+  backdrop-filter: blur(6px);
+  -webkit-backdrop-filter: blur(6px);
+}
+.modal-back.visible { display: flex; }
+
+.modal {
+  background: color-mix(in srgb, var(--surface) 92%, transparent);
+  backdrop-filter: blur(18px) saturate(1.3);
+  -webkit-backdrop-filter: blur(18px) saturate(1.3);
+  border: 1px solid rgba(255, 255, 255, 0.6);
+  border-radius: var(--r-xl);
+  padding: 30px 28px;
+  width: 100%;
+  max-width: 520px;
+  max-height: 92vh;
+  overflow-y: auto;
+  box-shadow: var(--clay-shadow-hover),
+              inset 4px -4px 8px rgba(255, 255, 255, 0.85);
+  animation: modalIn var(--dur-slow) var(--ease-bounce);
+}
+
+@keyframes modalIn {
+  from { opacity: 0; transform: translateY(18px) scale(0.97); }
+  to   { opacity: 1; transform: none; }
+}
+
+.modal h2 {
+  font-family: var(--font-display);
+  font-size: 24px;
+  font-weight: 700;
+  color: var(--ink);
+  margin-bottom: 6px;
+}
+
+.modal-actions {
+  display: flex;
+  gap: 10px;
+  justify-content: flex-end;
+  margin-top: 22px;
+}
+@media (max-width: 480px) {
+  .modal-actions { flex-direction: column-reverse; }
+  .modal-actions > * { width: 100%; }
+}
+
+/* ============================================================================
+ * 6. TABLAS
+ * ========================================================================== */
+
+.table-wrap {
+  overflow-x: auto;
+  -webkit-overflow-scrolling: touch;
+  /* `position: relative` hace que el ancho minimo de la tabla se quede
+     DENTRO del contenedor. Sin esto, con la tabla en `static` y las th en
+     `sticky`, el scroll horizontal se va a la pagina entera (bug del
+     dashboard, 2026-10-28). */
+  position: relative;
+}
+
+table {
+  width: 100%;
+  border-collapse: collapse;
+  font-size: 13.5px;
+}
+
+th {
+  text-align: left;
+  font-size: 11px;
+  font-weight: 800;
+  letter-spacing: 1px;
+  text-transform: uppercase;
+  color: var(--ink-soft);
+  padding: 10px 12px;
+  border-bottom: 2px solid var(--line);
+  white-space: nowrap;
+}
+
+td {
+  padding: 11px 12px;
+  border-bottom: 1px solid var(--line);
+  color: var(--ink);
+  vertical-align: middle;
+}
+
+tbody tr:hover td { background: var(--surface-2); }
+
+/* ============================================================================
+ * 7. UTILIDADES
+ * ========================================================================== */
+
+/* Texto e iconos del mismo color que el CTA: los emojis sueltos (🏪 🛵)
+   rompian la linea de color. */
+.u-accent { color: var(--sakura-ink); }
+.u-muted { color: var(--ink-soft); }
+.u-mono {
+  font-variant-numeric: tabular-nums;
+  font-family: var(--font-body);
+}
+.u-hide { display: none !important; }
+
+@media (prefers-reduced-motion: reduce) {
+  .btn, .chip, .card-glass, .modal { animation: none !important; }
+}
