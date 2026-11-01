@@ -88,7 +88,9 @@ test.describe('dashboard', () => {
     await expect(fila.locator('.tag.src')).toBeVisible();
 
     // El detalle expone los datos que la API ya traia y la tabla no mostraba.
-    await fila.locator('button[onclick^="openOrderDetail"]').click();
+    // El id del pedido viaja en data-payload (no en un onclick): el id lo
+    // elige el cliente al crear el pedido y no puede ir crudo en el HTML.
+    await fila.locator('button[data-action="openOrderDetail"]').click();
     await expect(page.locator('#modal-back')).toHaveClass(/visible/);
     const texto = await page.locator('#modal-content').innerText();
     expect(texto).toContain('Cliente E2E');

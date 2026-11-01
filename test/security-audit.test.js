@@ -329,3 +329,54 @@ test('secreto — en produccion sin secreto el server NO arranca', async () => {
   assert.doesNotMatch(mock, /\|\|\s*'mock-secret'/,
     "el default inseguro 'mock-secret' no debe volver a existir en el adapter");
 });
+
+// =============================================================================
+// 4. XSS almacenado — el id del pedido lo elige el cliente (2026-11-01)
+// =============================================================================
+//
+// POST /api/orders es publico y el id lo manda el cliente. El panel lo
+// interpola en la tabla de pedidos: un id con comillas cerraba el atributo y
+// ejecutaba codigo en el navegador del operador (su token vive en
+// localStorage). El fix es de dos capas: el server acota el formato del id y
+// el panel deja de interpolarlo crudo.
+
+test('XSS — un id de pedido con comillas o etiquetas NO se acepta', async () => {
+  const ids = [
+    `x' onmouseover='alert(1)`,
+    `x" onfocus="alert(1)`,
+    `x</select><script>alert(1)</script>`,
+    `x'+(alert(1))+'`,
+    `x"><img src=x onerror=alert(1)>`,
+  ];
+  for (const id of ids) {
+    const r = await api('POST', '/api/orders', {
+      body: {
+        id, customer_name: 'XSS', customer_phone: '573001112233',
+        pickup_day: windowDate, items: { 'sec-fresa': 1 }, combos: [], total: 8000, source: 'test',
+      },
+    });
+    assert.equal(r.status, 400,
+      `el id ${JSON.stringify(id)} deberia rechazarse; respondio ${r.status} ${JSON.stringify(r.json)}`);
+    assert.equal(r.json?.error, 'bad_request');
+  }
+});
+
+test('XSS — ninguno de esos pedidos quedo en el libro', async () => {
+  const r = await api('GET', '/api/orders?limit=200', { token });
+  const lista = Array.isArray(r.json) ? r.json : (r.json?.orders || []);
+  const sospechosos = lista.filter(o => /[<>'"]|alert|script|onerror|onmouseover/i.test(String(o.id)));
+  assert.equal(sospechosos.length, 0,
+    `el libro no debe tener pedidos con id peligroso: ${JSON.stringify(sospechosos.map(o => o.id))}`);
+});
+
+test('XSS — un id normal (uuid de la tienda, ord- del panel) SI se acepta', async () => {
+  for (const id of ['6f1c2a3b-4d5e-6f70-8192-a3b4c5d6e7f8', 'ord-mvy2yebt-9hv5lu']) {
+    const r = await api('POST', '/api/orders', {
+      body: {
+        id, customer_name: 'Cliente Normal', customer_phone: '573009998877',
+        pickup_day: windowDate, items: { 'sec-fresa': 1 }, combos: [], total: 8000, source: 'test',
+      },
+    });
+    assert.equal(r.status, 201, `el id ${id} deberia aceptarse: ${JSON.stringify(r.json)}`);
+  }
+});

@@ -2062,7 +2062,11 @@ const render = {
       return;
     }
     const flavorNames = Object.fromEntries(_flavors.map(f => [f.id, f.name]));
-    tbody.innerHTML = filtered.map(o => {
+    tbody.innerHTML = filtered.map((o, rowIdx) => {
+      // El id del pedido lo elige el cliente al crear el pedido (POST /api/orders
+      // es publico): no puede interpolarse crudo en atributos ni en codigo.
+      // Viaja en data-payload y lo parsea el listener delegado.
+      const oid = esc(JSON.stringify(String(o.id)));
       const items = Object.entries(o.items || {}).map(([id, q]) => `${flavorNames[id] || id} × ${q}`).join(', ');
       const combos = (o.combos || []).map(c => {
         const name = c.name || `Combo ${c.id || ''}`;
@@ -2103,10 +2107,10 @@ const render = {
         <td><strong>${fmt(o.total)}</strong>${payHtml}</td>
         <td><span class="tag ${o.status}">${STATUS_ES[o.status] || o.status}</span></td>
         <td><span class="tag ${o.payment_status === 'paid' ? 'paid' : 'pending'}">${o.payment_status === 'paid' ? 'Pagado' : 'Pendiente'}</span></td>
-        <td><button class="btn btn-sm btn-ghost" onclick="openOrderDetail('${o.id}')" aria-label="Ver detalle del pedido" title="Ver detalle">🔎</button>
-        ${o.payment_status !== 'paid' ? `<button class="btn btn-sm btn-imediato" onclick="confirmOrderPayment('${o.id}')" aria-label="Confirmar que el pago llegó" title="Confirmar que el pago llegó">💰 Cobrar</button>` : ''}
-        <label for="order-status-${o.id}" class="visually-hidden">Cambiar estado del pedido</label>
-        <select id="order-status-${o.id}" data-status="${esc(String(o.status || ''))}" onchange="updateOrderStatus('${o.id}', this.value, this.dataset.status)" aria-label="Cambiar estado del pedido" style="padding:5px 8px;font-size:12px;border-radius:6px;border:1px solid var(--line);background:#fff">
+        <td><button class="btn btn-sm btn-ghost" data-action="openOrderDetail" data-payload='${oid}' aria-label="Ver detalle del pedido" title="Ver detalle">🔎</button>
+        ${o.payment_status !== 'paid' ? `<button class="btn btn-sm btn-imediato" data-action="confirmOrderPayment" data-payload='${oid}' aria-label="Confirmar que el pago llegó" title="Confirmar que el pago llegó">💰 Cobrar</button>` : ''}
+        <label for="order-status-${rowIdx}" class="visually-hidden">Cambiar estado del pedido</label>
+        <select id="order-status-${rowIdx}" data-order="${esc(String(o.id))}" data-status="${esc(String(o.status || ''))}" onchange="updateOrderStatus(this.dataset.order, this.value, this.dataset.status, this)" aria-label="Cambiar estado del pedido" style="padding:5px 8px;font-size:12px;border-radius:6px;border:1px solid var(--line);background:#fff">
           <option value="">cambiar estado...</option>
           <option value="pending">Pendiente</option>
           <option value="confirmed">Confirmado</option>
@@ -2114,7 +2118,7 @@ const render = {
           <option value="delivered">Entregado</option>
           <option value="cancelled">Cancelado</option>
         </select>
-          <button class="btn btn-sm btn-danger" onclick="deleteOrder('${o.id}')" aria-label="Eliminar pedido" title="Eliminar">🗑</button></td>
+          <button class="btn btn-sm btn-danger" data-action="deleteOrder" data-payload='${oid}' aria-label="Eliminar pedido" title="Eliminar">🗑</button></td>
       </tr>`;
     }).join('');
   },
@@ -2240,7 +2244,7 @@ document.addEventListener('click', (ev) => {
 });
 
 // ============ ORDERS ACTIONS ============
-async function updateOrderStatus(id, status, prevStatus) {
+async function updateOrderStatus(id, status, prevStatus, sel) {
   if (!status) return;
   const label = STATUS_ES[status] || status;
   // Cancelar devuelve el stock reservado a la ventana: sin confirmacion, un
@@ -2249,7 +2253,6 @@ async function updateOrderStatus(id, status, prevStatus) {
     ? '¿Cancelar el pedido? Se devuelve el stock reservado a la ventana de producción.'
     : `¿Cambiar el estado del pedido a "${label}"?`;
   if (!confirm(aviso)) {
-    const sel = document.getElementById('order-status-' + id);
     if (sel && prevStatus) sel.value = prevStatus;
     return;
   }

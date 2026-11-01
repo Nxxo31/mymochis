@@ -262,6 +262,16 @@ router.post('/', async (req, res) => {
   if (!id || !customer_name || !customer_phone || !pickup_day || total == null) {
     return res.status(400).json({ error: 'bad_request', message: 'id, customer_name, customer_phone, pickup_day, total son obligatorios' });
   }
+  // El id lo elige el cliente y este endpoint es publico. El panel lo
+  // interpola en la tabla de pedidos, asi que un id con comillas o etiquetas
+  // allowria inyectar codigo en el panel del operador. Se acota el formato:
+  // la tienda manda un uuid y el panel un id tipo ord-xxx-yyy.
+  if (!/^[A-Za-z0-9_-]{1,64}$/.test(String(id))) {
+    return res.status(400).json({
+      error: 'bad_request',
+      message: 'id invalido: solo letras, numeros, guion y guion bajo (max 64 caracteres)',
+    });
+  }
   if (!VALID_DELIVERY_MODE.includes(delivery_mode)) {
     return res.status(400).json({ error: 'bad_request', message: `delivery_mode debe ser uno de: ${VALID_DELIVERY_MODE.join(',')}` });
   }
