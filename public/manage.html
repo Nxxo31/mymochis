@@ -4,13 +4,14 @@
 <meta charset="UTF-8">
 <meta name="viewport" content="width=device-width,initial-scale=1">
 <link rel="stylesheet" href="/theme.css">
-<meta name="theme-color" content="#FAF3EA">
+<link rel="stylesheet" href="/ui.css">
+<meta name="theme-color" content="#62D3EC">
 <title>Mochi's Land · Panel de gestión</title>
 <link rel="icon" type="image/svg+xml" href="favicon.svg">
 <link rel="apple-touch-icon" href="logo-mochis-land.svg">
 <link rel="manifest" href="manifest.json">
 <meta name="robots" content="noindex, nofollow">
-<link href="https://fonts.googleapis.com/css2?family=Fredoka:wght@400;500;600;700&family=Inter:wght@400;500;600;700&display=swap" rel="stylesheet">
+<link href="https://fonts.googleapis.com/css2?family=Baloo+2:wght@400;600;700;800&family=Quicksand:wght@400;500;600;700&display=swap" rel="stylesheet">
 <script src="/vendor/chartjs.min.js"></script>
 <style>
 /* ==========================================================================
@@ -21,20 +22,22 @@
 * { box-sizing: border-box; margin: 0; padding: 0; }
 
 body {
-  font-family: 'Inter', 'Quicksand', system-ui, sans-serif;
-  background:
-    radial-gradient(circle at 12% 8%, color-mix(in srgb, var(--fresa) 30%, transparent) 0%, transparent 28%),
-    radial-gradient(circle at 88% 14%, color-mix(in srgb, var(--cyan) 28%, transparent) 0%, transparent 30%),
-    radial-gradient(circle at 14% 82%, color-mix(in srgb, var(--matcha) 28%, transparent) 0%, transparent 26%),
-    radial-gradient(circle at 88% 78%, color-mix(in srgb, var(--durazno) 30%, transparent) 0%, transparent 28%),
-    var(--clay-canvas);
+  font-family: var(--font-body);
+  /* Mismo fondo que la landing y la tienda (ui.css), para que el panel se
+     sienta parte del mismo sitio. El panel mantiene su densidad: 14px. */
+  background-color: color-mix(in srgb, var(--canvas) 82%, transparent);
+  background-image:
+    radial-gradient(circle at 10% 6%,  color-mix(in srgb, var(--fresa) 24%, transparent) 0%, transparent 34%),
+    radial-gradient(circle at 92% 12%, color-mix(in srgb, var(--ube) 18%, transparent) 0%, transparent 32%),
+    radial-gradient(circle at 12% 88%, color-mix(in srgb, var(--durazno) 16%, transparent) 0%, transparent 30%),
+    radial-gradient(circle at 90% 82%, color-mix(in srgb, var(--accent) 14%, transparent) 0%, transparent 30%);
   background-attachment: fixed;
-  color: var(--clay-ink);
+  color: var(--ink);
   font-size: 14px; line-height: 1.55;
   -webkit-font-smoothing: antialiased;
   min-height: 100vh;
 }
-.serif { font-family: 'Fredoka', 'Baloo 2', serif; }
+.serif { font-family: var(--font-display); }
 a { color: var(--mochi-fresa-d); text-decoration: none; }
 a:hover { text-decoration: underline; }
 
@@ -64,7 +67,7 @@ a:hover { text-decoration: underline; }
 }
 .login-card .brand {
   display: flex; align-items: center; gap: 10px;
-  font-family: 'Fredoka', serif;
+  font-family: var(--font-display);
   font-size: 28px; font-weight: 700;
   margin-bottom: 8px;
 }
@@ -75,62 +78,10 @@ a:hover { text-decoration: underline; }
   box-shadow: var(--clay-shadow-sm), inset 2px -2px 4px rgba(255,255,255,0.7);
 }
 .login-card h2 {
-  font-family: 'Fredoka', serif;
+  font-family: var(--font-display);
   font-size: 26px; font-weight: 700; margin-bottom: 6px;
 }
 .login-card p { color: var(--clay-ink-soft); font-size: 14px; margin-bottom: 22px; }
-
-.form-group { margin-bottom: 16px; }
-.form-group label {
-  display: block; font-size: 11px; font-weight: 700;
-  color: var(--clay-ink-soft); margin-bottom: 8px;
-  letter-spacing: 1px; text-transform: uppercase;
-}
-.form-group input, .form-group select, .form-group textarea {
-  width: 100%; padding: 14px 16px;
-  border: 0; border-radius: 14px;
-  font-family: 'Inter', sans-serif; font-size: 14px;
-  background: var(--clay-canvas);
-  color: var(--clay-ink);
-  box-shadow: var(--clay-shadow-xs), inset 1px -1px 2px rgba(255,255,255,0.7);
-  transition: box-shadow 0.2s;
-}
-.form-group input:focus, .form-group select:focus, .form-group textarea:focus {
-  outline: none;
-  box-shadow: var(--clay-inset-sm);
-}
-.form-group textarea { resize: vertical; min-height: 80px; font-family: inherit; }
-
-.btn {
-  border: 0; padding: 12px 22px; border-radius: 999px;
-  font-family: 'Inter', sans-serif; font-weight: 700; font-size: 14px;
-  cursor: pointer;
-  display: inline-flex; align-items: center; gap: 8px;
-  text-decoration: none;
-  letter-spacing: 0.2px;
-  box-shadow: var(--clay-shadow-sm), inset 2px -2px 4px rgba(255,255,255,0.7);
-  transition: all 0.2s cubic-bezier(.34,1.56,.64,1);
-}
-.btn:hover { transform: translateY(-1px); box-shadow: var(--clay-shadow-md); }
-.btn:active { transform: scale(0.97); box-shadow: var(--clay-inset-sm); }
-.btn:focus-visible { outline: 3px solid color-mix(in srgb, var(--cyan) 70%, transparent); outline-offset: 2px; }
-.btn-primary {
-  background: var(--mochi-fresa); color: var(--mochi-fresa-d);
-  box-shadow: var(--clay-shadow-sm), inset 2px -2px 4px rgba(255,255,255,0.8);
-}
-.btn-primary:hover {
-  transform: translateY(-2px);
-  box-shadow: var(--clay-shadow-md), inset 2px -2px 4px rgba(255,255,255,0.8);
-}
-.btn-primary:disabled { opacity: 0.5; cursor: not-allowed; }
-.btn-ghost { background: var(--clay-surface); color: var(--clay-ink); border: 0; }
-.btn-ghost:hover { background: var(--clay-canvas-2); }
-.btn-danger {
-  background: var(--clay-surface); color: var(--mochi-fresa-d); border: 0;
-}
-.btn-danger:hover { background: var(--mochi-fresa); }
-.btn-sm { padding: 8px 14px; font-size: 12px; }
-.btn-block { width: 100%; justify-content: center; }
 
 .login-error {
   color: var(--mochi-fresa-d); font-size: 13px;
@@ -159,7 +110,7 @@ a:hover { text-decoration: underline; }
 .sidebar > * { flex-shrink: 0; }
 .sidebar .brand {
   display: flex; align-items: center; gap: 12px;
-  font-family: 'Fredoka', serif;
+  font-family: var(--font-display);
   font-size: 22px; font-weight: 700; color: var(--clay-canvas);
   padding: 0 8px 18px;
   border-bottom: 1px solid rgba(255,255,255,0.08);
@@ -226,7 +177,7 @@ a:hover { text-decoration: underline; }
   flex-wrap: wrap; gap: 16px; margin-bottom: 28px;
 }
 .page-head h1 {
-  font-family: 'Fredoka', serif;
+  font-family: var(--font-display);
   font-size: 36px; font-weight: 700; margin-bottom: 4px;
   letter-spacing: -0.5px;
 }
@@ -242,7 +193,7 @@ a:hover { text-decoration: underline; }
   box-shadow: var(--clay-shadow-md), inset 3px -3px 6px rgba(255,255,255,0.85);
 }
 .card h3 {
-  font-family: 'Fredoka', serif;
+  font-family: var(--font-display);
   font-size: 22px; font-weight: 700; margin-bottom: 12px;
 }
 .grid { display: grid; gap: 20px; }
@@ -253,6 +204,36 @@ a:hover { text-decoration: underline; }
    contenido ancho (canvas, tablas, pre) empuja la columna mas alla de su
    track,Overflow horizontal en cualquier ancho. */
 .grid-2 > *, .grid-3 > *, .grid-4 > * { min-width: 0; }
+
+/* ============ TABLAS · densidad de herramienta ==========================
+   La base vive en ui.css; aqui se conservan las dos cosas que el panel
+   necesita y la base no tiene: la cabecera sticky (hay tablas largas) y
+   el interlineado compacto de una herramienta de trabajo. */
+/* El panel usa .table-wrap tambien como tarjeta (fondo, radio, sombra).
+   ui.css aporta el overflow-x:auto que evita que el scroll horizontal se
+   escape a la pagina; aqui se conserva la piel de tarjeta. */
+.table-wrap {
+  background: var(--surface);
+  border: 0;
+  border-radius: var(--r-lg);
+  overflow: hidden;
+  box-shadow: var(--clay-shadow-md), inset 3px -3px 6px rgba(255,255,255,0.85);
+}
+.app table { font-size: 13px; }
+.app thead th {
+  position: sticky;
+  top: 0;
+  z-index: 1;
+  background: var(--canvas-2);
+  padding: 9px 14px;
+  border-bottom: 2px solid var(--line);
+}
+.app tbody td {
+  padding: 11px 14px;
+  border-bottom: 1px dashed var(--line);
+}
+.app tbody tr:last-child td { border-bottom: 0; }
+.app tbody tr:hover td { background: var(--surface-2); }
 
 /* ============ KPI · clay numbers ============ */
 .kpi {
@@ -284,7 +265,7 @@ a:hover { text-decoration: underline; }
   text-transform: uppercase; color: var(--clay-ink-soft);
 }
 .kpi .value {
-  font-family: 'Fredoka', serif;
+  font-family: var(--font-display);
   font-size: 32px; font-weight: 700;
   color: var(--mochi-fresa-d); margin-top: 6px;
   letter-spacing: -0.5px;
@@ -302,24 +283,6 @@ a:hover { text-decoration: underline; }
   overflow: hidden;
   box-shadow: var(--clay-shadow-md), inset 3px -3px 6px rgba(255,255,255,0.85);
 }
-table { width: 100%; border-collapse: collapse; font-size: 13px; }
-thead th {
-  background: var(--clay-canvas-2);
-  text-align: left; padding: 12px 16px;
-  font-size: 11px; font-weight: 700;
-  letter-spacing: 0.8px; text-transform: uppercase;
-  color: var(--clay-ink-soft);
-  border-bottom: 0;
-  position: sticky; top: 0; z-index: 1;
-}
-tbody td {
-  padding: 13px 16px;
-  border-bottom: 1px dashed var(--clay-line);
-  vertical-align: middle;
-}
-tbody tr:last-child td { border-bottom: 0; }
-tbody tr { transition: background 0.15s; }
-tbody tr:hover { background: var(--clay-canvas); }
 
 .tag {
   display: inline-block; padding: 4px 12px; border-radius: 999px;
@@ -407,6 +370,29 @@ tbody tr:hover { background: var(--clay-canvas); }
 .tag.status-closed    { background: var(--mochi-fresa); color: var(--mochi-fresa-d); }
 .tag.status-completed { background: var(--mochi-cyan); color: var(--navy-deep); }
 
+/* El panel es una herramienta densa: sus botones small son mas compactos
+   que los de la web (ui.css), pero conservan el target tactil de 24px. */
+.btn.btn-sm {
+  min-height: 30px;
+  padding: 5px 11px;
+  font-size: 12px;
+  border-radius: var(--r-sm);
+}
+
+/* Los <select> del panel tambien llevan la flecha propia: sin esto el
+   navegador los pinta como dropdowns nativos, distintos de los del formulario. */
+.toolbar select,
+.item-row select {
+  padding-right: 34px;
+  background-image: url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 24 24' fill='none' stroke='%234A5C78' stroke-width='2.4' stroke-linecap='round' stroke-linejoin='round'%3E%3Cpolyline points='6 9 12 15 18 9'/%3E%3C/svg%3E");
+  background-repeat: no-repeat;
+  background-position: right 10px center;
+  background-size: 15px 15px;
+  -webkit-appearance: none;
+  appearance: none;
+  cursor: pointer;
+}
+
 /* ============ TOOLBAR ============ */
 .toolbar {
   display: flex; gap: 10px; flex-wrap: wrap; align-items: center;
@@ -422,7 +408,7 @@ tbody tr:hover { background: var(--clay-canvas); }
   border: 0; border-radius: 999px;
   font-size: 13px;
   background: var(--clay-canvas); color: var(--clay-ink);
-  font-family: 'Inter', sans-serif;
+  font-family: var(--font-body);
   box-shadow: inset 1px -1px 2px rgba(58,46,38,0.10);
 }
 .toolbar select:focus, .toolbar input:focus {
@@ -450,7 +436,7 @@ tbody tr:hover { background: var(--clay-canvas); }
   font-size: 13px; font-weight: 700; cursor: pointer;
   color: var(--clay-ink-soft); background: transparent;
   border: 0; transition: all 0.18s;
-  font-family: 'Inter', sans-serif;
+  font-family: var(--font-body);
 }
 .subtabs .pill:hover { background: var(--clay-canvas-2); color: var(--clay-ink); }
 .subtabs .pill.active {
@@ -470,7 +456,7 @@ tbody tr:hover { background: var(--clay-canvas); }
   box-shadow: var(--clay-shadow-md), inset 3px -3px 6px rgba(255,255,255,0.85);
 }
 .cfg-group h3 {
-  font-family: 'Fredoka', serif; font-size: 18px; font-weight: 700;
+  font-family: var(--font-display); font-size: 18px; font-weight: 700;
   color: var(--mochi-cyan-d); margin-bottom: 12px;
 }
 .cfg-group .hint { font-size: 12px; color: var(--clay-ink-soft); margin-top: 4px; }
@@ -546,7 +532,7 @@ tbody tr:hover { background: var(--clay-canvas); }
   width: 100%;
   padding: 10px 12px;
   border: 0; border-radius: 12px;
-  font-family: 'Inter', sans-serif; font-size: 13px;
+  font-family: var(--font-body); font-size: 13px;
   background: var(--clay-surface); color: var(--clay-ink);
   box-shadow: var(--clay-shadow-xs), inset 1px -1px 2px rgba(255,255,255,0.7);
 }
@@ -601,7 +587,7 @@ tbody tr:hover { background: var(--clay-canvas); }
   padding: 8px 12px;
   border: 0; border-radius: 10px;
   font-size: 13px;
-  font-family: 'Inter', sans-serif;
+  font-family: var(--font-body);
   background: var(--clay-surface);
   color: var(--clay-ink);
   box-shadow: var(--clay-shadow-xs), inset 1px -1px 2px rgba(255,255,255,0.7);
@@ -617,27 +603,10 @@ tbody tr:hover { background: var(--clay-canvas); }
   transition: all 0.15s;
 }
 .item-row button:hover { box-shadow: var(--clay-shadow-sm); }
-
-/* ============ MODAL ============ */
-.modal-back {
-  position: fixed; inset: 0; background: rgba(58,46,38,0.45);
-  z-index: 200; display: none; align-items: flex-start; justify-content: center;
-  padding: 40px 20px; overflow-y: auto;
-  backdrop-filter: blur(6px);
-}
-.modal-back.visible { display: flex; }
-.modal {
-  background: var(--clay-surface); border-radius: 28px;
-  padding: 32px; max-width: 540px; width: 100%;
-  box-shadow: var(--clay-shadow-hover), inset 4px -4px 8px rgba(255,255,255,0.85);
-  animation: modalIn 0.4s cubic-bezier(.34,1.56,.64,1);
-}
 @keyframes modalIn {
   from { opacity: 0; transform: translateY(16px) scale(0.97); }
   to   { opacity: 1; transform: none; }
 }
-.modal h2 { font-family: 'Fredoka', serif; font-size: 28px; font-weight: 700; margin-bottom: 14px; }
-.modal-actions { display: flex; gap: 8px; justify-content: flex-end; margin-top: 18px; }
 .modal-row { display: flex; gap: 10px; }
 .modal-row > * { flex: 1; }
 
@@ -981,7 +950,7 @@ tbody tr:hover { background: var(--clay-canvas); }
   margin-bottom: 12px;
 }
 .upload-section-head h3 {
-  font-family: 'Fredoka', serif;
+  font-family: var(--font-display);
   font-size: 18px; font-weight: 700;
 }
 .upload-section-head .category-pick {
@@ -1008,10 +977,6 @@ tbody tr:hover { background: var(--clay-canvas); }
 /* ============ CHECKBOXES ESTÉTICAS (clay) ============ */
 .form-group input[type="checkbox"] {
   width: 0; height: 0; opacity: 0; position: absolute;
-}
-.form-group label {
-  display: inline-flex; align-items: center; gap: 8px;
-  cursor: pointer;
 }
 .form-group label::before {
   content: ''; display: inline-block; width: 20px; height: 20px;
@@ -1064,9 +1029,6 @@ tbody tr:hover { background: var(--clay-canvas); }
 .prod-card table { width: 100%; border-collapse: collapse; font-size: 13px; }
 .prod-card th { text-align: left; color: var(--clay-ink-soft); font-size: 11px; text-transform: uppercase; letter-spacing: 1px; padding: 8px 6px; }
 .prod-card td { padding: 8px 6px; color: var(--clay-ink); border-bottom: 1px solid var(--line); }
-.btn-sm { padding: 6px 10px; font-size: 12px; border-radius: 8px; }
-.btn-danger { background: var(--clay-canvas); color: #b00020; box-shadow: var(--clay-shadow-xs), inset 1px -1px 2px rgba(255,255,255,0.7); }
-.btn-danger:hover { background: #fdecea; box-shadow: var(--clay-shadow-sm); }
 .prod-layout { display: grid; grid-template-columns: minmax(0, 1.6fr) minmax(280px, .8fr); gap: 16px; align-items: start; }
 .prod-metric { border-radius: 18px; padding: 14px 16px; background: var(--clay-canvas); border: 1px solid var(--line); box-shadow: var(--clay-shadow-xs); }
 .prod-metric .label { font-size: 11px; text-transform: uppercase; letter-spacing: 1px; color: var(--clay-ink-soft); }
@@ -1103,7 +1065,7 @@ tbody tr:hover { background: var(--clay-canvas); }
   border-radius: 16px; padding: 16px 18px; max-width: 320px;
   box-shadow: var(--clay-shadow); animation: cardIn 0.3s cubic-bezier(.34,1.56,.64,1);
 }
-.tour-card h3 { font-family: 'Fredoka', serif; margin: 0 0 6px; font-size: 17px; color: var(--clay-ink); }
+.tour-card h3 { font-family: var(--font-display); margin: 0 0 6px; font-size: 17px; color: var(--clay-ink); }
 .tour-card p { font-size: 13.5px; color: var(--clay-ink-soft); margin: 0 0 10px; line-height: 1.5; }
 .tour-card .steps { font-size: 11px; color: var(--ink-faint, #7A8AA3); margin-bottom: 10px; font-weight: 700; letter-spacing: 0.5px; }
 .tour-actions { display: flex; gap: 8px; justify-content: flex-end; }
