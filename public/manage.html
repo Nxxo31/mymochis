@@ -1869,7 +1869,8 @@ async function loadAll() {
     _openWindows = (windows || []).filter(w => w.status === 'open');
     _recipients = (recipients && recipients.recipients) || [];
     _users = (users && users.users) || [];
-    _paymentMethods = (payMethods && payMethods.methods) || [];
+    // GET /api/payment-methods devuelve un array plano, no {methods: [...]}.
+    _paymentMethods = Array.isArray(payMethods) ? payMethods : (payMethods && payMethods.methods) || [];
   } catch (e) {
     if (e.status === 401) {
       document.getElementById('logout-btn').click();
