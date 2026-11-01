@@ -259,7 +259,7 @@ a:hover { text-decoration: underline; }
 }
 .kpi.mint::before { background: var(--mochi-matcha); }
 .kpi.gold::before { background: var(--mochi-durazno); }
-.kpi.mochi::before { background: var(--mochi-crema); }
+.kpi.crema::before { background: var(--mochi-crema); }
 .kpi .label {
   font-size: 11px; font-weight: 700; letter-spacing: 1px;
   text-transform: uppercase; color: var(--clay-ink-soft);
@@ -272,7 +272,7 @@ a:hover { text-decoration: underline; }
 }
 .kpi.mint .value { color: var(--mochi-matcha-d); }
 .kpi.gold .value { color: var(--mochi-durazno-d); }
-.kpi.mochi .value { color: var(--mocha-3); }
+.kpi.crema .value { color: var(--mocha-3); }
 .kpi .hint { font-size: 12px; color: var(--clay-ink-soft); margin-top: 2px; }
 
 /* ============ TABLE ============ */
@@ -978,34 +978,21 @@ a:hover { text-decoration: underline; }
 .form-group input[type="checkbox"] {
   width: 0; height: 0; opacity: 0; position: absolute;
 }
-.form-group label::before {
+.form-group label > span.check-text {
+  position: relative; z-index: 2;
+  display: inline-flex; align-items: center;
+}
+.form-group label > span.check-text::before {
   content: ''; display: inline-block; width: 20px; height: 20px;
   border-radius: 6px; border: 2px solid var(--clay-ink-soft);
   background: var(--clay-canvas);
   box-shadow: var(--clay-shadow-xs), inset 1px -1px 2px rgba(255,255,255,0.7);
   transition: all 0.18s;
-  flex-shrink: 0;
+  flex-shrink: 0; margin-right: 8px;
+  color: #fff; font-size: 12px; font-weight: 700; line-height: 16px; text-align: center;
 }
 .form-group input[type="checkbox"]:checked + span.check-text::before {
-  background: var(--mochi-fresa);
-  border-color: var(--mochi-fresa-d);
-  box-shadow: var(--clay-shadow-sm), inset 1px -1px 2px rgba(255,255,255,0.6);
-}
-.form-group input[type="checkbox"]:checked + span.check-text::after {
-  content: '✔'; color: #fff; font-size: 12px; font-weight: 700;
-  position: absolute; left: 50%; top: 50%; transform: translate(-50%, -50%);
-}
-
-/* envuelve el texto del label en span para aplicar el check */
-.form-group label > span.check-text {
-  position: relative; z-index: 2; display: inline-flex; align-items: center;
-  width: 20px; height: 20px; border-radius: 6px; border: 2px solid var(--clay-ink-soft);
-  background: var(--clay-canvas);
-  box-shadow: var(--clay-shadow-xs), inset 1px -1px 2px rgba(255,255,255,0.7);
-  transition: all 0.18s; margin-right: 8px; flex-shrink: 0;
-}
-.form-group label > span.check-text::before { display: none; }
-.form-group input[type="checkbox"]:checked + span.check-text {
+  content: '✔';
   background: var(--mochi-fresa);
   border-color: var(--mochi-fresa-d);
   box-shadow: var(--clay-shadow-sm), inset 1px -1px 2px rgba(255,255,255,0.6);
@@ -1239,7 +1226,7 @@ a:hover { text-decoration: underline; }
 
       <!-- Estado rápido: pedidos pending + releases abiertos -->
             <div class="grid grid-2" id="dash-status-row">
-              <div class="kpi mochi" style="cursor:pointer" onclick="showSection('orders'); filterOrdersByStatus('pending');" title="Ir a pedidos pendientes">
+              <div class="kpi crema" style="cursor:pointer" onclick="showSection('orders'); filterOrdersByStatus('pending');" title="Ir a pedidos pendientes">
                 <div class="label">Pedidos pendientes</div>
                 <div class="value" id="kpi-pending">—</div>
                 <div class="hint" id="kpi-pending-hint">requieren acción</div>
