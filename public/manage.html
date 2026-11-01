@@ -2932,7 +2932,9 @@ render.entregasDiasGratis = async function() {
           const extras = list.filter(r => !primary || Number(r.id) !== Number(primary.id));
           const on = Boolean(primary && Number(primary.active) === 1);
           const label = primary ? (primary.label || '') : '';
-          const minOrder = primary ? Math.round(Number(primary.min_order_cents) || 0) / 100 : 0;
+          // En esta app los *_cents son PESOS COP (PROJECT.md capitulo 20):
+// min_order_cents = 20000 es $20.000, no $200.
+          const minOrder = primary ? Math.round(Number(primary.min_order_cents) || 0) : 0;
           const window = primary && primary.starts_at
             ? `${primary.starts_at}${primary.ends_at ? ' – ' + primary.ends_at : ''}`
             : '';
@@ -3011,7 +3013,9 @@ render.entregasDiasGratis = async function() {
         const rawLabel = document.getElementById(`df-label-${day}`).value.trim();
         const rawMin = document.getElementById(`df-min-${day}`).value.trim();
         const label = rawLabel || `Domicilio gratis los ${ENTREGAS_DAYS[day].toLowerCase()}`;
-        const minOrderCents = rawMin ? Math.round(Number(rawMin) * 100) : 0;
+        // Los *_cents de esta app son pesos COP (PROJECT.md capitulo 20): el umbral
+        // se guarda tal cual lo escribe el operador, sin multiplicar por 100.
+        const minOrderCents = rawMin ? Math.round(Number(rawMin)) : 0;
         if (Number.isNaN(minOrderCents) || minOrderCents < 0) {
           throw new Error(`El pedido mínimo de ${ENTREGAS_DAYS[day]} no es un número válido.`);
         }
