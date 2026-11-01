@@ -276,14 +276,6 @@ a:hover { text-decoration: underline; }
 .kpi .hint { font-size: 12px; color: var(--clay-ink-soft); margin-top: 2px; }
 
 /* ============ TABLE ============ */
-.table-wrap {
-  background: var(--clay-surface);
-  border: 0;
-  border-radius: 22px;
-  overflow: hidden;
-  box-shadow: var(--clay-shadow-md), inset 3px -3px 6px rgba(255,255,255,0.85);
-}
-
 .tag {
   display: inline-block; padding: 4px 12px; border-radius: 999px;
   font-size: 11px; font-weight: 700;
@@ -2227,11 +2219,9 @@ function escapeHtml(s) {
 // Antes cada boton llevaba onclick='fn(JSON.stringify(x))'. Un apostrofe en
 // el nombre (lo edita un admin) cerraba el atributo y permitia inyectar HTML.
 // Ahora el payload viaja en data-payload y se parsea en un listener unico.
-function esc(s) {
-  return String(s ?? '')
-    .replace(/&/g, '&amp;').replace(/</g, '&lt;').replace(/>/g, '&gt;')
-    .replace(/"/g, '&quot;').replace(/'/g, '&#39;');
-}
+// esc() y escapeHtml() escapan exactamente los mismos cinco caracteres:
+// una sola implementacion, dos nombres.
+const esc = escapeHtml;
 
 document.addEventListener('click', (ev) => {
   const el = ev.target.closest('[data-action][data-payload]');
@@ -2893,11 +2883,6 @@ function primaryRuleOf(list) {
   return active.length ? active[0] : list[0];
 }
 
-function formatCents(cents) {
-  const value = Number(cents) || 0;
-  return '$' + value.toLocaleString('es-CO');
-}
-
 render.entregasDiasGratis = async function() {
   const el = document.getElementById('entregas-dias-gratis');
   let rules = [];
@@ -2990,7 +2975,7 @@ render.entregasDiasGratis = async function() {
           ${activeRules.map(r => `<tr>
             <td><strong>${ENTREGAS_DAYS[Number(r.day_of_week)] || '—'}</strong></td>
             <td>${escapeHtml(r.label || '')}</td>
-            <td>${Number(r.min_order_cents) > 0 ? formatCents(r.min_order_cents) : 'Sin mínimo'}</td>
+            <td>${Number(r.min_order_cents) > 0 ? fmt(r.min_order_cents) : 'Sin mínimo'}</td>
             <td>${r.starts_at ? escapeHtml(r.starts_at + (r.ends_at ? ' – ' + r.ends_at : '')) : 'Todo el día'}</td>
             <td>${escDate(r.created_at)}</td>
           </tr>`).join('')}
@@ -3305,7 +3290,6 @@ render.cobros = async function() {
   if (!el) return;
   try {
     const s = await api('/payments/summary');
-    const fmt = n => '$' + Number(n || 0).toLocaleString('es-CO');
     const st = (code, label) => {
       const row = s.by_state.find(x => x.state === code);
       return row ? `<span class="pill" style="background:var(--bg,#eef2f7)">${label}: ${row.n} · ${fmt(row.total)}</span>` : '';
@@ -3367,7 +3351,6 @@ render.cobrosPayments = async function() {
   if (!el) return;
   try {
     const { payments } = await api('/payments?limit=15');
-    const fmt = n => '$' + Number(n || 0).toLocaleString('es-CO');
     const statePill = s => ({
       SUCCEEDED: '<span class="pill" style="background:var(--success,#22c55e);color:#fff">Pagado</span>',
       REQUIRES_ACTION: '<span class="pill" style="background:#f59e0b;color:#fff">Por aprobar</span>',
