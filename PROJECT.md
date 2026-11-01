@@ -2117,3 +2117,66 @@ Node + JS/HTML/CSS, sin build step obligatorio).
   renderizan, el checkbox se ve en los dos estados y el dashboard ya no tiene
   tarjetas pisadas.
 - `gitleaks` limpio en los 7 commits.
+
+## 29. MM-32 — los 5 P0 del panel y 3 bugs más que traía el WIP (2026-11-01)
+
+Cierra la spec MM-32 (10/10 tareas). 11 commits atómicos: uno por cambio
+lógico, del más general al más puntual.
+
+### 29.1 Lo que la auditoría del 2026-10-31 atribuyó mal
+
+- **El checkbox roto no lo introdujo el WIP sin commitear**: ya estaba en
+  `HEAD` (commit `cb651fd`). La causa era `.form-group label::before` (que
+  dibuja una caja) **más** `span.check-text` forzado a 20×20 con borde y fondo
+  —el texto dentro de una caja—. La caja ahora la dibuja
+  `span.check-text::before` y el texto conserva la suya.
+- **El "KPI solapado" era una colisión de clases**: la tarjeta de pedidos
+  pendientes usaba `class="kpi mochi"` y `.mochi` es **la mascota flotante**
+  de 48 px con su animación. La tarjeta quedaba en 48×48 flotando sobre el
+  panel y el grid repartía mal sus columnas. El acento pasa a `.kpi crema`.
+
+### 29.2 Tres bugs que la auditoría no vio (venían del WIP)
+
+- **La landing entera era inclicable.** El modal de pedido se muestra con el
+  atributo `hidden`, pero su `style` inline traía `display:flex`, que le gana
+  al `[hidden]` del navegador: el overlay (`inset:0`, `z-index:1000`) quedaba
+  siempre encima. Por eso el CTA del hero no navegaba y el e2e fallaba por
+  tiempo de espera en los tres viewports.
+- **El modal de pedido no podía crear pedidos.** Mandaba un payload inventado
+  (`customer_address`, `delivery_type`, `total_cents`, `items` como array) y
+  `POST /api/orders` respondía 400 siempre. Ahora usa el contrato real (`id`,
+  `pickup_day`, `items` como mapa, `combos` como array, `delivery_mode`,
+  `payment_method_id`), elige el día de recogida entre las ventanas abiertas
+  del server y el total del domicilio sale de la configuración, no de un
+  `5000` fijo.
+- **El paso 2 del modal se re-renderizaba** al cambiar el tipo de entrega y
+  vaciaba lo que el cliente había escrito. Ahora se captura antes de
+  re-renderizar.
+
+### 29.3 Los 5 P0 del panel
+
+| P0 | Causa | Cierre |
+|---|---|---|
+| XSS almacenado desde `orders.id` | El id lo elige el cliente en un endpoint público y el panel lo interpolaba crudo en atributos y código | El servidor acota el formato (`/^[A-Za-z0-9_-]{1,64}$/`); el panel lo mueve a `data-payload` con listener delegado; 3 tests de regresión |
+| `_paymentMethods` siempre vacío | El panel leía `payMethods.methods`; la API devuelve un array plano | Se acepta el array (y el envelope) |
+| Cambio de estado sin confirmar | Un `<select onchange>` cancelaba pedidos y devolvía el stock reservado sin preguntar | Pide confirmación (avisando que se devuelve el stock) y el `select` vuelve atrás si se rechaza |
+| Umbral de día gratis ×100 | En esta app los `*_cents` son **pesos COP** (`delivery-fee.js`), el panel dividía y multiplicaba por 100 | Se muestra y se guarda en la escala real |
+| `available` hardcodeado a `true` | Era imposible despublicar un producto y editar uno despublicado lo reactivaba en silencio | Interruptor "Disponible" en el formulario de sabor |
+
+### 29.4 Limpieza
+
+`.table-wrap` estaba declarado dos veces, `esc()` y `escapeHtml()` eran el
+mismo escape con dos nombres, `formatCents()` era `fmt()` con otro nombre y
+había dos `fmt()` locales que sombreaban al global. Una implementación cada
+uno.
+
+### 29.5 Verificación
+
+- `npm test` → **134/134** (131 previos + 3 de regresión del XSS).
+- `npx playwright test` → **57/57** en 3 viewports (375 / 768 / 1440), con DB
+  temporal limpia.
+- Barrido manual con login real: las 12 secciones renderizan con contenido y
+  0 errores de consola; con un id de pedido malicioso inyectado en memoria,
+  la fila no genera ningún handler ni etiqueta (0 elementos con
+  `onmouseover`/`onerror`/`onfocus`).
+- `gitleaks` limpio en los 14 commits.
