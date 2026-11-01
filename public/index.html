@@ -1443,6 +1443,8 @@ async function loadConfig() {
             PAYMENT_METHODS = data.payment_methods || [];
             DELIVERY_SCHEDULE = data.delivery_schedule || [];
             DELIVERY_CONFIG = data.delivery_config || null;
+            RELEASE_WINDOWS = data.release_windows || [];
+            BUSINESS_DATE = data.business_date || new Date().toISOString().slice(0, 10);
             applySocialLinksFromConfig();
     }
   } catch (e) {
@@ -1725,6 +1727,8 @@ function getWppTarget() {
 
 const FLAVORS = [];
 const COMBOS = [];
+let RELEASE_WINDOWS = [];  // ventanas de recogida: dias que ya se pueden pedir
+let BUSINESS_DATE = '';    // fecha de negocio del server, no la del reloj local
 let CATEGORIES = [];        // 2026-10-14 — admin ? /api/public ? data.categories
 let PROMOS = [];           // 2026-10-14 — admin ? /api/public ? data.promos
 let PAYMENT_METHODS = [];  // 2026-10-14 — admin ? /api/public ? data.payment_methods
@@ -1824,6 +1828,7 @@ let orderModalState = {
   address: '',
   neighborhood: '',
   notes: '',
+  pickupDay: '',
   paymentMethod: 'cash',
   deliveryFee: 0
 };
@@ -1846,11 +1851,12 @@ function closeOrderModal() {
   orderModalState = {
     step: 1, productId: null, quantity: 1, name: '', phone: '',
     deliveryType: 'pickup', address: '', neighborhood: '', notes: '',
-    paymentMethod: 'cash', deliveryFee: 0
+    pickupDay: '', paymentMethod: 'cash', deliveryFee: 0
   };
 }
 
 function goToOrderStep(step) {
+  if (step === 3) captureOrderForm();
   orderModalState.step = step;
   renderOrderModal();
 }
@@ -1865,6 +1871,42 @@ function selectPayMethod(method) {
   document.querySelectorAll('[data-pay-method]').forEach(btn => {
     btn.classList.toggle('selected', btn.dataset.payMethod === method);
   });
+}
+
+// El modal vive en la landing pero el pedido lo crea el back-end con el
+// mismo contrato que la tienda: items como mapa {sabor: cantidad}, combos
+// como [{id, qty}], delivery_mode scheduled|immediate y dia de recogida.
+function orderableDays() {
+  const today = BUSINESS_DATE || new Date().toISOString().slice(0, 10);
+  const all = Array.isArray(RELEASE_WINDOWS) ? RELEASE_WINDOWS : [];
+  const conFlag = all.some(w => typeof w.orderable === 'boolean');
+  const usable = all.filter(w => conFlag
+    ? w.orderable === true
+    : (w.status === 'open' && String(w.release_date) >= today));
+  return [...new Set(usable.map(w => String(w.release_date)))].sort();
+}
+
+function formatDayLabel(iso) {
+  const d = new Date(iso + 'T12:00:00');
+  const dias = ['domingo', 'lunes', 'martes', 'miércoles', 'jueves', 'viernes', 'sábado'];
+  const meses = ['ene', 'feb', 'mar', 'abr', 'may', 'jun', 'jul', 'ago', 'sep', 'oct', 'nov', 'dic'];
+  return `${dias[d.getDay()]} ${d.getDate()} ${meses[d.getMonth()]}`;
+}
+
+// El paso 2 se vuelve a renderizar al cambiar el tipo de entrega: sin guardar
+// lo que el cliente ya escribio, sus campos se vaciaban.
+function captureOrderForm() {
+  const read = (id, prev) => {
+    const el = document.getElementById(id);
+    return el ? el.value : prev;
+  };
+  orderModalState.name = read('order-name', orderModalState.name);
+  orderModalState.phone = read('order-phone', orderModalState.phone);
+  orderModalState.address = read('order-address', orderModalState.address);
+  orderModalState.neighborhood = read('order-neighborhood', orderModalState.neighborhood);
+  orderModalState.notes = read('order-notes', orderModalState.notes);
+  const day = read('order-pickup-day', orderModalState.pickupDay);
+  if (day) orderModalState.pickupDay = day;
 }
 
 function renderOrderModal() {
@@ -1928,7 +1970,14 @@ function renderOrderModal() {
             <span>🚚 Domicilio (+$${orderModalState.deliveryFee.toLocaleString('es-CO')})</span>
           </label>
         </fieldset>
-        
+
+        <div class="form-group" id="order-day-block" style="margin-bottom:1rem; ${orderModalState.deliveryType === 'delivery' ? 'display:none;' : ''}">
+          <label style="display:block; margin-bottom:0.35rem; font-weight:600;" for="order-pickup-day">Día de recogida</label>
+          <select id="order-pickup-day" required style="width:100%; padding:0.75rem; border-radius:var(--r-md); border:1px solid var(--line); background:var(--surface); font-family:inherit; font-size:1rem;">
+            ${orderableDays().map(iso => `<option value="${escapeAttr(iso)}" ${orderModalState.pickupDay === iso ? 'selected' : ''}>${escapeHtml(formatDayLabel(iso))}</option>`).join('') || '<option value="">No hay días disponibles</option>'}
+          </select>
+        </div>
+
         <div id="delivery-fields" style="${orderModalState.deliveryType === 'delivery' ? '' : 'display:none;'}">
           <div class="form-group" style="margin-bottom:1rem;">
             <label style="display:block; margin-bottom:0.35rem; font-weight:600;">Dirección</label>
@@ -1963,7 +2012,7 @@ function renderOrderModal() {
           ${PAYMENT_METHODS.map(m => `
             <button type="button" class="glass" data-pay-method="${escapeAttr(m.id)}" style="padding:1rem; border-radius:var(--r-lg); cursor:pointer; text-align:center; border:2px solid ${orderModalState.paymentMethod === m.id ? 'var(--mochi-fresa-d)' : 'transparent'}; transition:all 0.2s; ${orderModalState.paymentMethod === m.id ? 'background:color-mix(in srgb, var(--mochi-fresa) 15%, transparent);' : ''}">
               <div style="font-size:1.5rem; margin-bottom:0.25rem;">${m.icon || '💳'}</div>
-              <div style="font-weight:600;">${escapeHtml(m.name)}</div>
+              <div style="font-weight:600;">${escapeHtml(m.label || m.name || m.code || 'Pago')}</div>
             </button>
           `).join('')}
           ${PAYMENT_METHODS.length === 0 ? `
@@ -1997,19 +2046,22 @@ function renderOrderModal() {
 }
 
 function updateDeliveryFee() {
+  captureOrderForm();
   const deliveryType = orderModalState.deliveryType;
   const fields = document.getElementById('delivery-fields');
   if (fields) fields.style.display = deliveryType === 'delivery' ? '' : 'none';
-  orderModalState.deliveryFee = deliveryType === 'delivery' ? 5000 : 0;
+  orderModalState.deliveryFee = deliveryType === 'delivery'
+    ? (Number(DELIVERY_CONFIG && DELIVERY_CONFIG.delivery_immediate_fee_cents) || 0)
+    : 0;
   renderOrderModal();
 }
 
 async function submitOrder() {
-  const name = document.getElementById('order-name')?.value?.trim();
-  const phone = document.getElementById('order-phone')?.value?.trim();
-  const address = document.getElementById('order-address')?.value?.trim();
-  const neighborhood = document.getElementById('order-neighborhood')?.value?.trim();
-  const notes = document.getElementById('order-notes')?.value?.trim();
+  const name = (document.getElementById('order-name')?.value ?? orderModalState.name ?? '').trim();
+  const phone = (document.getElementById('order-phone')?.value ?? orderModalState.phone ?? '').trim();
+  const address = (document.getElementById('order-address')?.value ?? orderModalState.address ?? '').trim();
+  const neighborhood = (document.getElementById('order-neighborhood')?.value ?? orderModalState.neighborhood ?? '').trim();
+  const notes = (document.getElementById('order-notes')?.value ?? orderModalState.notes ?? '').trim();
   
   if (!name || !phone) {
     alert('Por favor completa nombre y teléfono');
@@ -2034,39 +2086,51 @@ async function submitOrder() {
   
   const subtotal = product.price * orderModalState.quantity;
   const total = subtotal + orderModalState.deliveryFee;
-  
+
+  const isCombo = COMBOS.some(c => c.id === product.id);
+  const items = isCombo ? {} : { [product.id]: orderModalState.quantity };
+  const combos = isCombo ? [{ id: product.id, qty: orderModalState.quantity, name: product.name }] : [];
+  const isDelivery = orderModalState.deliveryType === 'delivery';
+  const days = orderableDays();
+  const pickupDay = isDelivery
+    ? (BUSINESS_DATE || new Date().toISOString().slice(0, 10))
+    : (orderModalState.pickupDay || days[0] || '');
+  if (!isDelivery && !pickupDay) {
+    alert('No hay días de recogida disponibles. Escríbenos por WhatsApp.');
+    return;
+  }
+  const fullAddress = [orderModalState.address, orderModalState.neighborhood].filter(Boolean).join(', ');
+  // El metodo de pago del modal es el id numerico de la tabla payment_methods;
+  // 'cash'/'transfer' son codigos de la UI y no existen como metodo guardado.
+  const payId = Number(orderModalState.paymentMethod);
+  const paymentMethodId = Number.isInteger(payId) && payId > 0 ? payId : null;
+
   try {
     const res = await fetch('/api/orders', {
       method: 'POST',
       headers: { 'Content-Type': 'application/json' },
       body: JSON.stringify({
+        id: 'ord-' + Date.now().toString(36) + '-' + Math.random().toString(36).slice(2, 8),
         customer_name: name,
         customer_phone: phone,
-        customer_address: address ? JSON.stringify({ street: address, neighborhood }) : null,
-        delivery_type: orderModalState.deliveryType,
-        delivery_fee_cents: orderModalState.deliveryFee * 100,
-        payment_method: orderModalState.paymentMethod,
-        payment_status: orderModalState.paymentMethod === 'cash' ? 'pending' : 'pending',
-        subtotal_cents: subtotal * 100,
-        total_cents: total * 100,
-        items: [{
-          product_id: product.id,
-          product_name: product.name,
-          unit_price_cents: product.price * 100,
-          quantity: orderModalState.quantity,
-          line_total_cents: subtotal * 100
-        }],
-        notes: notes,
-        source: 'web'
+        pickup_day: pickupDay,
+        items,
+        combos,
+        total,
+        notes: notes || undefined,
+        source: 'landing',
+        delivery_mode: isDelivery ? 'immediate' : 'scheduled',
+        delivery_address: isDelivery ? fullAddress : undefined,
+        payment_method_id: paymentMethodId
       })
     });
-    
+
     if (res.ok) {
       const data = await res.json();
       orderModalState.step = 4;
       renderOrderModal();
-      
-      const wppMsg = `Hola! Mi pedido #${data.orderNumber}: ${product.name} x${orderModalState.quantity} - Total $${total.toLocaleString('es-CO')} COP. ${orderModalState.deliveryType === 'delivery' ? 'Domicilio a: ' + address + ' ' + neighborhood : 'Recoger en cocina'}. Pago: ${orderModalState.paymentMethod}. ${notes ? 'Notas: ' + notes : ''}`;
+
+      const wppMsg = `Hola! Mi pedido #${String(data.id || '').slice(0, 8)}: ${product.name} x${orderModalState.quantity} - Total $${total.toLocaleString('es-CO')} COP. ${isDelivery ? 'Domicilio a: ' + fullAddress : 'Recoger en cocina el ' + pickupDay}. Pago: ${orderModalState.paymentMethod}. ${notes ? 'Notas: ' + notes : ''}`;
       window.open(`https://api.whatsapp.com/send/?phone=573213050426&text=${encodeURIComponent(wppMsg)}`, '_blank');
     } else {
       const err = await res.json();

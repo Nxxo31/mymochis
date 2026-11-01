@@ -162,6 +162,33 @@ test.describe('landing', () => {
     await expect(modal).toBeHidden();
   });
 
+  test('el modal de pedido crea el pedido en el back-end', async ({ page, context }) => {
+    // El modal abre WhatsApp en una pestana nueva: se bloquea la navegacion
+    // para que el test no dependa de la red externa.
+    await context.route('**://api.whatsapp.com/**', (route) => route.abort());
+    await page.goto('/');
+    await page.locator('[data-open-order]').first().click();
+    const modal = page.locator('#order-modal');
+    await expect(modal).toBeVisible();
+
+    const pick = page.locator('#order-modal [data-product-pick]').first();
+    await expect(pick).toBeVisible({ timeout: 8000 });
+    await pick.click();
+
+    await page.locator('#order-name').fill('Cliente E2E Landing');
+    await page.locator('#order-phone').fill('573001234567');
+    // El dia de recogida sale de las ventanas abiertas del server: sin el, el
+    // back-end rechaza el pedido.
+    const day = page.locator('#order-pickup-day');
+    await expect(day).toBeVisible();
+    expect(await day.locator('option').count()).toBeGreaterThan(0);
+
+    await page.locator('[data-order-step="3"]').click();
+    await expect(page.locator('#order-modal .order-modal__panel')).toContainText('Total a pagar');
+    await page.locator('[data-submit-order]').click();
+    await expect(page.locator('#order-modal .order-modal__panel')).toContainText('Pedido confirmado', { timeout: 10000 });
+  });
+
   test('la seccion de sabores se llena con el catalogo real', async ({ page }) => {
     await page.goto('/');
     await page.locator('#flavors').scrollIntoViewIfNeeded();
