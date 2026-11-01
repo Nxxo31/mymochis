@@ -52,8 +52,14 @@
   --danger:  #B3261E;
 
   /* === Typography === */
-  --font-display: 'Inter', 'Baloo 2', system-ui, -apple-system, sans-serif;
-  --font-body:    'Inter', 'Quicksand', system-ui, -apple-system, sans-serif;
+  /* Mismo par que theme.css (Baloo 2 + Quicksand). Este archivo se compila
+     a /build/assets/islands.css, que las paginas cargan DESPUES de
+     theme.css: si aqui se declara otro par, su :root gana por orden de
+     cascada y el body del sitio entero se renderiza en Inter. La fuente
+     unica es theme.css; este bloque solo la replica para que las islas
+     no dependan del orden de carga. */
+  --font-display: 'Baloo 2', 'Quicksand', system-ui, -apple-system, sans-serif;
+  --font-body:    'Quicksand', system-ui, -apple-system, sans-serif;
   --font-mono:    'JetBrains Mono', ui-monospace, monospace;
   --fs-xs:  0.75rem;
   --fs-sm:  0.875rem;

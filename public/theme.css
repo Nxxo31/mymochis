@@ -187,10 +187,55 @@
   --r-xs: 6px;  --r-sm: 8px;  --r-md: 14px;
   --r-lg: 22px; --r-xl: 32px; --r-2xl: 40px; --r-pill: 9999px;
 
-  /* === Tipografia === */
-  --font-display: 'Fredoka', 'Baloo 2', 'Quicksand', system-ui, sans-serif;
-  --font-body:    'Quicksand', 'Inter', system-ui, -apple-system, sans-serif;
+  /* === Tipografia ===
+     Un solo par en las 4 paginas (decisión del operador 2026-10-29):
+     Baloo 2 para titulares (es la del logo) + Quicksand para texto.
+     Fredoka (que vivia solo en el panel) e Inter (que vivia en panel y
+     cocina) se retiran: cada pagina hacia su propia compra de fuentes y
+     por eso las cuatro se veian distintas. */
+  --font-display: 'Baloo 2', 'Quicksand', system-ui, sans-serif;
+  --font-body:    'Quicksand', system-ui, -apple-system, sans-serif;
   --font-mono:    'JetBrains Mono', ui-monospace, monospace;
+
+  /* === Botones · el CTA principal es sakura-ink solido en las 4 paginas ===
+     Antes: la landing usaba sakura-ink (#8E2350) con texto blanco y la
+     tienda y el panel usaban fresa clara (#F9B8CE) con texto sakura-ink:
+     mismo boton, dos identidades. Ahora --btn-primary es una sola cosa. */
+  --btn-primary-bg:        var(--sakura-ink);
+  --btn-primary-bg-hover:  var(--sakura-deep);
+  --btn-primary-bg-active: #9B3263;
+  --btn-primary-fg:        #FFFFFF;
+  --btn-primary-ring:      rgba(184, 63, 113, 0.28);
+  --btn-secondary-bg:      var(--surface);
+  --btn-secondary-fg:      var(--ink);
+  --btn-ghost-fg:          var(--ink-soft);
+  --btn-danger-bg:         var(--danger);
+  --btn-danger-fg:         #FFFFFF;
+  --btn-radius:            var(--r-pill);
+  --btn-height:            44px;   /* target tactil minimo (WCAG 2.2 · 2.5.8) */
+  --btn-pad-x:             22px;
+  --btn-pad-y:             12px;
+
+  /* === Campos de formulario ===
+     Un solo bloque para input/select/textarea. El <select> es el caso
+     critico: en la tienda los <select> de "dia de recogida" y "como queres
+     pagar" NO tenian ni una regla de CSS, asi que el navegador los pintaba
+     como dropdowns nativos (cuadro gris con flecha del sistema) al lado de
+     los inputs clay. Un formulario se veia roto. */
+  --field-bg:        var(--surface);
+  --field-fg:        var(--ink);
+  --field-placeholder: var(--ink-faint);
+  --field-radius:    var(--r-md);
+  --field-pad-x:     14px;
+  --field-pad-y:     12px;
+  --field-height:    46px;
+  --field-border:    1px solid var(--line);
+  --field-shadow:
+    var(--clay-shadow-xs),
+    inset 1px -1px 2px rgba(255, 255, 255, 0.70);
+  --field-shadow-focus: var(--clay-inset-sm);
+  --field-label-fg:  var(--ink-soft);
+  --field-hint-fg:   var(--ink-faint);
 
   /* === Movimiento · nunca > 0.6s en UI === */
   --dur-fast: 0.18s;  --dur-base: 0.28s;  --dur-slow: 0.45s;

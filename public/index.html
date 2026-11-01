@@ -4,8 +4,9 @@
 <meta charset="UTF-8">
 <meta name="viewport" content="width=device-width,initial-scale=1,viewport-fit=cover">
 <link rel="stylesheet" href="/theme.css">
+<link rel="stylesheet" href="/ui.css">
 <link rel="stylesheet" href="/build/assets/islands.css">
-<meta name="theme-color" content="#FAF3EA">
+<meta name="theme-color" content="#62D3EC">
 <title>Mochi's Land — Mochis artesanales en Neiva</title>
 <meta name="description" content="Mochi's Land · Mochis artesanales hechos a mano en Neiva. Pedidos por WhatsApp o entrega inmediata a domicilio.">
 <meta name="application-name" content="Mochi's Land">
@@ -47,28 +48,16 @@
    Sistema: pastel cálido + dual-shadow suave + radios grandes + inner highlight
    ========================================================================== */
 
-/* ============ RESET ============ */
+/* ============ BODY · canvas con shaders vibrantes ============ */
 * { box-sizing: border-box; margin: 0; padding: 0; }
 html { scroll-behavior: smooth; overflow-x: hidden; }
 
-/* ============ BODY · canvas con mochis flotantes ============ */
+/* ============ BODY · canvas con shaders vibrantes ============ */
 body {
-  font-family: 'Quicksand', 'Baloo 2', system-ui, sans-serif;
-  /* El body es semi-transparente para que el shader .page-shader se vea a través de todas las secciones.
-     70% = 70% opaco, 30% transparente: deja ver la aurora sin que el texto pierda contraste. */
-  background-color: color-mix(in srgb, var(--clay-canvas) 70%, transparent);
-    /* Los 4 halos usaban rgba() hardcodeados de la paleta vieja (rosa/cyan/
-       matcha/durazno) y se dibujaban POR ENCIMA de theme.css, dejando la
-       pagina con la identidad anterior. Ahora salen de tokens. Alfas bajos:
-       la pagina se lee limpia y la aurora del hero es el ambiente, no un
-       arcoiris detras de todo el texto. */
-  background-image:
-    radial-gradient(circle at 10% 6%,  color-mix(in srgb, var(--fresa) 26%, transparent) 0%, transparent 34%),
-    radial-gradient(circle at 92% 12%, color-mix(in srgb, var(--ube) 20%, transparent) 0%, transparent 32%),
-    radial-gradient(circle at 12% 88%, color-mix(in srgb, var(--durazno) 18%, transparent) 0%, transparent 30%),
-    radial-gradient(circle at 90% 82%, color-mix(in srgb, var(--accent) 16%, transparent) 0%, transparent 30%);
-  background-attachment: fixed;
-  color: var(--clay-ink);
+  font-family: var(--font-body);
+  /* Body mayormente blanco/transparente para que el shader .page-shader se vea VIBRANTE en toda la página */
+  background-color: color-mix(in srgb, var(--canvas) 85%, transparent);
+  color: var(--ink);
   line-height: 1.6;
   font-weight: 500;
   -webkit-font-smoothing: antialiased;
@@ -78,13 +67,13 @@ body {
 }
 
 /* ============ CAPAS · la aurora va DETRAS de todo el contenido ============
-   .page-shader (canvas WebGL) vive en z-index 0. El contenido va en
-   z-index 1. Sin esto el <main> (in-flow, no posicionado) queda por DEBAJO
-   del shader y las secciones, aunque sean translucidas, lo tapan. */
+   .page-shader (canvas WebGL) vive en z-index 0 (fixed, full viewport).
+   El contenido va en z-index 1. */
 body > main,
 body > footer,
 body > section,
-body > .flavors-marquee { position: relative; z-index: 1; }
+body > .flavors-marquee,
+body > header { position: relative; z-index: 1; }
 
 /* Dot grid (21st.dev): textura fina sobre la aurora, debajo del contenido */
 body::after {
@@ -99,7 +88,7 @@ body::after {
   mask-image: radial-gradient(130% 100% at 50% 10%, #000 25%, transparent 82%);
 }
 
-/* ============ SUPERFICIES DE CRISTAL · dejan ver la aurora ============
+/* ============ SUPERFICIES DE CRISTAL · dejan ver la aurora VIBRANTE ============
    Regla de la casa: ninguna seccion es un bloque opaco. Superficie
    translucida + borde claro + blur -> el shader se ve a traves. */
 .flavors,
@@ -113,53 +102,79 @@ body::after {
   -webkit-backdrop-filter: blur(12px) saturate(1.25);
   border: 1px solid rgba(255, 255, 255, 0.6);
   box-shadow: 0 20px 48px rgba(32, 48, 74, 0.09), inset 0 1px 0 rgba(255, 255, 255, 0.75);
+  background: color-mix(in srgb, var(--surface) 70%, transparent);
 }
 
-/* ============ MOCHIS FLOTANTES (decoración) · ahora PUFFY CLAY ============ */
-@keyframes drift {
-  0%   { background-position: 0% 0%; }
-  100% { background-position: 100% 100%; }
-}
-
-.mochi-float {
-  position: fixed; z-index: 0; pointer-events: none;
-  width: 70px; height: 70px; border-radius: 50%;
-  animation: mochiFloat 16s ease-in-out infinite;
-  opacity: 0.55;
-  filter: blur(0.5px);
-}
-.mochi-float::before {
-  content: '';
-  position: absolute; inset: 8%;
+/* ============ BOLAS DE COLOR DECORATIVAS (estilo imagen referencia) ============
+   Esferas vibrantes dispersas por la página, como en la imagen de referencia */
+.color-orb {
+  position: fixed;
+  z-index: 0;
+  pointer-events: none;
   border-radius: 50%;
-  background: radial-gradient(circle at 32% 28%, rgba(255,255,255,0.85) 0%, transparent 50%);
+  filter: blur(1px);
+  animation: orbFloat 20s ease-in-out infinite;
+  opacity: 0.6;
+}
+.color-orb::before {
+  content: '';
+  position: absolute; inset: 12%;
+  border-radius: 50%;
+  background: radial-gradient(circle at 30% 30%, rgba(255,255,255,0.9) 0%, transparent 50%);
 }
 
-@keyframes mochiFloat {
-  0%, 100% { transform: translateY(0) rotate(-4deg); }
-  50%      { transform: translateY(-28px) rotate(6deg); }
+@keyframes orbFloat {
+  0%, 100% { transform: translateY(0) translateX(0) rotate(-3deg); }
+  25%      { transform: translateY(-30px) translateX(15px) rotate(5deg); }
+  50%      { transform: translateY(-15px) translateX(-20px) rotate(-2deg); }
+  75%      { transform: translateY(-35px) translateX(10px) rotate(4deg); }
 }
 
-.mochi-float-1 { top: 10%; left: 7%;
-  background: radial-gradient(circle at 32% 28%, #fff 0%, var(--mochi-fresa) 38%, var(--mochi-fresa-d) 100%);
-  box-shadow: -8px 10px 20px rgba(232,80,110,0.30), inset 4px -4px 8px rgba(255,255,255,0.6);
+/* Fresa - rosa vibrante */
+.orb-fresa { top: 8%; left: 5%; width: 80px; height: 80px;
+  background: radial-gradient(circle at 32% 28%, #fff 0%, #FF8FB4 40%, #E94560 100%);
+  box-shadow: 0 15px 40px rgba(233,69,96,0.35), inset 4px -4px 8px rgba(255,255,255,0.6);
   animation-delay: 0s; }
-.mochi-float-2 { top: 26%; right: 10%; width: 56px; height: 56px;
-  background: radial-gradient(circle at 32% 28%, #fff 0%, var(--mochi-matcha) 38%, var(--mochi-matcha-d) 100%);
-  box-shadow: -7px 9px 18px rgba(123,138,46,0.28), inset 4px -4px 8px rgba(255,255,255,0.55);
+
+/* Durazno - naranja cálido */
+.orb-durazno { top: 20%; right: 8%; width: 60px; height: 60px;
+  background: radial-gradient(circle at 32% 28%, #fff 0%, #FFB88C 40%, #E98045 100%);
+  box-shadow: 0 12px 35px rgba(233,128,69,0.32), inset 4px -4px 8px rgba(255,255,255,0.55);
   animation-delay: 3s; }
-.mochi-float-3 { bottom: 22%; left: 13%; width: 80px; height: 80px;
-  background: radial-gradient(circle at 32% 28%, #fff 0%, var(--mochi-durazno) 38%, #C08E12 100%);
-  box-shadow: -9px 11px 22px rgba(192,142,18,0.30), inset 4px -4px 8px rgba(255,255,255,0.55);
+
+/* Ube - púrpura */
+.orb-ube { bottom: 15%; left: 10%; width: 90px; height: 90px;
+  background: radial-gradient(circle at 32% 28%, #fff 0%, #B08CF0 40%, #7A56B0 100%);
+  box-shadow: 0 18px 45px rgba(122,86,176,0.35), inset 4px -4px 8px rgba(255,255,255,0.55);
   animation-delay: 6s; }
-.mochi-float-4 { bottom: 12%; right: 8%; width: 60px; height: 60px;
-  background: radial-gradient(circle at 32% 28%, #fff 0%, var(--mochi-ube) 38%, var(--mochi-ube-d) 100%);
-  box-shadow: -7px 9px 18px rgba(107,72,176,0.28), inset 4px -4px 8px rgba(255,255,255,0.55);
+
+/* Matcha - verde */
+.orb-matcha { bottom: 10%; right: 5%; width: 70px; height: 70px;
+  background: radial-gradient(circle at 32% 28%, #fff 0%, #7BBC46 40%, #4F8C2E 100%);
+  box-shadow: 0 14px 38px rgba(79,140,46,0.32), inset 4px -4px 8px rgba(255,255,255,0.55);
   animation-delay: 9s; }
-.mochi-float-5 { top: 48%; left: 44%; width: 50px; height: 50px; opacity: 0.85;
-  background: radial-gradient(circle at 32% 28%, #fff 0%, var(--mochi-cyan) 38%, var(--mochi-cyan-d) 100%);
-  box-shadow: -7px 9px 18px rgba(68,184,216,0.28), inset 4px -4px 8px rgba(255,255,255,0.55);
+
+/* Cyan - azul cielo */
+.orb-cyan { top: 45%; left: 48%; width: 50px; height: 50px; opacity: 0.8;
+  background: radial-gradient(circle at 32% 28%, #fff 0%, #56C8E4 40%, #2EB8D0 100%);
+  box-shadow: 0 10px 30px rgba(46,184,208,0.30), inset 4px -4px 8px rgba(255,255,255,0.55);
   animation-delay: 12s; }
+
+/* Fresa pequeño extra */
+.orb-fresa-2 { top: 65%; right: 25%; width: 40px; height: 40px;
+  background: radial-gradient(circle at 32% 28%, #fff 0%, #FF8FB4 40%, #E94560 100%);
+  box-shadow: 0 8px 25px rgba(233,69,96,0.28), inset 4px -4px 8px rgba(255,255,255,0.5);
+  animation-delay: 15s; }
+
+/* Durazno pequeño extra */
+.orb-durazno-2 { bottom: 35%; left: 35%; width: 45px; height: 45px;
+  background: radial-gradient(circle at 32% 28%, #fff 0%, #FFB88C 40%, #E98045 100%);
+  box-shadow: 0 8px 25px rgba(233,128,69,0.28), inset 4px -4px 8px rgba(255,255,255,0.5);
+  animation-delay: 18s; }
+
+@media (prefers-reduced-motion: reduce) {
+  .color-orb { animation: none; }
+}
 
 .serif { font-family: 'Baloo 2', 'Fredoka', serif; }
 
@@ -199,24 +214,6 @@ header {
 }
 .brand-name { color: var(--clay-ink); font-weight: 600; }
 .brand-name .dot { color: var(--mochi-fresa-d); font-weight: 700; }
-
-.nav-cta {
-  background: var(--mochi-fresa);
-  color: var(--mochi-fresa-d);
-  padding: 12px 24px; border-radius: 999px;
-  font-family: 'Quicksand', sans-serif; font-weight: 700; font-size: 14px;
-  border: 0; cursor: pointer; text-decoration: none;
-  box-shadow: var(--clay-shadow-sm), inset 2px -2px 4px rgba(255,255,255,0.7);
-  transition: all 0.25s cubic-bezier(.34,1.56,.64,1); display: inline-block;
-}
-.nav-cta:hover {
-  transform: translateY(-2px);
-  box-shadow: var(--clay-shadow-md), inset 2px -2px 4px rgba(255,255,255,0.7);
-}
-.nav-cta:active {
-  transform: translateY(0);
-  box-shadow: var(--clay-inset-sm);
-}
 
 .admin-icon {
   display: inline-flex; align-items: center; justify-content: center;
@@ -265,44 +262,52 @@ header {
   font-size: 18px; max-width: 480px;
   color: var(--clay-ink-soft); line-height: 1.6; margin-bottom: 32px;
 }
-.hero-cta {
-  display: inline-flex; align-items: center; gap: 10px;
-  background: var(--mochi-fresa);
-  color: var(--mochi-fresa-d);
-  padding: 18px 38px; border-radius: 999px;
-  font-family: 'Quicksand', sans-serif; font-weight: 700; font-size: 16px;
-  text-decoration: none;
-  box-shadow: var(--clay-shadow-md), inset 3px -3px 6px rgba(255,255,255,0.8);
-  letter-spacing: 0.2px; border: 0; cursor: pointer;
-  transition: all 0.25s cubic-bezier(.34,1.56,.64,1);
-}
-.hero-cta:hover {
-  transform: translateY(-3px) scale(1.02);
-  box-shadow: var(--clay-shadow-hover), inset 3px -3px 6px rgba(255,255,255,0.8);
-}
-.hero-cta:active {
-  transform: scale(0.97);
-  box-shadow: var(--clay-inset);
-}
 .hero-cta svg { width: 20px; height: 20px; }
 .hero-trust { margin-top: 28px; display: flex; gap: 20px; flex-wrap: wrap; font-size: 13px; color: color-mix(in srgb, var(--clay-ink) 82%, var(--clay-ink-soft)); }
 .hero-trust span { display: flex; align-items: center; gap: 6px; }
 
-/* Hero visual: clay blob con doble sombra muy puffy */
+/* Hero visual: CLAY BLOB circular · identidad mochi (puffy clay) */
 .hero-visual {
-  position: relative; height: 100%;
-  border-radius: 28px;
+  position: relative;
+  width: 420px;
+  height: 420px;
+  border-radius: 28px !important;
   border: 0;
-  overflow: hidden; z-index: 1;
+  overflow: hidden;
+  z-index: 1;
   box-shadow:
     0 28px 60px -28px rgba(45,26,17,.38),
     0 2px 10px rgba(45,26,17,.08),
     inset 0 1px 0 rgba(255,255,255,0.5);
   transition: transform 0.35s cubic-bezier(.2,.7,.3,1);
+  margin: 0 auto;
+}
+.hero-visual-wrap {
+  border-radius: 28px !important;
 }
 .hero-visual-wrap:hover .hero-visual { transform: translateY(-6px); }
+@media (max-width: 880px) {
+  .hero-visual { width: 280px; height: 280px; }
+}
 
 /* Iconos de linea: SVG inline en vez de emoji (el emoji se ve como tofu en
+   algunos dispositivos y no se puede controlar por color). */
+.ico {
+  width: 18px; height: 18px; flex: none;
+  fill: none; stroke: currentColor; stroke-width: 1.7;
+  stroke-linecap: round; stroke-linejoin: round;
+  vertical-align: -3px; margin-right: 7px;
+}
+.hero-trust .ico { color: var(--mochi-fresa-d); }
+footer .ico { color: var(--mochi-fresa-d); }
+.hero-visual img,
+.hero-visual video { width: 100%; height: 100%; object-fit: cover; display: block; }
+.hero-visual-placeholder {
+  position: absolute; inset: 0;
+  display: flex; align-items: center; justify-content: center;
+  background: linear-gradient(135deg, var(--mochi-fresa) 0%, var(--mochi-durazno) 100%);
+  color: var(--clay-ink-soft); font-size: 14px; text-align: center; padding: 20px;
+}/* Iconos de linea: SVG inline en vez de emoji (el emoji se ve como tofu en
    algunos dispositivos y no se puede controlar por color). */
 .ico {
   width: 18px; height: 18px; flex: none;
@@ -422,108 +427,22 @@ section { padding: 80px 24px; position: relative; }
 
 /* ============ CATEGORY CHIPS · filter ============ */
 .category-chips { display: flex; flex-wrap: wrap; gap: 8px; justify-content: center; margin: 16px auto 24px; max-width: 720px; }
-.category-chips .chip { padding: 8px 16px; border-radius: 999px; background: var(--clay-surface); color: var(--clay-ink); font-weight: 600; font-size: 13px; cursor: pointer; border: 0; box-shadow: var(--clay-shadow-xs), inset 2px -2px 4px rgba(255,255,255,0.7); transition: transform .15s ease; }
-.category-chips .chip:hover { transform: translateY(-1px); }
-.category-chips .chip.active { background: var(--mochi-fresa); color: #fff; }
 
-/* ============ MODAL · payment methods step ============ */
-.pay-methods { display: grid; gap: 10px; }
-.pay-method { background: var(--clay-surface); border-radius: 14px; padding: 12px 14px; box-shadow: var(--clay-shadow-xs); display: grid; grid-template-columns: auto 1fr auto; gap: 10px; align-items: center; cursor: pointer; border: 2px solid transparent; }
-.pay-method:hover { border-color: var(--mochi-fresa); }
-.pay-method.selected { border-color: var(--mochi-fresa); background: var(--clay-canvas); }
-.pay-method .pay-icon { width: 36px; height: 36px; border-radius: 10px; background: var(--clay-canvas-2); display: inline-flex; align-items: center; justify-content: center; font-weight: 700; color: var(--mochi-fresa-d); font-size: 13px; }
-.pay-method .pay-label { font-weight: 700; color: var(--clay-ink); font-size: 14px; }
-.pay-method .pay-instr { color: var(--clay-ink-soft); font-size: 12px; line-height: 1.4; margin-top: 2px; }
-.pay-method .pay-default { font-size: 11px; padding: 2px 8px; border-radius: 999px; background: var(--mochi-matcha); color: #1F7C3E; font-weight: 700; }
-
-/* ============ COMBOS · clay cards ============ */
-.combos { background: color-mix(in srgb, var(--clay-canvas-2) 46%, transparent); border-radius: 48px; margin: 0 16px; }
+/* ============ COMBOS = FLAVOR CARDS (mismo estilo) ============ */
+.combos { background: color-mix(in srgb, var(--canvas) 42%, transparent); border-radius: 48px; margin: 0 16px; }
+.combos-grid {
+  display: grid;
+  grid-template-columns: repeat(3, 1fr);
+  gap: 18px;
+}
+@media (max-width: 920px) { .combos-grid { grid-template-columns: repeat(2, 1fr); } }
+@media (max-width: 560px) { .combos-grid { grid-template-columns: 1fr; } }
 .combos-grid {
   display: grid; grid-template-columns: repeat(3, 1fr);
   gap: 32px;
 }
 @media (max-width: 920px) { .combos-grid { grid-template-columns: repeat(2, 1fr); } }
 @media (max-width: 620px) { .combos-grid { grid-template-columns: 1fr; } }
-
-.combo-card {
-  background: var(--clay-surface); border-radius: 32px;
-  overflow: hidden;
-  display: flex; flex-direction: column;
-  transition: transform 0.25s cubic-bezier(.34,1.56,.64,1), box-shadow 0.3s;
-  box-shadow: var(--clay-shadow-md), inset 3px -3px 6px rgba(255,255,255,0.85);
-}
-.combo-card:hover {
-  transform: translateY(-6px);
-  box-shadow: var(--clay-shadow-hover), inset 3px -3px 6px rgba(255,255,255,0.85);
-}
-.combo-card.featured {
-  background: var(--mochi-crema);
-  box-shadow: var(--clay-shadow-md), inset 3px -3px 6px rgba(255,255,255,0.85);
-}
-
-.combo-card .badge {
-  position: absolute; top: 18px; left: 18px; z-index: 2;
-  background: var(--mochi-fresa-d); color: #fff;
-  padding: 7px 16px; border-radius: 999px;
-  font-size: 11px; font-weight: 700; letter-spacing: 1.4px;
-  text-transform: uppercase;
-  box-shadow: var(--clay-shadow-sm), inset 1px -1px 2px rgba(255,255,255,0.3);
-}
-
-.combo-img { aspect-ratio: 4 / 3; overflow: hidden; position: relative; }
-.combo-img img { width: 100%; height: 100%; object-fit: cover; transition: transform 0.5s; }
-.combo-card:hover .combo-img img { transform: scale(1.05); }
-.combo-img-placeholder {
-  position: absolute; inset: 0;
-  display: flex; align-items: center; justify-content: center;
-  background: linear-gradient(135deg, var(--mochi-fresa) 0%, var(--mochi-durazno) 100%);
-  color: var(--clay-ink-soft); font-size: 13px;
-}
-.combo-body { padding: 24px 26px 28px; flex: 1; display: flex; flex-direction: column; }
-.combo-name {
-  font-family: 'Baloo 2', serif;
-  font-size: 26px; font-weight: 700; margin-bottom: 4px;
-}
-.combo-qty { color: var(--clay-ink-soft); font-size: 13px; margin-bottom: 14px; }
-.combo-desc { font-size: 14px; color: var(--clay-ink-soft); margin-bottom: 18px; line-height: 1.55; flex: 1; }
-.combo-prices {
-  display: flex; align-items: baseline; gap: 10px;
-  margin-bottom: 18px; flex-wrap: wrap;
-}
-.combo-now {
-  font-family: 'Baloo 2', serif;
-  font-size: 32px; font-weight: 700; color: var(--mochi-fresa-d);
-  letter-spacing: -0.8px;
-}
-.combo-was {
-  font-size: 16px; color: var(--clay-ink-soft); text-decoration: line-through;
-}
-.combo-save {
-  font-size: 11px; font-weight: 700; color: var(--mocha-3);
-  background: var(--mochi-crema); padding: 5px 12px;
-  border-radius: 999px; margin-left: auto;
-  letter-spacing: 0.5px;
-  box-shadow: var(--clay-shadow-xs), inset 1px -1px 2px rgba(255,255,255,0.7);
-}
-.combo-add {
-  width: 100%;
-  background: var(--mochi-fresa-d);
-  color: #fff;
-  border: 0; padding: 16px; border-radius: 18px;
-  font-family: 'Quicksand', sans-serif; font-weight: 700; font-size: 14px;
-  cursor: pointer; letter-spacing: 0.3px;
-  box-shadow: var(--clay-shadow-sm), inset 2px -2px 4px rgba(255,255,255,0.3);
-  transition: all 0.2s;
-}
-.combo-add:hover {
-  background: var(--mochi-fresa-d);
-  transform: translateY(-1px);
-  box-shadow: var(--clay-shadow-md), inset 2px -2px 4px rgba(255,255,255,0.3);
-}
-.combo-add:active {
-  transform: translateY(0);
-  box-shadow: var(--clay-inset-sm);
-}
 
 /* ============ WHY ============ */
 .why { background: color-mix(in srgb, var(--clay-canvas) 44%, transparent); }
@@ -567,7 +486,7 @@ section { padding: 80px 24px; position: relative; }
   background: var(--clay-surface);
   box-shadow: var(--clay-shadow-sm), inset 2px -2px 4px rgba(255,255,255,0.7);
   position: relative;
-  transition: transform 0.25s cubic-bezier(.34,1.56,.64,1), box-shadow 0.3s;
+  transition: transform 0.25s cubic-bezier(.34,1.56,.64,1), box-shadow 0.25s;
 }
 .gallery-item:hover {
   transform: translateY(-4px);
@@ -583,7 +502,7 @@ section { padding: 80px 24px; position: relative; }
   overflow: hidden;
   display: flex; flex-direction: column; gap: 10px;
   padding: 28px 26px;
-  border-radius: 28px;
+  border-radius: 28px !important;
   color: #fff;
   background:
     radial-gradient(130% 90% at 0% 0%, rgba(255,255,255,0.26) 0%, transparent 62%),
@@ -648,7 +567,7 @@ section { padding: 80px 24px; position: relative; }
     inset 4px -4px 8px rgba(255,255,255,0.7);
   text-decoration: none;
   z-index: 90;
-  transition: transform 0.25s cubic-bezier(.34,1.56,.64,1), box-shadow 0.3s;
+  transition: transform 0.25s cubic-bezier(.34,1.56,.64,1), box-shadow 0.25s;
   animation: fabIdle 4s ease-in-out infinite;
 }
 .wsp-fab:hover {
@@ -661,7 +580,7 @@ section { padding: 80px 24px; position: relative; }
   position: absolute; top: -4px; right: -4px;
   width: 22px; height: 22px;
   border-radius: 50%;
-  background: var(--mochi-fresa-d);
+  background: var(--btn-primary-bg-hover);
   color: #fff;
   font-family: 'Baloo 2', sans-serif;
   font-size: 11px; font-weight: 700;
@@ -714,134 +633,12 @@ section { padding: 80px 24px; position: relative; }
   letter-spacing: 0.5px;
   box-shadow: var(--clay-shadow-xs), inset 1px -1px 2px rgba(255,255,255,0.7);
 }
-
-/* ============ FOOTER (unico bloque — ver "FOOTER v2" mas abajo) ============ */
-
-/* ============ MODAL: PEDIDO RÁPIDO · clay window ============ */
-.modal-back {
-  position: fixed; inset: 0;
-  background: rgba(58,46,38,0.45);
-  z-index: 200; display: none; align-items: center; justify-content: center;
-  padding: 20px; backdrop-filter: blur(6px);
-}
-.modal-back.visible { display: flex; }
-.modal {
-  background: var(--clay-canvas); border-radius: 32px;
-  padding: 36px 32px; max-width: 460px; width: 100%;
-  box-shadow: var(--clay-shadow-hover), inset 4px -4px 8px rgba(255,255,255,0.85);
-  max-height: 90vh; overflow-y: auto;
-  animation: modalIn 0.4s cubic-bezier(.34,1.56,.64,1);
-}
 @keyframes modalIn {
   from { opacity: 0; transform: translateY(20px) scale(0.95); }
   to   { opacity: 1; transform: none; }
 }
-.modal h2 {
-  font-family: 'Baloo 2', serif;
-  font-size: 30px; font-weight: 700; margin-bottom: 6px;
-}
-.modal .sub { color: var(--clay-ink-soft); font-size: 14px; margin-bottom: 22px; line-height: 1.55; }
-.modal .step-num {
-  display: inline-block; width: 28px; height: 28px;
-  background: var(--mochi-fresa); color: var(--mochi-fresa-d); border-radius: 50%;
-  font-size: 13px; font-weight: 700; text-align: center; line-height: 28px;
-  margin-right: 8px;
-  box-shadow: var(--clay-shadow-xs), inset 1px -1px 2px rgba(255,255,255,0.7);
-}
-.modal-section { margin-bottom: 22px; }
-.modal-section h3 {
-  font-size: 12px; font-weight: 700;
-  color: var(--clay-ink-soft); margin-bottom: 12px;
-  letter-spacing: 1px; text-transform: uppercase;
-  display: flex; align-items: center;
-}
-.flavor-grid { display: flex; flex-direction: column; gap: 8px; }
-.flavor-row {
-  display: grid; grid-template-columns: 1fr auto; gap: 10px; align-items: center;
-  padding: 12px 16px;
-  background: var(--clay-surface); border: 0;
-  border-radius: 16px;
-  box-shadow: var(--clay-shadow-xs), inset 1px -1px 2px rgba(255,255,255,0.7);
-}
-.flavor-row .name { font-size: 14px; font-weight: 600; }
-.flavor-row .name small { display: block; color: var(--clay-ink-soft); font-size: 11px; font-weight: 400; margin-top: 1px; }
-.flavor-qty { display: flex; align-items: center; gap: 4px; }
-.flavor-qty button {
-  width: 32px; height: 32px; border-radius: 50%;
-  border: 0; background: var(--mochi-crema); cursor: pointer;
-  font-size: 15px; color: var(--clay-ink); font-family: 'Quicksand', sans-serif;
-  display: flex; align-items: center; justify-content: center;
-  padding: 0; line-height: 1; font-weight: 700;
-  box-shadow: var(--clay-shadow-xs), inset 1px -1px 2px rgba(255,255,255,0.6);
-  transition: all 0.15s;
-}
-.flavor-qty button:hover {
-  background: var(--mochi-fresa); color: var(--mochi-fresa-d);
-  box-shadow: var(--clay-shadow-sm);
-}
-.flavor-qty button:active { box-shadow: var(--clay-inset-sm); }
-.flavor-qty .q { width: 32px; text-align: center; font-weight: 700; font-size: 14px; }
-
-.day-pick { display: grid; grid-template-columns: repeat(5, 1fr); gap: 8px; }
-.day-pick label {
-  text-align: center; padding: 12px 2px;
-  border: 0; border-radius: 14px;
-  cursor: pointer; font-size: 12px; font-weight: 700;
-  background: var(--clay-surface); transition: all 0.15s;
-  display: block;
-  box-shadow: var(--clay-shadow-xs), inset 1px -1px 2px rgba(255,255,255,0.7);
-}
-.day-pick input { display: none; }
-.day-pick label:has(input:checked) {
-  background: var(--mochi-fresa); color: var(--mochi-fresa-d);
-  box-shadow: var(--clay-inset-sm);
-}
-
-.form-group { margin-bottom: 16px; }
-.form-group input {
-  width: 100%; padding: 14px 16px;
-  border: 0; border-radius: 14px;
-  font-family: 'Quicksand', sans-serif; font-size: 14px;
-  background: var(--clay-surface); color: var(--clay-ink);
-  box-shadow: var(--clay-shadow-xs), inset 1px -1px 2px rgba(255,255,255,0.7);
-  transition: box-shadow 0.2s;
-}
-.form-group input:focus {
-  outline: none;
-  box-shadow: var(--clay-inset-sm);
-}
-
-.total-row {
-  display: flex; justify-content: space-between; align-items: baseline;
-  padding: 18px 22px; background: var(--mochi-crema); border-radius: 18px;
-  margin: 18px 0 16px;
-  box-shadow: var(--clay-shadow-xs), inset 1px -1px 2px rgba(255,255,255,0.7);
-}
-.total-row .lbl { font-size: 14px; color: var(--clay-ink-soft); font-weight: 600; }
-.total-row .val { font-family: 'Baloo 2', serif; font-size: 28px; font-weight: 700; color: var(--mochi-fresa-d); letter-spacing: -0.5px; }
 
 .modal-actions { display: flex; gap: 8px; }
-.modal-actions .btn-send {
-  flex: 1;
-  background: var(--mochi-fresa); color: var(--mochi-fresa-d);
-  border: 0; padding: 16px; border-radius: 18px;
-  font-family: 'Quicksand', sans-serif; font-weight: 700; font-size: 15px;
-  cursor: pointer;
-  display: flex; align-items: center; justify-content: center; gap: 8px;
-  box-shadow: var(--clay-shadow-sm), inset 2px -2px 4px rgba(255,255,255,0.7);
-  transition: all 0.2s;
-}
-.modal-actions .btn-send:hover { transform: translateY(-1px); box-shadow: var(--clay-shadow-md); }
-.modal-actions .btn-send:active { box-shadow: var(--clay-inset); }
-.modal-actions .btn-cancel {
-  background: var(--clay-surface);
-  color: var(--clay-ink-soft);
-  border: 0; padding: 16px 20px;
-  border-radius: 18px; cursor: pointer; font-size: 14px;
-  font-family: 'Quicksand', sans-serif; font-weight: 600;
-  box-shadow: var(--clay-shadow-xs), inset 1px -1px 2px rgba(255,255,255,0.7);
-}
-.modal-actions .btn-cancel:hover { box-shadow: var(--clay-shadow-sm); }
 
 /* ============ RESPONSIVE ============ */
 @media (max-width: 880px) {
@@ -865,79 +662,27 @@ section { padding: 80px 24px; position: relative; }
   .brand-mark { width: 36px; height: 36px; font-size: 18px; }
   .combo-card .combo-body { padding: 20px 20px 22px; }
   .combo-now { font-size: 28px; }
-  .day-pick label { font-size: 11px; padding: 10px 2px; }
   .flavor-card .name { font-size: 20px; }
   .flavor-card .price { font-size: 24px; }
 }
 
-/* ============ FLAVOR CARDS · clay puffs ============ */
-.flavors { background: color-mix(in srgb, var(--clay-canvas) 46%, transparent); border-radius: 48px; margin: 0 16px; }
+/* ============ FLAVOR CARDS · clay puffs compactas ============ */
+.flavors { background: color-mix(in srgb, var(--canvas) 42%, transparent); border-radius: 48px; margin: 0 16px; }
+/* Grid: 4 cols desktop, 3 tablet, 2 móvil grande, 1 móvil */
 .flavor-grid {
   display: grid;
-  grid-template-columns: repeat(3, 1fr);
-  gap: 32px;
-  max-width: 1180px; margin: 0 auto;
+  grid-template-columns: repeat(4, 1fr);
+  gap: 18px;
 }
+@media (max-width: 1200px) { .flavor-grid { grid-template-columns: repeat(3, 1fr); } }
 @media (max-width: 920px) { .flavor-grid { grid-template-columns: repeat(2, 1fr); } }
-@media (max-width: 620px) { .flavor-grid { grid-template-columns: 1fr; } }
-
-.flavor-card {
-  background: var(--clay-surface);
-  border-radius: 32px;
-  overflow: hidden;
-  position: relative;
-  transition: transform 0.3s cubic-bezier(.34,1.56,.64,1), box-shadow 0.3s;
-  --flavor-accent: var(--mochi-fresa-d);
-  --flavor-clay:   var(--mochi-fresa);
-  box-shadow: var(--clay-shadow-md), inset 3px -3px 6px rgba(255,255,255,0.85);
-  display: flex; flex-direction: column;
+@media (max-width: 560px) { .flavor-grid { grid-template-columns: 1fr; } }
+/* Filtros en un solo div centrado */
+.flavor-filters {
+  display: flex; flex-wrap: wrap; gap: 8px;
+  justify-content: center;
+  margin: 16px 0 28px;
 }
-.flavor-card:hover {
-  transform: translateY(-8px);
-  box-shadow: var(--clay-shadow-hover), inset 3px -3px 6px rgba(255,255,255,0.85);
-}
-.flavor-card .ribbon {
-  position: absolute; top: 16px; right: 16px; z-index: 3;
-  background: color-mix(in srgb, var(--flavor-accent) 86%, #14202E);
-  color: var(--flavor-on-accent, #fff);
-  padding: 7px 14px; border-radius: 999px;
-  font-size: 11px; font-weight: 700;
-  letter-spacing: 0.8px; text-transform: uppercase;
-  box-shadow: var(--clay-shadow-sm);
-}
-.flavor-card .accent-stripe {
-  position: absolute; top: 0; left: 0; bottom: 0; width: 6px;
-  background: var(--flavor-accent);
-  z-index: 2;
-}
-.flavor-card .photo {
-  aspect-ratio: 1 / 1; overflow: hidden;
-  background: var(--mochi-cyan);
-}
-.flavor-card .photo img {
-  width: 100%; height: 100%; object-fit: cover; display: block;
-  transition: transform 0.4s;
-}
-.flavor-card:hover .photo img { transform: scale(1.06); }
-.flavor-card .body { padding: 20px 22px 24px; flex: 1; display: flex; flex-direction: column; }
-.flavor-card .name { font-family: 'Baloo 2', sans-serif; font-size: 22px; font-weight: 700; margin-bottom: 4px; color: var(--clay-ink); }
-.flavor-card .desc { color: var(--clay-ink-soft); font-size: 13px; line-height: 1.55; margin-bottom: 14px; flex: 1; }
-.flavor-card .price-row { display: flex; align-items: baseline; justify-content: space-between; margin-bottom: 14px; }
-.flavor-card .price { font-family: 'Baloo 2', sans-serif; font-size: 26px; font-weight: 700; color: var(--clay-ink); letter-spacing: -0.5px; }
-.flavor-card .unit { color: var(--clay-ink-soft); font-size: 12px; }
-.flavor-card .add-btn {
-  width: 100%;
-  background: color-mix(in srgb, var(--flavor-accent) 86%, #14202E);
-  color: var(--flavor-on-accent, #fff);
-  border: 0; padding: 14px;
-  border-radius: 18px;
-  font-family: 'Baloo 2', sans-serif; font-weight: 700; font-size: 14px;
-  cursor: pointer; letter-spacing: 0.3px;
-  box-shadow: var(--clay-shadow-sm), inset 2px -2px 4px rgba(255,255,255,0.3);
-  transition: all 0.2s;
-}
-.flavor-card .add-btn:hover { transform: translateY(-2px); box-shadow: var(--clay-shadow-md); }
-.flavor-card .add-btn:active { transform: scale(0.97); box-shadow: var(--clay-inset-sm); }
 
 /* ============ HOW IT WORKS · stepper 01/02/03 ============
    Antes: circulos con un conector punteado hecho con ::before (se rompia en
@@ -1052,23 +797,6 @@ section { padding: 80px 24px; position: relative; }
   justify-content: center;
   margin: 28px 0 36px;
 }
-.filter-chip {
-  background: var(--clay-surface);
-  border: 0;
-  color: var(--clay-ink);
-  padding: 10px 20px;
-  border-radius: 999px;
-  font-family: 'Baloo 2', sans-serif;
-  font-size: 13px; font-weight: 600;
-  cursor: pointer;
-  transition: all 0.18s;
-  box-shadow: var(--clay-shadow-xs), inset 1px -1px 2px rgba(255,255,255,0.7);
-}
-.filter-chip:hover { transform: translateY(-1px); box-shadow: var(--clay-shadow-sm); }
-.filter-chip.active {
-  background: var(--mochi-fresa-d); color: #fff;
-  box-shadow: var(--clay-shadow-sm), inset 1px -1px 2px rgba(255,255,255,0.3);
-}
 
 /* ============ HEADER SOCIAL BAR ============ */
 .social-bar { display: flex; align-items: center; gap: 6px; margin-right: 12px; }
@@ -1083,7 +811,7 @@ section { padding: 80px 24px; position: relative; }
   box-shadow: var(--clay-shadow-xs), inset 1px -1px 2px rgba(255,255,255,0.7);
 }
 .social-icon:hover {
-  background: var(--mochi-fresa-d); color: #fff;
+  background: var(--btn-primary-bg-hover); color: #fff;
   transform: translateY(-2px);
   box-shadow: var(--clay-shadow-sm);
 }
@@ -1123,7 +851,7 @@ section { padding: 80px 24px; position: relative; }
   box-shadow: var(--clay-shadow-sm), inset 1px -1px 2px rgba(255,255,255,0.7);
 }
 .social-strip-links a:hover {
-  background: var(--mochi-fresa-d); color: #fff;
+  background: var(--btn-primary-bg-hover); color: #fff;
   transform: translateY(-2px);
   box-shadow: var(--clay-shadow-md);
 }
@@ -1255,13 +983,10 @@ footer .privacy-note {
 @media (max-width: 520px) {
   .footer-grid { grid-template-columns: 1fr; }
 }
-
-/* ============ IDENTIDAD MOCHI · micro-interacciones ============ */
-::selection { background: var(--mochi-fresa-d); color: #fff; }
 ::-webkit-scrollbar { width: 14px; }
 ::-webkit-scrollbar-track { background: var(--clay-canvas); }
 ::-webkit-scrollbar-thumb {
-  background: var(--mochi-fresa-d);
+  background: var(--btn-primary-bg-hover);
   border-radius: 999px; border: 3px solid var(--clay-canvas);
   box-shadow: var(--clay-shadow-xs);
 }
@@ -1369,7 +1094,7 @@ footer .privacy-note {
 .combo-img-blob svg { width: 46%; height: auto; opacity: .8; }
 
 @media (prefers-reduced-motion: reduce) {
-  .hero-sparkle, .hero-mascot, .mochi-float { animation: none; }
+  .hero-sparkle, .hero-mascot, .color-orb { animation: none; }
   .fill-trail { display: none; }
 }
 
@@ -1383,7 +1108,7 @@ footer .privacy-note {
      translucidas la dejan ver. Antes se montaba al final (z-index:-1) y
      cualquier seccion opaca lo tapaba. Degradacion graciosa: sin WebGL o si
      el bundle falla, la pagina queda identica (el fondo son halos CSS). -->
-<div class="page-shader" data-island="hero-bg" data-props='{"intensity":0.62,"colorA":"#FF8FB4","colorB":"#FFC24D","colorC":"#B08CF0"}' aria-hidden="true"></div>
+<div class="page-shader" data-island="hero-bg" data-props='{"intensity":0.75,"colorA":"#FF8FB4","colorB":"#FFB88C","colorC":"#B08CF0","colorD":"#7BBC46","colorE":"#56C8E4"}' aria-hidden="true"></div>
 
 <header>
   <div class="nav">
@@ -1405,10 +1130,6 @@ footer .privacy-note {
         <svg viewBox="0 0 24 24" fill="currentColor"><path d="M19.59 6.69a4.83 4.83 0 0 1-3.77-4.25V2h-3.45v13.67a2.89 2.89 0 0 1-5.2 1.74 2.89 2.89 0 0 1 2.31-4.64 2.93 2.93 0 0 1 .88.13V9.4a6.84 6.84 0 0 0-1-.05A6.33 6.33 0 0 0 5.8 20.1a6.34 6.34 0 0 0 10.86-4.43V8.65a8.16 8.16 0 0 0 4.77 1.52v-3.4a4.85 4.85 0 0 1-1.84-.08z"/></svg>
       </a>
     </div>
-    <a class="admin-icon" href="/manage.html" aria-label="Panel de administración" title="Panel admin" rel="nofollow" style="display:none">
-      <svg viewBox="0 0 24 24" fill="currentColor" width="16" height="16"><path d="M12 1L3 5v6c0 5.5 3.8 10.7 9 12 5.2-1.3 9-6.5 9-12V5l-9-4zm0 6c1.1 0 2 .9 2 2s-.9 2-2 2-2-.9-2-2 .9-2 2-2zm0 10c-2.2 0-4.1-1.2-5.1-3 .5-1.7 2.3-2.8 5.1-2.8s4.6 1.1 5.1 2.8c-1 1.8-2.9 3-5.1 3z"/></svg>
-    </a>
-    <a class="nav-cta" href="/tienda.html">Pedir ahora</a>
   </div>
 </header>
 
@@ -1419,10 +1140,10 @@ footer .privacy-note {
     <span class="hero-tag">Hechos hoy en Neiva</span>
     <h1>Mochis <span class="accent">artesanales</span><br>con alma del Huila</h1>
     <p class="lead">Pide cada semana, recoge en nuestra cocina oculta. Frescos, sin congelar, hechos el mismo día.</p>
-    <a class="hero-cta" href="/tienda.html">
-          <svg viewBox="0 0 24 24" fill="currentColor"><path d="M17.5 14.4c-.3-.1-1.7-.8-1.9-.9-.3-.1-.5-.1-.7.1-.2.3-.7.9-.9 1.1-.2.2-.3.2-.6.1-.3-.1-1.2-.4-2.3-1.4-.9-.8-1.5-1.7-1.6-2-.2-.3 0-.5.1-.6.1-.1.3-.3.4-.5.1-.2.2-.3.3-.5.1-.2 0-.4 0-.5-.1-.1-.7-1.6-.9-2.2-.2-.6-.5-.5-.7-.5h-.6c-.2 0-.5.1-.8.4-.3.3-1 1-1 2.4s1.1 2.8 1.2 3c.1.2 2.1 3.3 5.2 4.6.7.3 1.3.5 1.7.6.7.2 1.4.2 1.9.1.6-.1 1.7-.7 2-1.4.2-.7.2-1.2.2-1.4-.1-.1-.3-.2-.6-.3z M19.6 4.4C17.8 2.6 15.4 1.6 13 1.6c-2.4 0-4.8 1-6.6 2.8C4.6 6.2 3.6 8.6 3.6 11c0 2.4 1 4.8 2.8 6.6l-1.8 1.8c-.4.4-.4 1 0 1.4.2.2.4.3.7.3.3 0 .5-.1.7-.3l1.8-1.8c1.8 1.8 4.2 2.8 6.6 2.8 2.4 0 4.8-1 6.6-2.8 3.6-3.6 3.6-9.6 0-13.2-.5-.5-1-.9-1.4-1.4zm-1 12.2c-1.5 1.5-3.6 2.4-5.6 2.4-2.1 0-4.1-.8-5.6-2.4-3.1-3.1-3.1-8.1 0-11.2 1.5-1.5 3.6-2.4 5.6-2.4 2.1 0 4.1.8 5.6 2.4 3.1 3.1 3.1 8.1 0 11.2z"/></svg>
+    <button class="hero-cta" data-open-order>
+          <svg viewBox="0 0 24 24" fill="currentColor"><path d="M17.5 14.4c-.3-.1-1.7-.8-1.9-.9-.3-.1-.5-.1-.7.1-.2.3-.7.9-.9 1.1-.2.2-.3.2-.6.1-.3-.1-1.2-.4-2.3-1.4-.9-.8-1.5-1.7-1.6-2-.2-.3 0-.5.1-.6.1-.1.3-.3.4-.5.1-.2.2-.3.3-.5.1-.2 0-.4 0-.5-.1-.1-.7-1.6-.9-2.2-.2-.6-.5-.5-.7-.5h-.6c-.2 0-.5.1-.8.4-.3.3-1 1-1 2.4s1.1 2.8 1.2 3c.1.2 2.1 3.3 5.2 4.6.7.3 1.3.5 1.7.6.7.2 1.4.2 1.9.1.6-.1 1.7-.7 2-1.4.2-.7.2-1.2.2-1.4-.1-.1-.3-.2-.6-.3z"/></svg>
           Armar mi pedido
-        </a>
+        </button>
     <div class="hero-trust">
       <span><svg class="ico" viewBox="0 0 24 24" aria-hidden="true"><path d="M12 2v20M4.9 6.5l14.2 11M19.1 6.5L4.9 17.5"/><path d="M9.6 4.4 12 6.7l2.4-2.3M9.6 19.6 12 17.3l2.4 2.3"/></svg>Sin congelar</span>
       <span><svg class="ico" viewBox="0 0 24 24" aria-hidden="true"><circle cx="12" cy="12" r="8.4"/><path d="M12 7.4V12l3.1 1.9"/></svg>Hechos hoy</span>
@@ -1660,57 +1381,6 @@ footer .privacy-note {
   </div>
 </footer>
 
-<!-- MODAL: pedido rápido -->
-<div id="quick-modal" class="modal-back" onclick="if(event.target.id==='quick-modal')closeModal()">
-  <div class="modal" onclick="event.stopPropagation()">
-    <h2 id="quick-title">Tu pedido</h2>
-    <p class="sub" id="quick-sub">Completa y abre WhatsApp con el mensaje listo.</p>
-
-    <div class="modal-section" id="quick-flavors-section">
-      <h3><span class="step-num">1</span> Elige sabores</h3>
-      <div class="flavor-grid" id="flavor-grid"></div>
-    </div>
-
-    <div class="modal-section">
-          <h3><span class="step-num">2</span> Día de recogida</h3>
-          <div class="day-pick" id="day-pick">
-            <label><input type="radio" name="day" value="Martes">Mar</label>
-            <label><input type="radio" name="day" value="Miércoles">Mié</label>
-            <label><input type="radio" name="day" value="Jueves">Jue</label>
-            <label><input type="radio" name="day" value="Viernes">Vie</label>
-            <label><input type="radio" name="day" value="Sábado">Sáb</label>
-          </div>
-        </div>
-
-        <!-- 2026-10-14 — payment methods step (admin ? /api/public ? data.payment_methods) -->
-        <div class="modal-section" id="pay-methods-section">
-          <h3><span class="step-num">3</span> Cómo pagas</h3>
-          <div class="pay-methods" id="pay-methods-list">
-            <p class="pay-empty" style="color:var(--clay-ink-soft);font-size:13px">Cargando métodos...</p>
-          </div>
-        </div>
-
-        <div class="modal-section">
-          <h3><span class="step-num">4</span> Tus datos</h3>
-          <div class="form-group"><input type="text" id="cli-name" placeholder="Tu nombre" autocomplete="name"></div>
-          <div class="form-group"><input type="tel" id="cli-phone" placeholder="Tu WhatsApp (ej 3123456789)" autocomplete="tel"></div>
-        </div>
-
-    <div class="total-row">
-      <span class="lbl">Total a pagar</span>
-      <span class="val" id="quick-total">$0</span>
-    </div>
-
-    <div class="modal-actions">
-      <button class="btn-cancel" onclick="closeModal()">Cancelar</button>
-      <button class="btn-send" onclick="sendWhatsApp()">
-        <svg viewBox="0 0 24 24" width="18" height="18" fill="currentColor"><path d="M17.5 14.4c-.3-.1-1.7-.8-1.9-.9-.3-.1-.5-.1-.7.1-.2.3-.7.9-.9 1.1-.2.2-.3.2-.6.1-.3-.1-1.2-.4-2.3-1.4-.9-.8-1.5-1.7-1.6-2-.2-.3 0-.5.1-.6.1-.1.3-.3.4-.5.1-.2.2-.3.3-.5.1-.2 0-.4 0-.5-.1-.1-.7-1.6-.9-2.2-.2-.6-.5-.5-.7-.5h-.6c-.2 0-.5.1-.8.4-.3.3-1 1-1 2.4s1.1 2.8 1.2 3c.1.2 2.1 3.3 5.2 4.6.7.3 1.3.5 1.7.6.7.2 1.4.2 1.9.1.6-.1 1.7-.7 2-1.4.2-.7.2-1.2.2-1.4-.1-.1-.3-.2-.6-.3z M19.6 4.4C17.8 2.6 15.4 1.6 13 1.6c-2.4 0-4.8 1-6.6 2.8C4.6 6.2 3.6 8.6 3.6 11c0 2.4 1 4.8 2.8 6.6l-1.8 1.8c-.4.4-.4 1 0 1.4.2.2.4.3.7.3.3 0 .5-.1.7-.3l1.8-1.8c1.8 1.8 4.2 2.8 6.6 2.8 2.4 0 4.8-1 6.6-2.8 3.6-3.6 3.6-9.6 0-13.2-.5-.5-1-.9-1.4-1.4z"/></svg>
-        Enviar pedido
-      </button>
-    </div>
-  </div>
-</div>
-
 <!-- MODAL: configurar WhatsApp (se gestiona desde el panel admin) -->
 
 <script>
@@ -1836,9 +1506,8 @@ function renderFlavorCards() {
     const ribbon = cfg.ribbon;
     const ribbonHtml = ribbon ? `<div class="ribbon">${escapeHtml(ribbon)}</div>` : '';
     return `
-      <article class="flavor-card" data-flavor-id="${f.id}" style="--flavor-accent: ${accent}; --flavor-on-accent: ${onAccent}">
+      <article class="product-card" data-flavor-id="${f.id}" style="--flavor-accent: ${accent}; --flavor-on-accent: ${onAccent}">
         ${ribbonHtml}
-        <div class="accent-stripe"></div>
         <div class="photo"><img src="${escapeAttr(photo)}" alt="${escapeAttr(f.name)}" loading="lazy"></div>
         <div class="body">
           <div class="name">${escapeHtml(f.name)}</div>
@@ -1864,9 +1533,9 @@ const FLAVOR_TAGS = {
 };
 
 function applyFlavorFilter() {
-  const active = document.querySelector('.filter-chip.active');
+  const active = document.querySelector('.chip.active');
   const filter = active ? active.dataset.filter : 'all';
-  document.querySelectorAll('.flavor-card').forEach(card => {
+  document.querySelectorAll('.product-card[data-flavor-id]').forEach(card => {
     const id = card.dataset.flavorId;
     const flavor = FLAVORS.find(f => f.id === id);
     const slug = flavor ? flavor.category_slug : null;
@@ -1880,7 +1549,7 @@ function renderCategoryChips() {
   if (!wrap) return;
   const chips = [{ slug: 'all', name: 'Todos' }, ...CATEGORIES.map(c => ({ slug: c.slug, name: c.name }))];
   wrap.innerHTML = chips.map((c, i) => `
-    <button class="filter-chip${i === 0 ? ' active' : ''}" data-filter="${c.slug}">${c.name}</button>
+    <button class="chip${i === 0 ? ' active' : ''}" data-filter="${c.slug}">${c.name}</button>
   `).join('');
   setupFlavorFilters();
 }
@@ -1913,43 +1582,10 @@ function renderHorarios() {
   }).join('');
 }
 
-function renderPayMethods() {
-  const wrap = document.getElementById('pay-methods-list');
-  if (!wrap) return;
-  if (!PAYMENT_METHODS.length) {
-    wrap.innerHTML = '<p class="pay-empty" style="color:var(--clay-ink-soft);font-size:13px">Pregúntanos por WhatsApp cómo pagar.</p>';
-    return;
-  }
-  wrap.innerHTML = PAYMENT_METHODS.map(m => {
-    const defAccount = m.payout_accounts && m.payout_accounts.find(a => a.is_default) || m.payout_accounts && m.payout_accounts[0];
-    const instr = (m.instructions || '').replace(/</g,'&lt;');
-    const account = defAccount ? `<div class="pay-instr"><strong>${defAccount.holder_name}</strong> · ${defAccount.account_ref}</div>` : '';
-    return `<div class="pay-method" data-method-id="${m.id}" onclick="selectPayMethod(${m.id})">
-      <div class="pay-icon">${(m.code||'?').slice(0,2).toUpperCase()}</div>
-      <div>
-        <div class="pay-label">${m.label}</div>
-        ${account}
-        ${instr ? `<div class="pay-instr">${instr}</div>` : ''}
-      </div>
-      ${defAccount && defAccount.is_default ? '<div class="pay-default">Por defecto</div>' : '<div></div>'}
-    </div>`;
-  }).join('');
-  // Auto-select default
-  const def = PAYMENT_METHODS.find(m => m.payout_accounts && m.payout_accounts.some(a => a.is_default));
-  if (def) selectPayMethod(def.id);
-}
-
-function selectPayMethod(id) {
-  _selectedPayMethod = id;
-  document.querySelectorAll('.pay-method').forEach(el => {
-    el.classList.toggle('selected', Number(el.dataset.methodId) === Number(id));
-  });
-}
-
 function setupFlavorFilters() {
-  document.querySelectorAll('.filter-chip').forEach(chip => {
+  document.querySelectorAll('.chip').forEach(chip => {
     chip.addEventListener('click', () => {
-      document.querySelectorAll('.filter-chip').forEach(c => c.classList.remove('active'));
+      document.querySelectorAll('.chip').forEach(c => c.classList.remove('active'));
       chip.classList.add('active');
       applyFlavorFilter();
     });
@@ -1995,24 +1631,24 @@ function renderCombos() {
   if (section) section.style.display = '';
   grid.innerHTML = COMBOS.map(c => {
     const img = (c.image_url && String(c.image_url).trim())
-      ? `<img src="${c.image_url}" alt="${c.name}" loading="lazy">`
+      ? `<img src="${escapeAttr(c.image_url)}" alt="${escapeAttr(c.name)}" loading="lazy">`
       : `<div class="combo-img-blob"><svg viewBox="0 0 120 100"><ellipse cx="60" cy="58" rx="46" ry="36" fill="#FFF8E7"/><ellipse cx="60" cy="66" rx="39" ry="27" fill="#E94560" opacity="0.3"/><circle cx="47" cy="54" r="4.6" fill="#2D2D2D"/><circle cx="74" cy="54" r="4.6" fill="#2D2D2D"/><path d="M51 64 q9 7 18 0" stroke="#2D2D2D" stroke-width="3" fill="none" stroke-linecap="round"/><ellipse cx="38" cy="63" rx="6" ry="4" fill="#E94560" opacity="0.45"/><ellipse cx="83" cy="63" rx="6" ry="4" fill="#E94560" opacity="0.45"/></svg></div>`;
-    const was = c.compare_at_price ? `<span class="combo-was">$${c.compare_at_price.toLocaleString('es-CO')}</span>` : '';
-    const save = c.compare_at_price ? `<span class="combo-save">Ahorras $${(c.compare_at_price - c.price).toLocaleString('es-CO')}</span>` : '';
+    const was = c.compare_at_price ? `<span class="price-was">$${c.compare_at_price.toLocaleString('es-CO')}</span>` : '';
+    const save = c.compare_at_price ? `<span class="price-save">Ahorras $${(c.compare_at_price - c.price).toLocaleString('es-CO')}</span>` : '';
     return `
-      <article class="combo-card${c.featured ? ' featured' : ''}">
+      <article class="product-card${c.featured ? ' featured' : ''}">
         ${c.featured ? '<div class="badge">Más pedido</div>' : ''}
-        <div class="combo-img">${img}</div>
-        <div class="combo-body">
-          <h3 class="combo-name">${escapeHtml(c.name)}</h3>
-          <div class="combo-qty">${c.units} unidades · tú eliges sabores</div>
-          <p class="combo-desc">${escapeHtml(c.description || '')}</p>
-          <div class="combo-prices">
-            <span class="combo-now">$${c.price.toLocaleString('es-CO')}</span>
+        <div class="photo">${img}</div>
+        <div class="body">
+          <div class="name">${escapeHtml(c.name)}</div>
+          <p class="desc">${c.units} unidades · tú eliges sabores</p>
+          <p class="desc">${escapeHtml(c.description || '')}</p>
+          <div class="price-row">
+            <span class="price">$${c.price.toLocaleString('es-CO')}</span>
             ${was}
             ${save}
           </div>
-          <button class="combo-add" type="button" data-combo='${escapeAttr(JSON.stringify({ id: c.id, name: c.name, units: c.units, price: c.price }))}'>Pedir ${escapeHtml(c.name)}</button>
+          <button class="add-btn" type="button" data-combo='${escapeAttr(JSON.stringify({ id: c.id, name: c.name, units: c.units, price: c.price }))}'>Pedir ${escapeHtml(c.name)}</button>
         </div>
       </article>
     `;
@@ -2067,11 +1703,6 @@ async function loadReleases() {
 
 
 
-function quickAddFlavor(id) {
-  openQuickOrder();
-  bumpFlavor(id, 1);
-}
-
 const FALLBACK_WHATSAPP = '573213050426';
 const PLACEHOLDER_WHATSAPP = '573000000000';
 function effectiveWhatsapp() {
@@ -2089,7 +1720,6 @@ let PROMOS = [];           // 2026-10-14 — admin ? /api/public ? data.promos
 let PAYMENT_METHODS = [];  // 2026-10-14 — admin ? /api/public ? data.payment_methods
 let DELIVERY_SCHEDULE = [];// 2026-10-14 — admin ? /api/public ? data.delivery_schedule
 let DELIVERY_CONFIG = null;// 2026-10-14 — admin ? /api/public ? data.delivery_config
-let _selectedPayMethod = null;
 
 function applyServerConfig() {
   if (!APP_CONFIG) return;
@@ -2101,190 +1731,6 @@ function applyServerConfig() {
   setK('bg', APP_CONFIG.soft || APP_CONFIG.bg);
 }
 
-let _combo = null;
-let _comboUnits = 0;
-let _comboPrice = 0;
-let _flavors = {};
-
-// Convierte "Martes"/"Sábado" (radios del modal) al próximo YYYY-MM-DD real.
-// La API exige fecha concreta para validar horario, cutoff y stock del día.
-function nextDateForWeekday(esDay) {
-  const map = { 'Domingo': 0, 'Lunes': 1, 'Martes': 2, 'Miércoles': 3, 'Jueves': 4, 'Viernes': 5, 'Sábado': 6 };
-  const target = map[esDay];
-  if (target == null) return null;
-  const now = new Date();
-  const d = new Date(Date.UTC(now.getFullYear(), now.getMonth(), now.getDate()));
-  const delta = (target - d.getUTCDay() + 7) % 7;
-  d.setUTCDate(d.getUTCDate() + delta);
-  return d.toISOString().slice(0, 10);
-}
-
-// Mensaje de respaldo cuando la API no está disponible (mismo tono del server).
-function buildFallbackWspMessage(name, phone, dayLabel, items, combo, total) {
-  const lines = [];
-  lines.push('¡Hola! Me antojo de un pedido.');
-  lines.push('');
-  lines.push(`Soy *${name}*`);
-  lines.push(`Mi WhatsApp: ${phone}`);
-  lines.push(`Quiero recogerlo el *${dayLabel}*`);
-  lines.push('');
-  if (items.length) {
-    lines.push('Sabores:');
-    items.forEach(([id, q]) => {
-      const f = FLAVORS.find(x => x.id === id);
-      lines.push(`  • ${f ? f.name : id} ×${q}`);
-    });
-  }
-
-  if (combo) lines.push(`Combo: ${combo.name}`);
-  lines.push('');
-  if (total > 0) lines.push(`*Total: $${total.toLocaleString('es-CO')} COP*`);
-  lines.push('');
-  lines.push('¿Me confirmás disponibilidad? ¡Gracias!');
-  return lines.join('\n');
-}
-
-function openQuickOrder(combo) {
-  _combo = (combo && typeof combo === 'object') ? combo : null;
-  _comboUnits = _combo ? (_combo.units || 0) : 0;
-  _comboPrice = _combo ? (_combo.price || 0) : 0;
-  _flavors = {};
-  const titleEl = document.getElementById('quick-title');
-  const subEl = document.getElementById('quick-sub');
-  if (_combo) {
-    titleEl.textContent = `${_combo.name} — $${_combo.price.toLocaleString('es-CO')}`;
-    subEl.textContent = `Elige ${_combo.units} sabores (o déjanos elegir a nosotros). Te respondemos por WhatsApp para confirmar.`;
-  } else if (!FLAVORS.length) {
-    titleEl.textContent = 'Tu pedido';
-    subEl.textContent = 'Cuéntanos qué se te antoja: te respondemos por WhatsApp con la disponibilidad de la semana.';
-  } else {
-    titleEl.textContent = 'Tu pedido';
-    subEl.textContent = 'Completa y abre WhatsApp con el mensaje listo.';
-  }
-
-  const flavorSection = document.getElementById('quick-flavors-section');
-    if (flavorSection) flavorSection.style.display = FLAVORS.length ? '' : 'none';
-    renderFlavors();
-    renderPayMethods();        // 2026-10-14 — populate payment methods when modal opens
-    updateQuickTotal();
-    document.getElementById('quick-modal').classList.add('visible');
-  }
-  function closeModal() { document.getElementById('quick-modal').classList.remove('visible'); }
-
-function renderFlavors() {
-  const grid = document.getElementById('flavor-grid');
-  grid.innerHTML = FLAVORS.map(f => `
-    <div class="flavor-row">
-      <div class="name">${f.name} <small>$${f.price.toLocaleString('es-CO')}/u</small></div>
-      <div class="flavor-qty">
-        <button onclick="bumpFlavor('${f.id}',-1)" aria-label="Quitar">-</button>
-        <span class="q" id="qf-${f.id}">0</span>
-        <button onclick="bumpFlavor('${f.id}',1)" aria-label="Agregar">+</button>
-      </div>
-    </div>
-  `).join('');
-}
-
-function bumpFlavor(id, d) {
-  _flavors[id] = Math.max(0, (_flavors[id] || 0) + d);
-  const el = document.getElementById('qf-' + id);
-  if (el) el.textContent = _flavors[id];
-  updateQuickTotal();
-}
-
-function updateQuickTotal() {
-  const units = Object.values(_flavors).reduce((a,b) => a+b, 0);
-  const itemsPrice = Object.entries(_flavors).reduce((s,[id,q]) => {
-    const f = FLAVORS.find(x => x.id === id);
-    return s + (q * (f ? f.price : 0));
-  }, 0);
-  const total = itemsPrice + (_comboUnits ? _comboPrice : 0);
-  document.getElementById('quick-total').textContent = '$' + total.toLocaleString('es-CO');
-}
-
-async function sendWhatsApp() {
-  const name = document.getElementById('cli-name').value.trim();
-  const phone = document.getElementById('cli-phone').value.trim();
-  const dayEl = document.querySelector('input[name="day"]:checked');
-  const dayLabel = dayEl ? dayEl.value : '';
-
-  if (!name) { alert('Falta tu nombre'); return; }
-  if (!phone) { alert('Falta tu WhatsApp'); return; }
-  if (!dayLabel) { alert('Elegí un día de recogida'); return; }
-
-  const items = Object.entries(_flavors).filter(([,q]) => q > 0);
-  if (items.length === 0 && !_combo && (FLAVORS.length || COMBOS.length)) { alert('Elegí al menos un sabor'); return; }
-
-  const itemsTotal = items.reduce((s,[id,q]) => {
-    const f = FLAVORS.find(x => x.id === id);
-    return s + q * (f ? f.price : 0);
-  }, 0);
-  const total = itemsTotal + _comboPrice;
-
-  const order = {
-    id: 'MYM-' + Date.now().toString(36).toUpperCase(),
-    ts: new Date().toISOString(),
-    name, phone, day: dayLabel,
-    items: Object.fromEntries(items),
-    combos: _combo ? [{ units: _comboUnits, price: _comboPrice }] : [],
-    total
-  };
-  const history = JSON.parse(localStorage.getItem('mymochis_orders') || '[]');
-  history.push(order);
-  localStorage.setItem('mymochis_orders', JSON.stringify(history));
-
-  // 1) Registrar el pedido en el panel (source of truth) y usar el deep-link
-  //    que arma el server: mensaje nuevo + destinatario round-robin entre los
-  //    números configurados. Así el pedido queda en el dashboard ANTES de
-  //    abrir WhatsApp.
-  const pickupDate = nextDateForWeekday(dayLabel);
-  let url = null;
-  if (pickupDate) {
-    try {
-      const res = await fetch(API_BASE + '/orders', {
-        method: 'POST',
-        headers: { 'Content-Type': 'application/json' },
-        body: JSON.stringify({
-          id: order.id,
-          customer_name: name,
-          customer_phone: phone.replace(/\D/g, ''),
-          pickup_day: pickupDate,
-          items: order.items,
-          combos: _combo ? [{ id: _combo.id, qty: 1, name: _combo.name }] : [],
-          total,
-          payment_method_id: _selectedPayMethod || undefined,
-          source: 'web'
-        })
-      });
-      if (res.ok) {
-        const data = await res.json().catch(() => ({}));
-        if (data.whatsapp && data.whatsapp.deep_link) {
-          url = data.whatsapp.deep_link;
-        } else {
-          console.warn('Pedido registrado pero sin deep_link:', data.whatsapp);
-        }
-      } else {
-        const err = await res.json().catch(() => ({}));
-        console.warn('API order save:', res.status, err.error, err.message);
-      }
-    } catch (e) {
-      console.warn('API order save failed:', e.message);
-    }
-  }
-
-  // 2) Respaldo: WhatsApp directo con mensaje local (el negocio confirma manual).
-  if (!url) {
-    const msg = encodeURIComponent(buildFallbackWspMessage(name, phone, dayLabel, items, _combo, total));
-    url = `https://api.whatsapp.com/send/?phone=${getWppTarget()}&text=${msg}`;
-  }
-
-  window.open(url, '_blank');
-  closeModal();
-  setTimeout(() => {
-    alert('¡Pedido enviado! Te respondemos por WhatsApp para confirmar.');
-  }, 600);
-}
-
 // La barra flotante inferior se eliminó (2026-10-20). El CTA principal vive en
 // el header (.nav-cta) y al final de cada sección; el FAB de WhatsApp sigue
 // flotando a la derecha. No hay aquí ningún listener de scroll que mantener.
@@ -2294,7 +1740,6 @@ Promise.all([loadConfig(), loadMochisConfig()]).then(() => {
   applyServerConfig();
   renderPromosBar();          // 2026-10-14 — promos activas (top of page)
   renderCategoryChips();      // 2026-10-14 — chips por categoría (admin lo controla)
-  renderFlavors();
   renderFlavorCards();
   renderCombos();
   renderHorarios();           // 2026-10-14 — horarios de recogida
@@ -2339,7 +1784,7 @@ if ('serviceWorker' in navigator) {
   }, { passive: true });
   document.addEventListener('pointerdown', e => spawn(e.clientX, e.clientY, true), { passive: true });
 
-  const floats = Array.from(document.querySelectorAll('.mochi-float'));
+  const floats = Array.from(document.querySelectorAll('.color-orb'));
   const depths = [26, 38, 18, 32, 44];
   let tx = 0, ty = 0, cx = 0, cy = 0;
   document.addEventListener('pointermove', e => {
@@ -2358,6 +1803,279 @@ if ('serviceWorker' in navigator) {
   requestAnimationFrame(tick);
 })();
 
+// ==== MODAL DE PEDIDO (sheet flotante) ====
+let orderModalState = {
+  step: 1, // 1=producto, 2=datos, 3=pago, 4=confirmación
+  productId: null,
+  quantity: 1,
+  name: '',
+  phone: '',
+  deliveryType: 'pickup',
+  address: '',
+  neighborhood: '',
+  notes: '',
+  paymentMethod: 'cash',
+  deliveryFee: 0
+};
+
+function openOrderModal(productId = null) {
+  if (productId) {
+    orderModalState.productId = productId;
+    orderModalState.step = 2;
+  } else {
+    orderModalState.step = 1;
+  }
+  renderOrderModal();
+  document.getElementById('order-modal').hidden = false;
+  document.body.style.overflow = 'hidden';
+}
+
+function closeOrderModal() {
+  document.getElementById('order-modal').hidden = true;
+  document.body.style.overflow = '';
+  orderModalState = {
+    step: 1, productId: null, quantity: 1, name: '', phone: '',
+    deliveryType: 'pickup', address: '', neighborhood: '', notes: '',
+    paymentMethod: 'cash', deliveryFee: 0
+  };
+}
+
+function goToOrderStep(step) {
+  orderModalState.step = step;
+  renderOrderModal();
+}
+
+function selectProductForOrder(productId) {
+  orderModalState.productId = productId;
+  goToOrderStep(2);
+}
+
+function selectPayMethod(method) {
+  orderModalState.paymentMethod = method;
+  document.querySelectorAll('[data-pay-method]').forEach(btn => {
+    btn.classList.toggle('selected', btn.dataset.payMethod === method);
+  });
+}
+
+function renderOrderModal() {
+  const modal = document.getElementById('order-modal');
+  if (!modal) return;
+  const panel = modal.querySelector('.order-modal__panel');
+  if (!panel) return;
+
+  let html = '';
+  
+  if (orderModalState.step === 1) {
+    html = `
+      <h2 class="serif" style="margin-bottom: 1rem;">¿Qué te antoja?</h2>
+      <div class="product-selector" style="display:grid; grid-template-columns:repeat(auto-fill,minmax(140px,1fr)); gap:0.75rem;">
+        ${FLAVORS.filter(f => f.available !== 0).map(f => `
+          <button class="product-selector__option glass" data-product-pick="${escapeAttr(f.id)}" style="padding:0.75rem; border-radius:var(--r-lg); cursor:pointer; text-align:center; transition:transform var(--dur-fast), box-shadow var(--dur-fast); border:2px solid transparent;">
+            <img src="${escapeAttr(f.image_url || 'img/instagram/mochi-01.jpg')}" alt="${escapeAttr(f.name)}" class="product-selector__img" style="aspect-ratio:1/1; border-radius:var(--r-md); object-fit:cover; margin-bottom:0.5rem;">
+            <div class="product-selector__name" style="font-family:var(--font-display); font-size:0.875rem; font-weight:700;">${escapeHtml(f.name)}</div>
+            <div class="product-selector__price" style="font-size:0.875rem; font-weight:600; color:var(--ink);">$${f.price.toLocaleString('es-CO')}</div>
+          </button>
+        `).join('')}
+        ${COMBOS.filter(c => c.available !== 0).map(c => `
+          <button class="product-selector__option glass" data-product-pick="${escapeAttr(c.id)}" style="padding:0.75rem; border-radius:var(--r-lg); cursor:pointer; text-align:center; transition:transform var(--dur-fast), box-shadow var(--dur-fast); border:2px solid transparent;">
+            <div class="product-selector__img" style="aspect-ratio:1/1; border-radius:var(--r-md); background:linear-gradient(135deg,var(--mochi-cyan),var(--mochi-crema)); display:flex; align-items:center; justify-content:center; margin-bottom:0.5rem;">
+              <svg width="48" height="48" viewBox="0 0 120 100" fill="none"><ellipse cx="60" cy="58" rx="46" ry="36" fill="#FFF8E7"/><ellipse cx="60" cy="66" rx="39" ry="27" fill="#F9D85E" opacity="0.3"/><circle cx="47" cy="54" r="4.6" fill="#2D2D2D"/><circle cx="74" cy="54" r="4.6" fill="#2D2D2D"/><path d="M51 64 q9 7 18 0" stroke="#2D2D2D" stroke-width="3" fill="none" stroke-linecap="round"/><ellipse cx="38" cy="63" rx="6" ry="4" fill="#E94560" opacity="0.45"/><ellipse cx="83" cy="63" rx="6" ry="4" fill="#E94560" opacity="0.45"/></svg>
+            </div>
+            <div class="product-selector__name" style="font-family:var(--font-display); font-size:0.875rem; font-weight:700;">${escapeHtml(c.name)}</div>
+            <div class="product-selector__price" style="font-size:0.875rem; font-weight:600; color:var(--ink);">$${c.price.toLocaleString('es-CO')}</div>
+          </button>
+        `).join('')}
+      </div>
+      <button class="btn btn-ghost" data-close-order style="margin-top:1rem; width:100%;">Seguir viendo</button>
+    `;
+  } else if (orderModalState.step === 2) {
+    const product = FLAVORS.find(f => f.id === orderModalState.productId) || COMBOS.find(c => c.id === orderModalState.productId);
+    const subtotal = product ? product.price * orderModalState.quantity : 0;
+    const total = subtotal + orderModalState.deliveryFee;
+    
+    html = `
+      <h3 class="serif" style="margin-bottom: 0.5rem;">${escapeHtml(product?.name || 'Tu pedido')}</h3>
+      <p style="color:var(--ink-soft); margin-bottom: 1.5rem; font-size: 0.9rem;">${orderModalState.quantity} unidad${orderModalState.quantity > 1 ? 'es' : ''} · $${subtotal.toLocaleString('es-CO')}${orderModalState.deliveryFee ? ` + $${orderModalState.deliveryFee.toLocaleString('es-CO')} envío` : ''} = <strong>$${total.toLocaleString('es-CO')}</strong></p>
+      
+      <form onsubmit="return false;">
+        <div class="form-group" style="margin-bottom:1rem;">
+          <label style="display:block; margin-bottom:0.35rem; font-weight:600;">Nombre</label>
+          <input type="text" id="order-name" value="${escapeAttr(orderModalState.name)}" placeholder="Tu nombre" required style="width:100%; padding:0.75rem; border-radius:var(--r-md); border:1px solid var(--line); background:var(--surface); font-family:inherit; font-size:1rem;">
+        </div>
+        <div class="form-group" style="margin-bottom:1rem;">
+          <label style="display:block; margin-bottom:0.35rem; font-weight:600;">WhatsApp / Teléfono</label>
+          <input type="tel" id="order-phone" value="${escapeAttr(orderModalState.phone)}" placeholder="+57 3XX XXX XXXX" required style="width:100%; padding:0.75rem; border-radius:var(--r-md); border:1px solid var(--line); background:var(--surface); font-family:inherit; font-size:1rem;">
+        </div>
+        
+        <fieldset class="form-group" style="margin-bottom:1rem; border:none; padding:0;">
+          <legend style="display:block; margin-bottom:0.5rem; font-weight:600;">Tipo de entrega</legend>
+          <label style="display:flex; align-items:center; gap:0.5rem; margin-bottom:0.5rem; cursor:pointer;">
+            <input type="radio" name="deliveryType" value="pickup" ${orderModalState.deliveryType === 'pickup' ? 'checked' : ''} onchange="orderModalState.deliveryType=this.value; updateDeliveryFee();" style="width:18px; height:18px; accent-color:var(--mochi-fresa-d);">
+            <span>🏠 Recoger en cocina (gratis)</span>
+          </label>
+          <label style="display:flex; align-items:center; gap:0.5rem; cursor:pointer;">
+            <input type="radio" name="deliveryType" value="delivery" ${orderModalState.deliveryType === 'delivery' ? 'checked' : ''} onchange="orderModalState.deliveryType=this.value; updateDeliveryFee();" style="width:18px; height:18px; accent-color:var(--mochi-fresa-d);">
+            <span>🚚 Domicilio (+$${orderModalState.deliveryFee.toLocaleString('es-CO')})</span>
+          </label>
+        </fieldset>
+        
+        <div id="delivery-fields" style="${orderModalState.deliveryType === 'delivery' ? '' : 'display:none;'}">
+          <div class="form-group" style="margin-bottom:1rem;">
+            <label style="display:block; margin-bottom:0.35rem; font-weight:600;">Dirección</label>
+            <input type="text" id="order-address" value="${escapeAttr(orderModalState.address)}" placeholder="Calle, número, apartamento" required style="width:100%; padding:0.75rem; border-radius:var(--r-md); border:1px solid var(--line); background:var(--surface); font-family:inherit; font-size:1rem;">
+          </div>
+          <div class="form-group" style="margin-bottom:1rem;">
+            <label style="display:block; margin-bottom:0.35rem; font-weight:600;">Barrio / Referencia</label>
+            <input type="text" id="order-neighborhood" value="${escapeAttr(orderModalState.neighborhood)}" placeholder="Barrio, punto de referencia" style="width:100%; padding:0.75rem; border-radius:var(--r-md); border:1px solid var(--line); background:var(--surface); font-family:inherit; font-size:1rem;">
+          </div>
+        </div>
+        
+        <div class="form-group" style="margin-bottom:1rem;">
+          <label style="display:block; margin-bottom:0.35rem; font-weight:600;">Notas (opcional)</label>
+          <textarea id="order-notes" rows="3" placeholder="Instrucciones especiales, alergias, etc." style="width:100%; padding:0.75rem; border-radius:var(--r-md); border:1px solid var(--line); background:var(--surface); font-family:inherit; font-size:1rem; resize:vertical;">${escapeHtml(orderModalState.notes)}</textarea>
+        </div>
+        
+        <button type="button" class="btn btn-primary" data-order-step="3" style="width:100%; margin-top:0.5rem;">Continuar al pago →</button>
+      </form>
+    `;
+  } else if (orderModalState.step === 3) {
+    const product = FLAVORS.find(f => f.id === orderModalState.productId) || COMBOS.find(c => c.id === orderModalState.productId);
+    const subtotal = product ? product.price * orderModalState.quantity : 0;
+    const total = subtotal + orderModalState.deliveryFee;
+    
+    html = `
+      <h3 class="serif" style="margin-bottom: 0.5rem;">Total a pagar</h3>
+      <div style="font-size:2rem; font-weight:700; color:var(--ink); margin-bottom:1.5rem; font-family:var(--font-display);">$${total.toLocaleString('es-CO')} COP</div>
+      
+      <div class="form-group" style="margin-bottom:1rem;">
+        <label style="display:block; margin-bottom:0.5rem; font-weight:600;">Método de pago</label>
+        <div style="display:grid; gap:0.5rem; grid-template-columns:1fr 1fr;">
+          ${PAYMENT_METHODS.map(m => `
+            <button type="button" class="glass" data-pay-method="${escapeAttr(m.id)}" style="padding:1rem; border-radius:var(--r-lg); cursor:pointer; text-align:center; border:2px solid ${orderModalState.paymentMethod === m.id ? 'var(--mochi-fresa-d)' : 'transparent'}; transition:all 0.2s; ${orderModalState.paymentMethod === m.id ? 'background:color-mix(in srgb, var(--mochi-fresa) 15%, transparent);' : ''}">
+              <div style="font-size:1.5rem; margin-bottom:0.25rem;">${m.icon || '💳'}</div>
+              <div style="font-weight:600;">${escapeHtml(m.name)}</div>
+            </button>
+          `).join('')}
+          ${PAYMENT_METHODS.length === 0 ? `
+            <button type="button" class="glass" data-pay-method="cash" style="padding:1rem; border-radius:var(--r-lg); cursor:pointer; text-align:center; border:2px solid var(--mochi-fresa-d); background:color-mix(in srgb, var(--mochi-fresa) 15%, transparent); grid-column:span 2;">
+              <div style="font-size:1.5rem; margin-bottom:0.25rem;">💵</div>
+              <div style="font-weight:600;">Efectivo en entrega</div>
+            </button>
+            <button type="button" class="glass" data-pay-method="transfer" style="padding:1rem; border-radius:var(--r-lg); cursor:pointer; text-align:center; border:2px solid transparent;">
+              <div style="font-size:1.5rem; margin-bottom:0.25rem;">🏦</div>
+              <div style="font-weight:600;">Transferencia (Nequi/Daviplata)</div>
+            </button>
+          ` : ''}
+        </div>
+      </div>
+      
+      <button type="button" class="btn btn-primary" data-submit-order style="width:100%; margin-top:0.5rem;">Confirmar pedido</button>
+    `;
+  } else if (orderModalState.step === 4) {
+    html = `
+      <div style="text-align:center; padding:2rem 1rem;">
+        <div style="font-size:4rem; margin-bottom:1rem;">✅</div>
+        <h3 class="serif" style="margin-bottom:1rem;">¡Pedido confirmado!</h3>
+        <p style="color:var(--ink-soft); margin-bottom:1.5rem;">Te llegará confirmación por WhatsApp al <strong>${escapeHtml(orderModalState.phone)}</strong></p>
+        <p style="color:var(--ink-soft); font-size:0.9rem; margin-bottom:2rem;">Tu pedido quedó registrado en nuestro sistema. Te avisaremos cuando esté listo para recoger/entregar.</p>
+        <button class="btn btn-primary" data-close-order style="width:100%; max-width:300px;">Cerrar</button>
+      </div>
+    `;
+  }
+  
+  panel.innerHTML = html;
+}
+
+function updateDeliveryFee() {
+  const deliveryType = orderModalState.deliveryType;
+  const fields = document.getElementById('delivery-fields');
+  if (fields) fields.style.display = deliveryType === 'delivery' ? '' : 'none';
+  orderModalState.deliveryFee = deliveryType === 'delivery' ? 5000 : 0;
+  renderOrderModal();
+}
+
+async function submitOrder() {
+  const name = document.getElementById('order-name')?.value?.trim();
+  const phone = document.getElementById('order-phone')?.value?.trim();
+  const address = document.getElementById('order-address')?.value?.trim();
+  const neighborhood = document.getElementById('order-neighborhood')?.value?.trim();
+  const notes = document.getElementById('order-notes')?.value?.trim();
+  
+  if (!name || !phone) {
+    alert('Por favor completa nombre y teléfono');
+    return;
+  }
+  if (orderModalState.deliveryType === 'delivery' && !address) {
+    alert('Por favor ingresa la dirección para el domicilio');
+    return;
+  }
+  
+  orderModalState.name = name;
+  orderModalState.phone = phone;
+  orderModalState.address = address;
+  orderModalState.neighborhood = neighborhood;
+  orderModalState.notes = notes;
+  
+  const product = FLAVORS.find(f => f.id === orderModalState.productId) || COMBOS.find(c => c.id === orderModalState.productId);
+  if (!product) {
+    alert('Error: producto no encontrado');
+    return;
+  }
+  
+  const subtotal = product.price * orderModalState.quantity;
+  const total = subtotal + orderModalState.deliveryFee;
+  
+  try {
+    const res = await fetch('/api/orders', {
+      method: 'POST',
+      headers: { 'Content-Type': 'application/json' },
+      body: JSON.stringify({
+        customer_name: name,
+        customer_phone: phone,
+        customer_address: address ? JSON.stringify({ street: address, neighborhood }) : null,
+        delivery_type: orderModalState.deliveryType,
+        delivery_fee_cents: orderModalState.deliveryFee * 100,
+        payment_method: orderModalState.paymentMethod,
+        payment_status: orderModalState.paymentMethod === 'cash' ? 'pending' : 'pending',
+        subtotal_cents: subtotal * 100,
+        total_cents: total * 100,
+        items: [{
+          product_id: product.id,
+          product_name: product.name,
+          unit_price_cents: product.price * 100,
+          quantity: orderModalState.quantity,
+          line_total_cents: subtotal * 100
+        }],
+        notes: notes,
+        source: 'web'
+      })
+    });
+    
+    if (res.ok) {
+      const data = await res.json();
+      orderModalState.step = 4;
+      renderOrderModal();
+      
+      const wppMsg = `Hola! Mi pedido #${data.orderNumber}: ${product.name} x${orderModalState.quantity} - Total $${total.toLocaleString('es-CO')} COP. ${orderModalState.deliveryType === 'delivery' ? 'Domicilio a: ' + address + ' ' + neighborhood : 'Recoger en cocina'}. Pago: ${orderModalState.paymentMethod}. ${notes ? 'Notas: ' + notes : ''}`;
+      window.open(`https://api.whatsapp.com/send/?phone=573213050426&text=${encodeURIComponent(wppMsg)}`, '_blank');
+    } else {
+      const err = await res.json();
+      alert('Error al crear el pedido: ' + (err.message || 'Intenta de nuevo'));
+    }
+  } catch (e) {
+    console.error('Error submitting order:', e);
+    alert('Error de conexión. Intenta de nuevo.');
+  }
+}
+
+window.openOrderModal = openOrderModal;
+window.closeOrderModal = closeOrderModal;
+window.goToOrderStep = goToOrderStep;
+window.selectProductForOrder = selectProductForOrder;
+window.selectPayMethod = selectPayMethod;
+window.updateDeliveryFee = updateDeliveryFee;
+window.submitOrder = submitOrder;
+
 // ==== DELEGACION DE CLICKS ====
 // Antes cada boton llevaba onclick='fn(JSON.stringify(x))'; un apostrofe en el
 // nombre cerraba el atributo (XSS almacenado admin -> publico). El payload
@@ -2365,17 +2083,46 @@ if ('serviceWorker' in navigator) {
 // del script: dentro de otra funcion los listeners solo existian tras llamar
 // a esa funcion y los botones no respondian.
 document.addEventListener('click', (ev) => {
-  const comboBtn = ev.target.closest('.combo-add[data-combo]');
-  if (comboBtn) {
-    try { openQuickOrder(JSON.parse(comboBtn.dataset.combo)); }
-    catch (e) { console.warn('[mymochis] combo payload invalido', e); }
+  // Abrir modal de pedido
+  if (ev.target.closest('[data-open-order]')) {
+    ev.preventDefault();
+    openOrderModal();
     return;
   }
-  const addBtn = ev.target.closest('.add-btn[data-flavor-add]');
-  if (addBtn) {
-    quickAddFlavor(addBtn.dataset.flavorAdd);
+  // Cerrar modal de pedido
+  if (ev.target.closest('[data-close-order]')) {
+    ev.preventDefault();
+    closeOrderModal();
     return;
   }
+  // Submit del formulario de pedido
+  if (ev.target.closest('[data-submit-order]')) {
+    ev.preventDefault();
+    submitOrder();
+    return;
+  }
+  // Cambio de paso en el modal
+  const stepBtn = ev.target.closest('[data-order-step]');
+  if (stepBtn) {
+    ev.preventDefault();
+    goToOrderStep(parseInt(stepBtn.dataset.orderStep, 10));
+    return;
+  }
+  // Selección de producto en el modal
+  const productPick = ev.target.closest('[data-product-pick]');
+  if (productPick) {
+    ev.preventDefault();
+    selectProductForOrder(productPick.dataset.productPick);
+    return;
+  }
+  // Selección de método de pago
+  const payMethod = ev.target.closest('[data-pay-method]');
+  if (payMethod) {
+    ev.preventDefault();
+    selectPayMethod(payMethod.dataset.payMethod);
+    return;
+  }
+  // Delegación legacy (compat)
   const actionBtn = ev.target.closest('[data-action][data-payload]');
   if (actionBtn) {
     const fn = window[actionBtn.dataset.action];
@@ -2389,12 +2136,21 @@ document.addEventListener('click', (ev) => {
 
 </script>
 
-<!-- Floating mochi decorations (subtle, blurred, animated) -->
-<div class="mochi-float mochi-float-1" aria-hidden="true"></div>
-<div class="mochi-float mochi-float-2" aria-hidden="true"></div>
-<div class="mochi-float mochi-float-3" aria-hidden="true"></div>
-<div class="mochi-float mochi-float-4" aria-hidden="true"></div>
-<div class="mochi-float mochi-float-5" aria-hidden="true"></div>
+<!-- Modal de pedido (sheet flotante con fondo difuminado) -->
+<div class="order-modal" id="order-modal" role="dialog" aria-modal="true" hidden style="position:fixed; inset:0; z-index:1000; background:rgba(32,48,74,0.5); backdrop-filter:blur(8px); -webkit-backdrop-filter:blur(8px); display:flex; align-items:center; justify-content:center; padding:1rem;">
+  <div class="order-modal__panel" style="width:100%; max-width:480px; max-height:90vh; overflow:auto; background:var(--surface); border-radius:var(--r-2xl); padding:1.5rem; box-shadow:0 24px 64px rgba(32,48,74,0.2), inset 0 1px 0 rgba(255,255,255,0.8); border:1px solid rgba(255,255,255,0.6); animation:modalIn 0.3s cubic-bezier(.34,1.56,.64,1);">
+    <!-- Contenido se inyecta por JS -->
+  </div>
+</div>
+
+<!-- Bolas de color decorativas (estilo imagen referencia) -->
+<div class="color-orb orb-fresa" aria-hidden="true"></div>
+<div class="color-orb orb-durazno" aria-hidden="true"></div>
+<div class="color-orb orb-ube" aria-hidden="true"></div>
+<div class="color-orb orb-matcha" aria-hidden="true"></div>
+<div class="color-orb orb-cyan" aria-hidden="true"></div>
+<div class="color-orb orb-fresa-2" aria-hidden="true"></div>
+<div class="color-orb orb-durazno-2" aria-hidden="true"></div>
 
 <a class="wsp-fab" href="https://api.whatsapp.com/send/?phone=573213050426&text=Hola%20Mochi's%20Land%20%F0%9F%8D%A1" target="_blank" rel="noopener" aria-label="Chatea por WhatsApp">
   <svg viewBox="0 0 24 24" fill="currentColor" aria-hidden="true"><path d="M17.5 14.4c-.3-.1-1.7-.8-2-.9-.3-.1-.5-.1-.7.1-.2.3-.8.9-.9 1.1-.2.2-.3.2-.6.1-.3-.1-1.2-.4-2.3-1.4-.9-.8-1.4-1.7-1.6-2-.2-.3 0-.5.1-.6l.4-.5c.2-.2.2-.4.3-.6.1-.2 0-.4 0-.5-.1-.1-.7-1.6-.9-2.2-.2-.6-.5-.5-.7-.5h-.6c-.2 0-.5.1-.8.4-.3.3-1 1-1 2.5s1 2.9 1.2 3.1c.1.2 2 3.1 4.9 4.3.7.3 1.2.5 1.6.6.7.2 1.3.2 1.8.1.5-.1 1.7-.7 1.9-1.4.2-.7.2-1.2.2-1.4-.1-.1-.3-.2-.6-.3z"/><path d="M20.5 3.5C18.3 1.2 15.3 0 12.2 0 5.9 0 .7 5.1 .7 11.4c0 2 .6 4 1.6 5.7L.6 24l7-1.8c1.7.9 3.5 1.4 5.4 1.4 6.3 0 11.5-5.1 11.5-11.4 0-3-1.2-5.9-3.4-8.1l-.6-.6zm-7.5 18.4c-1.7 0-3.4-.5-4.9-1.3l-.4-.2-4.1 1.1 1.1-4-.2-.4c-.9-1.5-1.4-3.3-1.4-5.1 0-5.3 4.4-9.7 9.8-9.7 2.6 0 5.1 1 6.9 2.9 1.9 1.9 2.9 4.3 2.9 6.9 0 5.4-4.4 9.8-9.7 9.8z"/></svg>

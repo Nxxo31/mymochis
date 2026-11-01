@@ -23,46 +23,37 @@ precision mediump float;
 uniform float uTime;
 uniform vec2  uMouse;
 uniform vec2  uRes;
-uniform vec3  uColorA;
-uniform vec3  uColorB;
-uniform vec3  uColorC;
+uniform vec3  uColorA;  // fresa
+uniform vec3  uColorB;  // durazno
+uniform vec3  uColorC;  // ube
+uniform vec3  uColorD;  // matcha
+uniform vec3  uColorE;  // cyan
 uniform float uIntensity;
 varying vec2 vUv;
 
-// 2D simplex noise (Ashima Arts, dominio público)
-vec3 mod289(vec3 x){return x-floor(x*(1.0/289.0))*289.0;}
-vec2 mod289(vec2 x){return x-floor(x*(1.0/289.0))*289.0;}
-vec3 permute(vec3 x){return mod289(((x*34.0)+1.0)*x);}
-float snoise(vec2 v){
-  const vec4 C=vec4(0.211324865405187,0.366025403784439,
-                   -0.577350269189626,0.024390243902439);
-  vec2 i=floor(v+dot(v,C.yy));
-  vec2 x0=v-i+dot(i,C.xx);
-  vec2 i1=(x0.x>x0.y)?vec2(1.0,0.0):vec2(0.0,1.0);
-  vec4 x12=x0.xyxy+C.xxzz; x12.xy-=i1;
-  i=mod289(i);
-  vec3 p=permute(permute(i.y+vec3(0.0,i1.y,1.0))+i.x+vec3(0.0,i1.x,1.0));
-  vec3 m=max(0.5-vec3(dot(x0,x0),dot(x12.xy,x12.xy),dot(x12.zw,x12.zw)),0.0);
-  m=m*m; m=m*m;
-  vec3 x=2.0*fract(p*C.www)-1.0;
-  vec3 h=abs(x)-0.5;
-  vec3 ox=floor(x+0.5);
-  vec3 a0=x-ox;
-  m*=1.79284291400159-0.85373472095314*(a0*a0+h*h);
-  vec3 g;
-  g.x=a0.x*x0.x+h.x*x0.y;
-  g.yz=a0.yz*x12.xz+h.yz*x12.yw;
-  return 130.0*dot(m,g);
+// Simple hash for pseudo-random
+float hash(vec2 p) {
+  return fract(sin(dot(p, vec2(127.1, 311.7))) * 43758.5453);
 }
 
+// Simple value noise
+float noise(vec2 p) {
+  vec2 i = floor(p);
+  vec2 f = fract(p);
+  f = f * f * (3.0 - 2.0 * f); // smoothstep
+  float a = hash(i);
+  float b = hash(i + vec2(1.0, 0.0));
+  float c = hash(i + vec2(0.0, 1.0));
+  float d = hash(i + vec2(1.0, 1.0));
+  return mix(mix(a, b, f.x), mix(c, d, f.x), f.y);
+}
+
+// fbm with 3 octaves - no loops, unrolled
 float fbm(vec2 p) {
   float v = 0.0;
-  float a = 0.5;
-  for (int i = 0; i < 3; i++) {
-    v += a * snoise(p);
-    p *= 2.02;
-    a *= 0.5;
-  }
+  v += 0.5000 * noise(p); p *= 2.02;
+  v += 0.2500 * noise(p); p *= 2.02;
+  v += 0.1250 * noise(p);
   return v;
 }
 
@@ -71,33 +62,48 @@ void main() {
   float aspect = uRes.x / max(uRes.y, 1.0);
   vec2 p = vec2(uv.x * aspect, uv.y);
 
-  vec2 m = (uMouse - 0.5) * 0.12;
-  float t = uTime * 0.05;
+  vec2 m = (uMouse - 0.5) * 0.15;
+  float t = uTime * 0.04;
 
-  float n1 = fbm(p * 1.5 + vec2(t, t * 0.6) + m);
-  float n2 = fbm(p * 2.9 - vec2(t * 0.45, t * 0.8) + m * 0.6);
-  float n = 0.66 * n1 + 0.34 * n2;
+  // Multiple noise layers for organic aurora movement
+  float n1 = fbm(p * 1.8 + vec2(t, t * 0.7) + m);
+  float n2 = fbm(p * 3.2 - vec2(t * 0.5, t * 0.9) + m * 0.5);
+  float n3 = fbm(p * 0.9 + vec2(t * 0.3, t * 0.4) - m * 0.3);
+  float n = 0.5 * n1 + 0.3 * n2 + 0.2 * n3;
 
-  float k = smoothstep(-0.5, 0.55, n);
-  vec3 col = k < 0.5
-    ? mix(uColorA, uColorB, k * 2.0)
-    : mix(uColorB, uColorC, (k - 0.5) * 2.0);
+  // Smooth color transitions through mochi palette
+  float k = smoothstep(-0.6, 0.6, n);
+  vec3 col;
 
-  // haces muy lentos: dos lóbulos que barren la escena sin que se note el loop
-  float beam1 = smoothstep(0.70, 0.0, abs(uv.x - (0.26 + 0.05 * sin(t * 0.7))));
-  float beam2 = smoothstep(0.80, 0.0, abs(uv.x - (0.74 + 0.04 * cos(t * 0.5))));
-  col += (beam1 * 0.10 + beam2 * 0.06) * uColorC;
+  // 5-color gradient: fresa -> durazno -> ube -> matcha -> cyan
+  if (k < 0.2) {
+    col = mix(uColorA, uColorB, k * 5.0);
+  } else if (k < 0.4) {
+    col = mix(uColorB, uColorC, (k - 0.2) * 5.0);
+  } else if (k < 0.6) {
+    col = mix(uColorC, uColorD, (k - 0.4) * 5.0);
+  } else if (k < 0.8) {
+    col = mix(uColorD, uColorE, (k - 0.6) * 5.0);
+  } else {
+    col = mix(uColorE, uColorA, (k - 0.8) * 5.0);
+  }
 
-  // viñeta suave: mantiene el centro legible bajo el texto del hero
+  // Sweeping light beams
+  float beam1 = smoothstep(0.75, 0.0, abs(uv.x - (0.25 + 0.06 * sin(t * 0.6))));
+  float beam2 = smoothstep(0.82, 0.0, abs(uv.x - (0.75 + 0.05 * cos(t * 0.4))));
+  col += (beam1 * 0.12 + beam2 * 0.08) * uColorE;
+
+  // Vignette suave
   float d = distance(uv, vec2(0.5));
-  col *= 1.0 - d * 0.30;
+  col *= 1.0 - d * 0.25;
 
-  // grano muy leve: mata el banding en degradados amplios
+  // Subtle grain
   float grain = fract(sin(dot(uv * uRes, vec2(12.9898, 78.233))) * 43758.5453);
-  col += (grain - 0.5) * 0.010;
+  col += (grain - 0.5) * 0.008;
 
-  gl_FragColor = vec4(col * uIntensity, 0.62);
-}`;
+  gl_FragColor = vec4(col * uIntensity, 0.75);
+}
+`;
 
 const DPR_CAP = 1.5;
 const MAX_PIXELS = 2400000;
@@ -130,18 +136,22 @@ function hex2rgb(h: string): [number, number, number] {
 }
 
 export interface HeroBackgroundProps {
-  colorA?: string;
-  colorB?: string;
-  colorC?: string;
+  colorA?: string;  // fresa
+  colorB?: string;  // durazno
+  colorC?: string;  // ube
+  colorD?: string;  // matcha
+  colorE?: string;  // cyan
   /** 0..1 — baja la intensidad cuando hay contenido legible encima */
   intensity?: number;
   className?: string;
 }
 
 export function HeroBackground({
-  colorA = '#FF8FB4',
-  colorB = '#FFC24D',
-  colorC = '#56C8E4',
+  colorA = '#FF8FB4',   // fresa
+  colorB = '#FFB88C',   // durazno
+  colorC = '#B08CF0',   // ube
+  colorD = '#7BBC46',   // matcha
+  colorE = '#56C8E4',   // cyan
   intensity = 1,
   className = 'shader-canvas',
 }: HeroBackgroundProps = {}) {
@@ -186,15 +196,21 @@ export function HeroBackground({
       cA: gl.getUniformLocation(prog, 'uColorA'),
       cB: gl.getUniformLocation(prog, 'uColorB'),
       cC: gl.getUniformLocation(prog, 'uColorC'),
+      cD: gl.getUniformLocation(prog, 'uColorD'),
+      cE: gl.getUniformLocation(prog, 'uColorE'),
       int: gl.getUniformLocation(prog, 'uIntensity'),
     };
 
     const [ar, ag, ab] = hex2rgb(colorA);
     const [br, bg, bb] = hex2rgb(colorB);
     const [cr, cg, cb] = hex2rgb(colorC);
+    const [dr, dg, db] = hex2rgb(colorD);
+    const [er, eg, eb] = hex2rgb(colorE);
     gl.uniform3f(u.cA, ar, ag, ab);
     gl.uniform3f(u.cB, br, bg, bb);
     gl.uniform3f(u.cC, cr, cg, cb);
+    gl.uniform3f(u.cD, dr, dg, db);
+    gl.uniform3f(u.cE, er, eg, eb);
     gl.uniform1f(u.int, intensity);
 
     let rect = canvas.getBoundingClientRect();
@@ -245,8 +261,16 @@ export function HeroBackground({
     window.addEventListener('scroll', onScroll, { passive: true });
 
     const draw = (time: number) => {
+      gl.useProgram(prog);
       gl.uniform1f(u.time, time);
       gl.uniform2f(u.mouse, pointer[0], pointer[1]);
+      gl.uniform2f(u.res, canvas.width, canvas.height);
+      gl.uniform3f(u.cA, ar, ag, ab);
+      gl.uniform3f(u.cB, br, bg, bb);
+      gl.uniform3f(u.cC, cr, cg, cb);
+      gl.uniform3f(u.cD, dr, dg, db);
+      gl.uniform3f(u.cE, er, eg, eb);
+      gl.uniform1f(u.int, intensity);
       gl.drawArrays(gl.TRIANGLES, 0, 3);
     };
 
@@ -301,14 +325,14 @@ export function HeroBackground({
       ro.disconnect();
       window.removeEventListener('pointermove', onMove);
       window.removeEventListener('scroll', onScroll);
-      document.removeEventListener('visibilitychange', onVis);
+      window.removeEventListener('visibilitychange', onVis);
       motionQuery.removeEventListener('change', onMotionChange);
       gl.deleteProgram(prog);
       gl.deleteShader(vs);
       gl.deleteShader(fs);
       gl.deleteBuffer(buf);
     };
-  }, [colorA, colorB, colorC, intensity]);
+  }, [colorA, colorB, colorC, colorD, colorE, intensity]);
 
   return <canvas ref={canvasRef} className={className} aria-hidden="true" />;
 }

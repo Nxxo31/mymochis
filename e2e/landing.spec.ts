@@ -162,7 +162,7 @@ test.describe('landing', () => {
     await page.goto('/');
     await page.locator('#flavors').scrollIntoViewIfNeeded();
     await page.waitForTimeout(1200);
-    const cards = page.locator('#flavor-cards-grid .flavor-card');
+    const cards = page.locator('#flavor-cards-grid .product-card[data-flavor-id]');
     await expect(cards.first()).toBeVisible({ timeout: 8000 });
     expect(await cards.count()).toBeGreaterThan(0);
   });

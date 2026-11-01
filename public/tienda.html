@@ -4,8 +4,9 @@
 <meta charset="UTF-8">
 <meta name="viewport" content="width=device-width,initial-scale=1,viewport-fit=cover">
 <link rel="stylesheet" href="/theme.css">
+<link rel="stylesheet" href="/ui.css">
 <link rel="stylesheet" href="/build/assets/islands.css">
-<meta name="theme-color" content="#FAF3EA">
+<meta name="theme-color" content="#62D3EC">
 <title>Tienda · Mochi's Land — Neiva</title>
 <meta name="description" content="Catálogo de mochis artesanales y combos. Arma tu pedido, recoge en Neiva.">
 <meta name="application-name" content="Mochi's Land">
@@ -20,17 +21,17 @@
 html { scroll-behavior: smooth; }
 
 body {
-  font-family: 'Quicksand', 'Baloo 2', system-ui, sans-serif;
-  /* Mismo fondo que la landing: semi-transparente para que la aurora del
-     shader se vea a traves de la pagina, con los halos de color encima. */
-  background-color: color-mix(in srgb, var(--clay-canvas) 70%, transparent);
+  font-family: var(--font-body);
+  /* Mismo fondo que la landing: translucido para que la aurora del shader
+     se vea a traves de la pagina, con los halos de color encima. */
+  background-color: color-mix(in srgb, var(--canvas) 50%, transparent);
   background-image:
-    radial-gradient(circle at 12% 8%, color-mix(in srgb, var(--fresa) 26%, transparent) 0%, transparent 34%),
-    radial-gradient(circle at 88% 14%, color-mix(in srgb, var(--ube) 20%, transparent) 0%, transparent 32%),
-    radial-gradient(circle at 14% 82%, color-mix(in srgb, var(--durazno) 18%, transparent) 0%, transparent 30%),
+    radial-gradient(circle at 10% 6%,  color-mix(in srgb, var(--fresa) 26%, transparent) 0%, transparent 34%),
+    radial-gradient(circle at 92% 12%, color-mix(in srgb, var(--ube) 20%, transparent) 0%, transparent 32%),
+    radial-gradient(circle at 12% 88%, color-mix(in srgb, var(--durazno) 18%, transparent) 0%, transparent 30%),
     radial-gradient(circle at 90% 82%, color-mix(in srgb, var(--accent) 16%, transparent) 0%, transparent 30%);
   background-attachment: fixed;
-  color: var(--clay-ink);
+  color: var(--ink);
   line-height: 1.55;
   font-weight: 500;
   -webkit-font-smoothing: antialiased;
@@ -201,26 +202,6 @@ main { max-width: 1320px; margin: 0 auto; padding: 32px 24px 80px; }
   display: flex; flex-wrap: wrap; gap: 8px;
   justify-content: center;
   margin-bottom: 28px;
-}
-.filter-chip {
-  background: var(--clay-surface);
-  border: 0;
-  color: var(--clay-ink);
-  /* min-height 44px: los chips quedaban en 41px, bajo el minimo de target
-     tactil (WCAG 2.2 · 2.5.8). */
-  padding: 11px 20px;
-  min-height: 44px;
-  border-radius: 999px;
-  font-family: 'Quicksand', sans-serif;
-  font-size: 13px; font-weight: 700;
-  cursor: pointer;
-  transition: all 0.18s;
-  box-shadow: var(--clay-shadow-xs), inset 1px -1px 2px rgba(255,255,255,0.7);
-}
-.filter-chip:hover { transform: translateY(-1px); box-shadow: var(--clay-shadow-sm); }
-.filter-chip.active {
-  background: var(--mochi-fresa-d); color: #fff;
-  box-shadow: var(--clay-shadow-sm), inset 1px -1px 2px rgba(255,255,255,0.3);
 }
 
 /* ============ PRODUCT GRID · clay cards ============ */
@@ -568,45 +549,6 @@ main { max-width: 1320px; margin: 0 auto; padding: 32px 24px 80px; }
 .free-delivery-banner .txt strong { display: block; font-size: 15px; line-height: 1.3; }
 .free-delivery-banner .txt span { display: block; font-size: 12.5px; opacity: 0.9; margin-top: 2px; }
 
-/* Forms (shared with cart sheet) */
-.form-block { margin-bottom: 14px; }
-.form-block label {
-  display: block; font-size: 11px; font-weight: 700;
-  color: var(--clay-ink-soft); letter-spacing: 1px; text-transform: uppercase;
-  margin-bottom: 6px;
-}
-.form-block input, .form-block textarea {
-  width: 100%; padding: 12px 14px;
-  border: 0; border-radius: 14px;
-  font-family: 'Quicksand', sans-serif; font-size: 14px;
-  background: var(--clay-surface);
-  color: var(--clay-ink);
-  box-shadow: var(--clay-shadow-xs), inset 1px -1px 2px rgba(255,255,255,0.7);
-  transition: box-shadow 0.2s;
-}
-.form-block input:focus, .form-block textarea:focus {
-  outline: none; box-shadow: var(--clay-inset-sm);
-}
-.form-block .hint { font-size: 11px; color: var(--clay-ink-soft); margin-top: 4px; opacity: 0.85; }
-
-.submit-btn {
-  width: 100%;
-  background: var(--mochi-fresa);
-  color: var(--mochi-fresa-d);
-  border: 0; padding: 16px; border-radius: 18px;
-  font-family: 'Quicksand', sans-serif;
-  font-weight: 700; font-size: 15px;
-  cursor: pointer;
-  box-shadow: var(--clay-shadow-sm), inset 2px -2px 4px rgba(255,255,255,0.7);
-  transition: all 0.2s;
-  display: inline-flex; align-items: center; justify-content: center;
-  gap: 8px;
-}
-.submit-btn:hover { transform: translateY(-2px); box-shadow: var(--clay-shadow-md); }
-.submit-btn:active { box-shadow: var(--clay-inset); }
-.submit-btn[disabled] { opacity: 0.55; cursor: not-allowed; transform: none; }
-.submit-btn svg { width: 18px; height: 18px; }
-
 .error-banner {
   background: var(--mochi-fresa);
   color: var(--mochi-fresa-d);
@@ -617,6 +559,133 @@ main { max-width: 1320px; margin: 0 auto; padding: 32px 24px 80px; }
   display: none;
 }
 .error-banner.visible { display: block; }
+
+/* ============ FORMULARIO DE COMPRA · checkout (rediseño 2026-10-29) ======== */
+.checkout-form { display: block; margin: 0; }
+
+.checkout-form .field-group {
+  border: 0;
+  padding: 0;
+  margin: 0 0 26px;
+}
+.checkout-form .field-group__title {
+  display: flex;
+  align-items: center;
+  gap: 10px;
+  font-family: var(--font-display);
+  font-size: 16px;
+  font-weight: 700;
+  color: var(--ink);
+  padding: 0;
+  margin: 0 0 14px;
+}
+.checkout-form .field-group__num {
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  width: 26px;
+  height: 26px;
+  flex: none;
+  border-radius: 50%;
+  background: var(--sakura-ink);
+  color: #fff;
+  font-family: var(--font-body);
+  font-size: 13px;
+  font-weight: 800;
+  box-shadow: var(--clay-shadow-xs);
+}
+.checkout-form .form-block { margin-bottom: 14px; }
+.checkout-form .form-block:last-child { margin-bottom: 0; }
+.checkout-form .form-row { margin-bottom: 4px; }
+.checkout-form .form-row .form-block { margin-bottom: 14px; }
+
+/* Los <select> ya traen su flecha de ui.css; aqui solo el alto para que
+   el control respire igual que los inputs. */
+.checkout-form select { min-height: 48px; }
+
+/* Toggle de entrega: dos botones grandes, con icono y texto apilados. */
+.checkout-form .mode-toggle {
+  display: grid;
+  grid-template-columns: 1fr 1fr;
+  gap: 10px;
+  margin-bottom: 16px;
+}
+.checkout-form .mode-pill {
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  justify-content: center;
+  gap: 6px;
+  min-height: 76px;
+  padding: 12px 10px;
+  border: 2px solid var(--line);
+  border-radius: var(--r-lg);
+  background: var(--surface);
+  color: var(--ink);
+  font-family: var(--font-body);
+  font-weight: 700;
+  font-size: 13.5px;
+  line-height: 1.25;
+  text-align: center;
+  cursor: pointer;
+  box-shadow: var(--clay-shadow-xs),
+              inset 1px -1px 2px rgba(255, 255, 255, 0.7);
+  transition: transform 0.18s cubic-bezier(.34,1.56,.64,1),
+              border-color 0.18s ease,
+              background-color 0.18s ease,
+              color 0.18s ease,
+              box-shadow 0.18s ease;
+}
+.checkout-form .mode-pill:hover { transform: translateY(-2px); }
+.checkout-form .mode-pill__ico { font-size: 22px; line-height: 1; }
+.checkout-form .mode-pill.active {
+  border-color: var(--sakura-ink);
+  background: var(--sakura-soft);
+  color: var(--sakura-ink);
+  box-shadow: var(--clay-shadow-sm),
+              inset 0 0 0 1px var(--sakura-ink);
+}
+.checkout-form .mode-pill:disabled {
+  opacity: 0.5;
+  cursor: not-allowed;
+  transform: none;
+}
+
+/* Barra final: total a la izquierda, CTA a la derecha. En movil apila. */
+.checkout-cta {
+  display: flex;
+  align-items: center;
+  gap: 16px;
+  padding: 16px 0 4px;
+  margin-top: 4px;
+  border-top: 2px solid var(--line);
+}
+.checkout-cta__total {
+  display: flex;
+  flex-direction: column;
+  gap: 2px;
+  flex: none;
+}
+.checkout-cta__total span {
+  font-size: 11px;
+  font-weight: 800;
+  letter-spacing: 1.2px;
+  text-transform: uppercase;
+  color: var(--ink-soft);
+}
+.checkout-cta__total strong {
+  font-family: var(--font-display);
+  font-size: 28px;
+  font-weight: 700;
+  line-height: 1;
+  color: var(--ink);
+}
+.checkout-cta .submit-btn { flex: 1; width: auto; }
+@media (max-width: 520px) {
+  .checkout-cta { flex-direction: column; align-items: stretch; gap: 12px; }
+  .checkout-cta__total { flex-direction: row; align-items: baseline; justify-content: space-between; }
+  .checkout-cta .submit-btn { width: 100%; }
+}
 
 /* ============ SUCCESS / CONFIRMATION MODAL ============ */
 .success-back {
@@ -880,56 +949,92 @@ footer {
           <span class="val" id="cartTotalVal">$0</span>
         </div>
       </div>
-      <div class="form-block">
-        <label for="customerName">Tu nombre</label>
-        <input type="text" id="customerName" maxlength="60" autocomplete="name" placeholder="Cómo te llamamos">
-      </div>
-      <div class="form-block">
-        <label for="customerPhone">WhatsApp</label>
-        <input type="tel" id="customerPhone" maxlength="20" autocomplete="tel" placeholder="3123456789">
-        <div class="hint">Te escribimos para confirmar. Si escribes los 10 dígitos locales, agregamos el 57 automáticamente.</div>
-      </div>
-      <div class="form-block">
-        <label>Cómo lo recibís</label>
-        <div class="mode-toggle" id="modeToggle">
-          <button type="button" class="mode-pill active" data-mode="recoger">🏪 Recoger en la cocina</button>
-          <button type="button" class="mode-pill" data-mode="domicilio">🛵 Domicilio</button>
+      <!-- ============ FORMULARIO DE COMPRA (rediseño 2026-10-29) ============
+           Antes eran 7 bloques planos apilados: todos los campos con el mismo
+           peso visual, los <select> sin una sola regla de CSS (el navegador
+           los pintaba como dropdowns nativos al lado de los inputs clay) y
+           sin separacion entre "quien sos", "como lo recibis" y "como pagas".
+           Ahora son 3 grupos numerados, cada campo con su icono, los select
+           con la flecha propia de ui.css y el CTA con el total a la vista.
+           Los ids y los name NO cambian: el JS los busca por id. -->
+      <form id="checkout-form" class="checkout-form" novalidate>
+
+        <fieldset class="field-group">
+          <legend class="field-group__title"><span class="field-group__num">1</span> Tus datos</legend>
+          <div class="form-row">
+            <div class="form-block">
+              <label for="customerName">Nombre</label>
+              <input type="text" id="customerName" maxlength="60" autocomplete="name" placeholder="Cómo te llamamos">
+            </div>
+            <div class="form-block">
+              <label for="customerPhone">WhatsApp</label>
+              <input type="tel" id="customerPhone" maxlength="20" autocomplete="tel" inputmode="tel" placeholder="312 345 6789">
+              <div class="hint">Si pones los 10 dígitos, agregamos el 57.</div>
+            </div>
+          </div>
+        </fieldset>
+
+        <fieldset class="field-group">
+          <legend class="field-group__title"><span class="field-group__num">2</span> Cómo lo recibís</legend>
+          <div class="mode-toggle" id="modeToggle">
+            <button type="button" class="mode-pill active" data-mode="recoger">
+              <span class="mode-pill__ico" aria-hidden="true">🏪</span>
+              <span>Recoger en la cocina</span>
+            </button>
+            <button type="button" class="mode-pill" data-mode="domicilio">
+              <span class="mode-pill__ico" aria-hidden="true">🛵</span>
+              <span>Te lo llevamos</span>
+            </button>
+          </div>
+
+          <div class="form-block" id="pickupBlock">
+            <label for="pickupDay">Día de recogida</label>
+            <!-- Antes era un <input type="date"> libre de +1 a +14 días que solo
+                 validaba el día de la SEMANA. El backend exige además una
+                 release_window 'open' para la fecha exacta, así que casi todo
+                 pedido moría en un 400 "no_release_window" SIN que el cliente
+                 entendiera por qué. Ahora las opciones salen de las ventanas
+                 reales abiertas, y si no hay ninguna se deshabilita con mensaje
+                 claro. -->
+            <select id="pickupDay" required></select>
+            <div class="hint" id="pickupHint">Elegí un día con horario disponible (mar–sáb).</div>
+          </div>
+
+          <div class="form-block" id="deliveryBlock" style="display:none">
+            <label for="deliveryAddress">Dirección de entrega</label>
+            <input type="text" id="deliveryAddress" maxlength="140" placeholder="Barrio + calle (ej: Cándido, cra 12 #34-56)">
+            <label for="deliveryReference">Punto de referencia</label>
+            <input type="text" id="deliveryReference" maxlength="90" placeholder="Ej: frente a la panadería, portón azul">
+            <div class="hint">Ayuda al domiciliario a llegar. Lo ve el operador en el panel.</div>
+            <button type="button" class="quote-btn" id="quoteBtn">Cotizar domicilio 🛵</button>
+            <div class="quote-result" id="quoteResult" style="display:none"></div>
+          </div>
+        </fieldset>
+
+        <fieldset class="field-group">
+          <legend class="field-group__title"><span class="field-group__num">3</span> Pago y notas</legend>
+          <div class="form-block">
+            <label for="payMethod">Cómo querés pagar</label>
+            <select id="payMethod"></select>
+            <div class="hint" id="payMethodHint">El negocio te confirma el pago por WhatsApp.</div>
+          </div>
+          <div class="form-block">
+            <label for="orderNotes">Notas (opcional)</label>
+            <textarea id="orderNotes" maxlength="200" rows="2" placeholder="Algo que debamos saber?"></textarea>
+          </div>
+        </fieldset>
+
+        <div class="checkout-cta">
+          <div class="checkout-cta__total">
+            <span>Total</span>
+            <strong id="checkoutTotalVal">$0</strong>
+          </div>
+          <button id="submitBtn" class="submit-btn" type="button" disabled>
+            <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round"><path d="M22 11.08V12a10 10 0 11-5.93-9.14"/><polyline points="22 4 12 14.01 9 11.01"/></svg>
+            <span id="submitBtnLabel">Enviar pedido</span>
+          </button>
         </div>
-      </div>
-      <div class="form-block" id="pickupBlock">
-        <label for="pickupDay">Día de recogida</label>
-        <!-- Antes era un <input type="date"> libre de +1 a +14 días que solo
-             validaba el día de la SEMANA. El backend exige además una
-             release_window 'open' para la fecha exacta, así que casi todo
-             pedido moría en un 400 "no_release_window" SIN que el cliente
-             entendiera por qué. Ahora las opciones salen de las ventanas
-             reales abiertas, y si no hay ninguna se deshabilita con mensaje
-             claro. -->
-        <select id="pickupDay" required></select>
-        <div class="hint" id="pickupHint">Elegí un día con horario disponible (mar–sáb).</div>
-      </div>
-      <div class="form-block" id="deliveryBlock" style="display:none">
-        <label for="deliveryAddress">Dirección de entrega</label>
-        <input type="text" id="deliveryAddress" maxlength="140" placeholder="Barrio + calle (ej: Cándido, cra 12 #34-56)">
-        <label for="deliveryReference" style="margin-top:10px">Punto de referencia</label>
-        <input type="text" id="deliveryReference" maxlength="90" placeholder="Ej: frente a la panadería, portón azul">
-        <div class="hint">Ayuda al domiciliario a llegar. Se guarda con el pedido y la ve el operador en el dashboard.</div>
-        <button type="button" class="quote-btn" id="quoteBtn">Cotizar domicilio 🛵</button>
-        <div class="quote-result" id="quoteResult" style="display:none"></div>
-      </div>
-      <div class="form-block">
-        <label for="payMethod">Cómo querés pagar</label>
-        <select id="payMethod"></select>
-        <div class="hint" id="payMethodHint">El negocio te confirma el pago por WhatsApp.</div>
-      </div>
-      <div class="form-block">
-        <label for="orderNotes">Notas (opcional)</label>
-        <textarea id="orderNotes" maxlength="200" rows="2" placeholder="Algo que debamos saber?"></textarea>
-      </div>
-      <button id="submitBtn" class="submit-btn" type="button" disabled>
-        <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round"><path d="M22 11.08V12a10 10 0 11-5.93-9.14"/><polyline points="22 4 12 14.01 9 11.01"/></svg>
-        <span id="submitBtnLabel">Enviar pedido</span>
-      </button>
+      </form>
     </div>
   </div>
 </div>
@@ -1064,23 +1169,23 @@ footer {
     const row = $('#filterRow');
     row.innerHTML = '';
     const allBtn = document.createElement('button');
-    allBtn.className = 'filter-chip active';
+    allBtn.className = 'chip active';
     allBtn.type = 'button';
     allBtn.textContent = 'Todos';
     allBtn.dataset.cat = 'all';
     row.appendChild(allBtn);
     for (const c of cats) {
       const b = document.createElement('button');
-      b.className = 'filter-chip';
+      b.className = 'chip';
       b.type = 'button';
       b.textContent = c.name;
       b.dataset.cat = c.id;
       row.appendChild(b);
     }
     row.addEventListener('click', e => {
-      const t = e.target.closest('.filter-chip');
+      const t = e.target.closest('.chip');
       if (!t) return;
-      $$('.filter-chip', row).forEach(b => b.classList.toggle('active', b === t));
+      $$('.chip', row).forEach(b => b.classList.toggle('active', b === t));
       renderGrid();
     });
   }
@@ -1088,7 +1193,7 @@ footer {
   function renderGrid() {
     const grid = $('#productGrid');
     grid.innerHTML = '';
-    const activeCat = ($('.filter-chip.active') || {}).dataset || { cat: 'all' };
+    const activeCat = ($('.chip.active') || {}).dataset || { cat: 'all' };
 
     const flavors = (catalog.flavors || []).filter(f => activeCat.cat === 'all' || String(f.category_id) === String(activeCat.cat));
     const combos = (catalog.combos || []).filter(c => activeCat.cat === 'all' || String(c.category_id) === String(activeCat.cat));
@@ -1179,6 +1284,8 @@ footer {
       topCount.textContent = '0';
       submitBtn.disabled = true;
       submitLabel.textContent = 'Enviar pedido';
+      const checkoutTotal = $('#checkoutTotalVal');
+      if (checkoutTotal) checkoutTotal.textContent = '$0';
       return;
     }
 
@@ -1512,6 +1619,9 @@ footer {
       }
     }
     $('#cartTotalVal').textContent = fmtPrice(total);
+    // El bloque nuevo del checkout muestra el total junto al CTA (2026-10-29).
+    const checkoutTotal = $('#checkoutTotalVal');
+    if (checkoutTotal) checkoutTotal.textContent = fmtPrice(total);
     const label = $('#submitBtnLabel');
     if (label) label.textContent = 'Enviar pedido · ' + fmtPrice(total);
   }

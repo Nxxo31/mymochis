@@ -2,7 +2,8 @@
 // Politica: red-primero para lo que puede quedar desfasado (HTML, JS, CSS)
 // y stale-while-revalidate para lo que no cambia (imagenes, fuentes, iconos).
 // Asi un HTML nuevo nunca se sirve junto a un JS/CSS viejo.
-const VERSION = 'v10'; // v10 2026-10-25: precache de las fotos que usa el catalogo (hero, sabores, galeria) + config de sabores
+const VERSION = 'v11'; // v11 2026-10-29: precache de ui.css (capa de componentes compartida)
+// v10 2026-10-25: precache de las fotos que usa el catalogo (hero, sabores, galeria) + config de sabores
 const CACHE = `mochis-land-${VERSION}`;
 const OFFLINE_DOC = 'index.html';
 
@@ -10,6 +11,10 @@ const PRECACHE = [
   './',
   'index.html',
   'manage.html',
+  'tienda.html',
+  'cocina.html',
+  'theme.css',
+  'ui.css',
   'manifest.json',
   'favicon.svg',
   'logo-mochis-land.svg',
