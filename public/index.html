@@ -638,6 +638,16 @@ section { padding: 80px 24px; position: relative; }
   to   { opacity: 1; transform: none; }
 }
 
+/* El modal de pedido se muestra con el atributo [hidden]. Si el layout
+   viviera en el style inline, el display:flex del autor le ganaria al
+   [hidden] del navegador y el overlay (inset:0, z-index:1000) taparia
+   toda la landing sin dejar pulsar nada. Por eso el layout va aqui y
+   [hidden] se respeta explicitamente. */
+.order-modal {
+  display: flex; align-items: center; justify-content: center; padding: 1rem;
+}
+.order-modal[hidden] { display: none; }
+
 .modal-actions { display: flex; gap: 8px; }
 
 /* ============ RESPONSIVE ============ */
@@ -2137,7 +2147,7 @@ document.addEventListener('click', (ev) => {
 </script>
 
 <!-- Modal de pedido (sheet flotante con fondo difuminado) -->
-<div class="order-modal" id="order-modal" role="dialog" aria-modal="true" hidden style="position:fixed; inset:0; z-index:1000; background:rgba(32,48,74,0.5); backdrop-filter:blur(8px); -webkit-backdrop-filter:blur(8px); display:flex; align-items:center; justify-content:center; padding:1rem;">
+<div class="order-modal" id="order-modal" role="dialog" aria-modal="true" hidden style="position:fixed; inset:0; z-index:1000; background:rgba(32,48,74,0.5); backdrop-filter:blur(8px); -webkit-backdrop-filter:blur(8px);">
   <div class="order-modal__panel" style="width:100%; max-width:480px; max-height:90vh; overflow:auto; background:var(--surface); border-radius:var(--r-2xl); padding:1.5rem; box-shadow:0 24px 64px rgba(32,48,74,0.2), inset 0 1px 0 rgba(255,255,255,0.8); border:1px solid rgba(255,255,255,0.6); animation:modalIn 0.3s cubic-bezier(.34,1.56,.64,1);">
     <!-- Contenido se inyecta por JS -->
   </div>
