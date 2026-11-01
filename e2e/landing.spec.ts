@@ -149,13 +149,17 @@ test.describe('landing', () => {
     expect(errores, `errores de consola: ${errores.join(' | ')}`).toEqual([]);
   });
 
-  test('el CTA del hero lleva a la tienda y la tienda carga', async ({ page }) => {
+  test('el CTA del hero abre el modal de pedido y este se cierra', async ({ page }) => {
     await page.goto('/');
+    const modal = page.locator('#order-modal');
+    await expect(modal).toBeHidden();
     const cta = page.locator('.hero-cta');
     await expect(cta).toBeVisible();
     await cta.click();
-    await page.waitForURL(/tienda\.html/);
-    await expect(page.locator('body')).toBeVisible();
+    await expect(modal).toBeVisible();
+    await expect(page.locator('#order-modal .order-modal__panel')).toBeVisible();
+    await page.locator('#order-modal [data-close-order]').first().click();
+    await expect(modal).toBeHidden();
   });
 
   test('la seccion de sabores se llena con el catalogo real', async ({ page }) => {
