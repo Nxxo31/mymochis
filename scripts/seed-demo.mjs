@@ -11,11 +11,13 @@ const today = new Date();
 const toISO = (d) => d.toISOString().slice(0, 10);
 const shortId = () => randomBytes(8).toString('hex');
 
-// 1) Categories
+// 1) Categories — la de "De temporada" la usa el config de los sabores
+// (durazno-caramelizado) y sin ella el chip de la landing sale vacio.
 const cats = [
   ['Clásicos', 'clasicos', 1],
   ['Frutales', 'frutales', 2],
   ['Premium', 'premium', 3],
+  ['De temporada', 'temporada', 4],
 ];
 for (const [name, slug, sort] of cats) {
   db.prepare(`INSERT OR IGNORE INTO categories(name, slug, sort_order, active) VALUES(?,?,?,1)`).run(name, slug, sort);
@@ -24,23 +26,31 @@ for (const [name, slug, sort] of cats) {
 const catIds = {};
 for (const r of db.prepare('SELECT id, slug FROM categories').all()) catIds[r.slug] = r.id;
 
-// 2) Flavors (id TEXT PRIMARY KEY — use short UUID)
+// 2) Flavors — se buscan por ID canonico, no por nombre.
+//
+// Por que por ID: el id es el que usa img/mochis/mochis.config.json (foto,
+// acento, ribbon y categoria) y el que el panel conserva. Buscar por nombre
+// rompia en cuanto el operador renombraba un sabor: el seed no lo encontraba,
+// creaba un duplicado con id nuevo y la landing mostraba dos veces el mismo
+// producto (uno de ellos con la foto generica). El nombre del seed es solo el
+// de la primera creacion: si la fila ya existe, se respeta el nombre que
+// tenga (el del operador).
 const flavorData = [
-  ['Fresas con crema',     'Fresa natural colada con crema pastelera artesanal.',                8000,  '#FFB8C8', 'frutales'],
-  ['Chokis & cream',       'Cobertura de chocolate con crujiente de galleta y corazón cremoso.', 9000,  '#A78BD9', 'clasicos'],
-  ['Blueberry cheesecake', 'Mochi con relleno de cheesecake de arándanos.',                      10000, '#C5B0E8', 'premium'],
-  ['Durazno caramelizado', 'Trozos de durazno fresco con caramelo de panela.',                    8000,  '#FBD773', 'frutales'],
-  ['Crema pastelera',      'Mochi clásico con crema pastelera de la casa.',                       7000,  '#FFE8A8', 'clasicos'],
+  ['clasico-fresa',        'Fresas con crema',     'Fresa natural colada con crema pastelera artesanal.',                8000,  '#FFB8C8', 'clasicos'],
+  ['clasico-chokis',       'Chokis & cream',       'Cobertura de chocolate con crujiente de galleta y corazón cremoso.', 9000,  '#A78BD9', 'premium'],
+  ['blueberry-cheesecake', 'Blueberry cheesecake', 'Mochi con relleno de cheesecake de arándanos.',                      10000, '#C5B0E8', 'frutales'],
+  ['durazno-caramelizado', 'Durazno caramelizado', 'Trozos de durazno fresco con caramelo de panela.',                    8000,  '#FBD773', 'temporada'],
+  ['crema-pastelera',      'Crema pastelera',      'Mochi clásico con crema pastelera de la casa.',                       7000,  '#FFE8A8', 'clasicos'],
 ];
 const flavorIds = {};
-for (const [name, desc, price, color, catSlug] of flavorData) {
-  const existing = db.prepare('SELECT id FROM flavors WHERE name=?').get(name);
+for (const [fid, name, desc, price, color, catSlug] of flavorData) {
+  const existing = db.prepare('SELECT id FROM flavors WHERE id=?').get(fid);
   if (existing) {
     flavorIds[name] = existing.id;
-    db.prepare('UPDATE flavors SET price=?, description=?, color=?, available=1 WHERE id=?').run(price, desc, color, existing.id);
+    db.prepare('UPDATE flavors SET price=?, description=?, color=?, category_id=?, available=1 WHERE id=?')
+      .run(price, desc, color, catIds[catSlug], existing.id);
     continue;
   }
-  const fid = shortId();
   db.prepare(`INSERT INTO flavors(id, name, description, price, color, available, category_id, sort_order) VALUES(?,?,?,?,?,1,?,50)`)
     .run(fid, name, desc, price, color, catIds[catSlug]);
   flavorIds[name] = fid;
