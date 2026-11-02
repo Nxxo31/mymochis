@@ -1204,7 +1204,7 @@ footer .privacy-note {
   <div class="container">
     <div class="section-head">
       <span class="section-eyebrow">Sabores de la semana</span>
-      <h2 class="section-title">Cinco sabores para tentar</h2>
+      <h2 class="section-title" id="sabores-title">Sabores para tentar</h2>
       <p class="section-sub">Cada mochi se prepara el mismo día. Toca uno para sumarlo a tu pedido.</p>
     </div>
     <div class="flavor-filters" id="flavor-filters">
@@ -1511,6 +1511,19 @@ function readableOnAccent(hex) {
   return onWhite >= onInk ? '#FFFFFF' : '#15202E';
 }
 
+// El encabezado de la seccion de sabores iba con el numero escrito ("Cinco
+// sabores") y mentia en cuanto el catalogo tenia otra cantidad. El numero
+// sale del catalogo real.
+const NUMEROS_PALABRAS = ['Cero', 'Uno', 'Dos', 'Tres', 'Cuatro', 'Cinco', 'Seis', 'Siete', 'Ocho', 'Nueve', 'Diez'];
+
+function renderSaboresTitle() {
+  const h2 = document.getElementById('sabores-title');
+  if (!h2) return;
+  const n = FLAVORS.length;
+  const palabra = NUMEROS_PALABRAS[n] || String(n);
+  h2.textContent = `${palabra} sabor${n === 1 ? '' : 'es'} para tentar`;
+}
+
 function renderFlavorCards() {
   const grid = document.getElementById('flavor-cards-grid');
   const section = document.getElementById('flavors');
@@ -1519,7 +1532,10 @@ function renderFlavorCards() {
   if (section) section.style.display = '';
   grid.innerHTML = FLAVORS.map(f => {
     const cfg = MOCHIS_CONFIG[f.id] || {};
-    const photo = (f.image_url && String(f.image_url).trim()) || cfg.photo || 'img/instagram/mochi-01.jpg';
+    // La foto que subio el admin gana; si no hay, la del config; y si el sabor
+    // es nuevo y no esta en el config, la ilustracion de marca (mochi-08) en
+    // vez de una foto de vida que no representa el producto.
+    const photo = (f.image_url && String(f.image_url).trim()) || cfg.photo || 'img/instagram/mochi-08.jpg';
     const accent = cfg.accent || getCssVar('--accent-ink');
     const onAccent = readableOnAccent(accent);
     const ribbon = cfg.ribbon;
@@ -1776,6 +1792,7 @@ Promise.all([loadConfig(), loadMochisConfig(), loadCombosConfig()]).then(() => {
   renderPromosBar();          // 2026-10-14 — promos activas (top of page)
   renderCategoryChips();      // 2026-10-14 — chips por categoría (admin lo controla)
   renderFlavorCards();
+  renderSaboresTitle();      // el encabezado lleva el numero real de sabores
   renderCombos();
   renderHorarios();           // 2026-10-14 — horarios de recogida
   loadReleases();
@@ -1944,7 +1961,7 @@ function renderOrderModal() {
       <div class="product-selector" style="display:grid; grid-template-columns:repeat(auto-fill,minmax(140px,1fr)); gap:0.75rem;">
         ${FLAVORS.filter(f => f.available !== 0).map(f => `
           <button class="product-selector__option glass" data-product-pick="${escapeAttr(f.id)}" style="padding:0.75rem; border-radius:var(--r-lg); cursor:pointer; text-align:center; transition:transform var(--dur-fast), box-shadow var(--dur-fast); border:2px solid transparent;">
-            <img src="${escapeAttr(f.image_url || 'img/instagram/mochi-01.jpg')}" alt="${escapeAttr(f.name)}" class="product-selector__img" style="aspect-ratio:1/1; border-radius:var(--r-md); object-fit:cover; margin-bottom:0.5rem;">
+            <img src="${escapeAttr(f.image_url || (MOCHIS_CONFIG[f.id] && MOCHIS_CONFIG[f.id].photo) || 'img/instagram/mochi-08.jpg')}" alt="${escapeAttr(f.name)}" class="product-selector__img" style="aspect-ratio:1/1; border-radius:var(--r-md); object-fit:cover; margin-bottom:0.5rem;">
             <div class="product-selector__name" style="font-family:var(--font-display); font-size:0.875rem; font-weight:700;">${escapeHtml(f.name)}</div>
             <div class="product-selector__price" style="font-size:0.875rem; font-weight:600; color:var(--ink);">$${f.price.toLocaleString('es-CO')}</div>
           </button>
