@@ -266,48 +266,13 @@ header {
 .hero-trust { margin-top: 28px; display: flex; gap: 20px; flex-wrap: wrap; font-size: 13px; color: color-mix(in srgb, var(--clay-ink) 82%, var(--clay-ink-soft)); }
 .hero-trust span { display: flex; align-items: center; gap: 6px; }
 
-/* Hero visual: CLAY BLOB circular · identidad mochi (puffy clay) */
-.hero-visual {
-  position: relative;
-  width: 420px;
-  height: 420px;
-  border-radius: 28px !important;
-  border: 0;
-  overflow: hidden;
-  z-index: 1;
-  box-shadow:
-    0 28px 60px -28px rgba(45,26,17,.38),
-    0 2px 10px rgba(45,26,17,.08),
-    inset 0 1px 0 rgba(255,255,255,0.5);
-  transition: transform 0.35s cubic-bezier(.2,.7,.3,1);
-  margin: 0 auto;
-}
-.hero-visual-wrap {
-  border-radius: 28px !important;
-}
+/* Hero visual: CLAY BLOB · identidad mochi (puffy clay). El diseño vive en
+   el bloque de abajo (~1012): la foto toma la silueta organica del mochi y
+   el marco blob (::before) sobresale detras. Esta copia con 28px forzados
+   convertia el hero en un cuadrado redondeado y tapaba el blob. */
 .hero-visual-wrap:hover .hero-visual { transform: translateY(-6px); }
-@media (max-width: 880px) {
-  .hero-visual { width: 280px; height: 280px; }
-}
 
 /* Iconos de linea: SVG inline en vez de emoji (el emoji se ve como tofu en
-   algunos dispositivos y no se puede controlar por color). */
-.ico {
-  width: 18px; height: 18px; flex: none;
-  fill: none; stroke: currentColor; stroke-width: 1.7;
-  stroke-linecap: round; stroke-linejoin: round;
-  vertical-align: -3px; margin-right: 7px;
-}
-.hero-trust .ico { color: var(--mochi-fresa-d); }
-footer .ico { color: var(--mochi-fresa-d); }
-.hero-visual img,
-.hero-visual video { width: 100%; height: 100%; object-fit: cover; display: block; }
-.hero-visual-placeholder {
-  position: absolute; inset: 0;
-  display: flex; align-items: center; justify-content: center;
-  background: linear-gradient(135deg, var(--mochi-fresa) 0%, var(--mochi-durazno) 100%);
-  color: var(--clay-ink-soft); font-size: 14px; text-align: center; padding: 20px;
-}/* Iconos de linea: SVG inline en vez de emoji (el emoji se ve como tofu en
    algunos dispositivos y no se puede controlar por color). */
 .ico {
   width: 18px; height: 18px; flex: none;
@@ -1008,23 +973,28 @@ footer .privacy-note {
   transition: transform 0.25s cubic-bezier(.34,1.56,.64,1), box-shadow 0.25s;
 }
 
-/* Hero: marco blob (identidad) */
-.hero-visual-wrap { 
-  position: relative; 
-  height: 480px; 
-  border-radius: 40px; 
-  overflow: hidden; 
+/* Hero: la foto toma la silueta organica del mochi y el marco blob
+   (::before) sobresale detras. Sin overflow en el wrap: con el, el marco
+   quedaba recortado y el hero se veia como un cuadrado redondeado. */
+.hero-visual-wrap {
+  position: relative;
+  height: 480px;
 }
-.hero-visual { 
-  position: absolute; 
-  inset: 0; 
-  border-radius: 40px; 
-  overflow: hidden; 
+.hero-visual {
+  position: absolute;
+  inset: 0;
+  border-radius: 55% 45% 62% 38% / 48% 58% 42% 52%;
+  overflow: hidden;
+  box-shadow:
+    0 28px 60px -28px rgba(45,26,17,.38),
+    0 2px 10px rgba(45,26,17,.08),
+    inset 0 1px 0 rgba(255,255,255,0.5);
+  transition: transform 0.35s cubic-bezier(.2,.7,.3,1);
 }
 .hero-visual-wrap::before {
   content: '';
   position: absolute; inset: -28px;
-  border-radius: 55% 45% 62% 38% / 48% 58% 42% 52%;
+  border-radius: 48% 58% 42% 52% / 55% 45% 62% 38%;
   background: linear-gradient(135deg, var(--mochi-fresa) 0%, var(--mochi-ube) 50%, var(--mochi-cyan) 100%);
   transform: rotate(2.5deg);
   box-shadow: var(--clay-shadow-md);
