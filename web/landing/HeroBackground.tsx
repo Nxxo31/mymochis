@@ -62,8 +62,10 @@ void main() {
   float aspect = uRes.x / max(uRes.y, 1.0);
   vec2 p = vec2(uv.x * aspect, uv.y);
 
-  vec2 m = (uMouse - 0.5) * 0.15;
-  float t = uTime * 0.04;
+  // El mouse desplaza el campo de ruido: 0.4 de recorrido maximo para que la
+  // respuesta se note sin marear (el lerp del puntero suaviza el viaje).
+  vec2 m = (uMouse - 0.5) * 0.4;
+  float t = uTime * 0.10;
 
   // Multiple noise layers for organic aurora movement
   float n1 = fbm(p * 1.8 + vec2(t, t * 0.7) + m);
@@ -89,8 +91,8 @@ void main() {
   }
 
   // Sweeping light beams
-  float beam1 = smoothstep(0.75, 0.0, abs(uv.x - (0.25 + 0.06 * sin(t * 0.6))));
-  float beam2 = smoothstep(0.82, 0.0, abs(uv.x - (0.75 + 0.05 * cos(t * 0.4))));
+  float beam1 = smoothstep(0.75, 0.0, abs(uv.x - (0.25 + 0.10 * sin(t * 0.6))));
+  float beam2 = smoothstep(0.82, 0.0, abs(uv.x - (0.75 + 0.08 * cos(t * 0.4))));
   col += (beam1 * 0.12 + beam2 * 0.08) * uColorE;
 
   // Vignette suave
@@ -214,7 +216,10 @@ export function HeroBackground({
     gl.uniform1f(u.int, intensity);
 
     let rect = canvas.getBoundingClientRect();
+    // El puntero se interpola: el shader persigue al mouse en lugar de
+    // seguirlo en seco, para que la aurora responda con inercia.
     let pointer: [number, number] = [0.5, 0.5];
+    let pointerTarget: [number, number] = [0.5, 0.5];
 
     const resize = () => {
       rect = canvas.getBoundingClientRect();
@@ -245,7 +250,7 @@ export function HeroBackground({
     const onMove = (e: PointerEvent) => {
       const w = Math.max(rect.width, 1);
       const h = Math.max(rect.height, 1);
-      pointer = [(e.clientX - rect.left) / w, 1 - (e.clientY - rect.top) / h];
+      pointerTarget = [(e.clientX - rect.left) / w, 1 - (e.clientY - rect.top) / h];
     };
     window.addEventListener('pointermove', onMove, { passive: true });
 
@@ -262,6 +267,10 @@ export function HeroBackground({
 
     const draw = (time: number) => {
       gl.useProgram(prog);
+      // Persecucion del puntero con inercia (0.06 por frame a 60fps: medio
+      // segundo para llegar). Sin esto el mouse era imperceptible.
+      pointer[0] += (pointerTarget[0] - pointer[0]) * 0.06;
+      pointer[1] += (pointerTarget[1] - pointer[1]) * 0.06;
       gl.uniform1f(u.time, time);
       gl.uniform2f(u.mouse, pointer[0], pointer[1]);
       gl.uniform2f(u.res, canvas.width, canvas.height);
