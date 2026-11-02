@@ -2499,6 +2499,58 @@ function pickUploadFor(category, inputId) {
   }, 50);
 }
 
+// Subida directa desde el modal: el operador no tiene que saltar a la
+// galeria de la seccion de productos para ponerle foto a un combo.
+async function uploadImageToField(category, inputId, file) {
+  const fd = new FormData();
+  fd.append('files', file);
+  fd.append('category', category);
+  const xhr = new XMLHttpRequest();
+  const result = await new Promise((resolve, reject) => {
+    xhr.open('POST', API + '/uploads');
+    xhr.setRequestHeader('Authorization', 'Bearer ' + _token);
+    xhr.onload = () => {
+      if (xhr.status >= 200 && xhr.status < 300) resolve(JSON.parse(xhr.responseText));
+      else reject(new Error(`HTTP ${xhr.status}`));
+    };
+    xhr.onerror = () => reject(new Error('network error'));
+    xhr.send(fd);
+  });
+  const f = result.files && result.files[0];
+  if (!f) throw new Error('el servidor no devolvio el archivo');
+  const input = document.getElementById(inputId);
+  if (input) input.value = f.url;
+  setImagePreview(inputId + '_preview', f.url);
+  return f;
+}
+
+function setImagePreview(previewId, url) {
+  const host = document.getElementById(previewId);
+  if (!host) return;
+  host.innerHTML = url
+    ? `<img src="${escapeHtml(url)}" alt="" style="max-height:96px;border-radius:12px;border:1px solid var(--line)">`
+    : '';
+}
+
+async function uploadComboImage() {
+  const inp = document.getElementById('c-image_file');
+  const file = inp && inp.files && inp.files[0];
+  if (!file) { toast('Elige un archivo de imagen primero', 'error'); return; }
+  if (file.size > 25 * 1024 * 1024) { toast('Archivo > 25MB: ' + file.name, 'error'); return; }
+  const btn = document.getElementById('c-image_upload_btn');
+  if (btn) { btn.disabled = true; btn.textContent = 'Subiendo…'; }
+  try {
+    await uploadImageToField('combo', 'c-image_url', file);
+    inp.value = '';
+    toast('Imagen subida', 'success');
+  } catch (e) {
+    toast('Error subiendo: ' + e.message, 'error');
+  } finally {
+    if (btn) { btn.disabled = false; btn.textContent = '⬆ Subir'; }
+  }
+}
+window.uploadComboImage = uploadComboImage;
+
 // ============ COMBOS CRUD ============
 function openComboModal(combo) {
   _editingItem = combo || null;
@@ -2515,7 +2567,7 @@ function openComboModal(combo) {
         <div class="form-group"><label>Precio tachado (opcional)</label><input type="number" id="c-compare_at_price" value="${combo?.compare_at_price || ''}"></div>
         <div class="form-group"><label>Orden</label><input type="number" id="c-sort_order" value="${combo?.sort_order || 0}"></div>
       </div>
-      <div class="form-group"><label>Imagen URL</label><div style="display:flex;gap:8px"><input type="text" id="c-image_url" value="${escapeHtml(combo?.image_url || '')}" placeholder="/uploads/xxx.jpg" style="flex:1"><button type="button" class="btn btn-ghost btn-sm" onclick="pickUploadFor('combo','c-image_url')">📤 Elegir</button></div>${combo?.image_url ? `<div id="c-image_preview" style="margin-top:6px"><img src="${escapeHtml(combo.image_url)}" alt="" style="max-height:80px;border-radius:8px;border:1px solid var(--line)"></div>` : ''}</div>
+      <div class="form-group"><label>Imagen del combo (se sube desde aquí)</label><div style="display:flex;gap:8px;align-items:center"><input type="file" id="c-image_file" accept="image/*" style="flex:1;font-size:13px"><button type="button" class="btn btn-sm btn-primary" id="c-image_upload_btn" onclick="uploadComboImage()">⬆ Subir</button></div><div style="display:flex;gap:8px;margin-top:6px"><input type="text" id="c-image_url" value="${escapeHtml(combo?.image_url || '')}" placeholder="/uploads/xxx.jpg (se rellena al subir)" style="flex:1"><button type="button" class="btn btn-ghost btn-sm" onclick="pickUploadFor('combo','c-image_url')">🖼 Galería</button></div><div id="c-image_url_preview" style="margin-top:6px">${combo?.image_url ? `<img src="${escapeHtml(combo.image_url)}" alt="" style="max-height:96px;border-radius:12px;border:1px solid var(--line)">` : ''}</div></div>
       <div class="form-group"><label style="display:flex;align-items:center;gap:8px;text-transform:none;letter-spacing:0;font-size:14px;color:var(--ink)"><input type="checkbox" id="c-featured" ${combo?.featured ? 'checked' : ''}><span class="check-text">Destacado (aparece primero)</span></label></div>
       <div class="form-group"><label style="display:flex;align-items:center;gap:8px;text-transform:none;letter-spacing:0;font-size:14px;color:var(--ink)"><input type="checkbox" id="c-available" ${combo?.available !== false ? 'checked' : ''}><span class="check-text">Disponible</span></label></div>
       <div class="modal-actions">
