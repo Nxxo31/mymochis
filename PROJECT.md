@@ -2180,3 +2180,41 @@ uno.
   la fila no genera ningún handler ni etiqueta (0 elementos con
   `onmouseover`/`onerror`/`onfocus`).
 - `gitleaks` limpio en los 14 commits.
+
+## 30. Onda de feedback del operador — hero mochi, aurora viva y foto de combos (2026-11-01)
+
+Cuatro observaciones del operador probando el dev server (:3737), las cuatro
+corregidas el mismo día. 4 commits, verificación 134/134 unit + 57/57 e2e.
+
+### 30.1 El hero era un cuadrado, no un mochi
+
+La onda del 2026-10-29 dejó una **segunda definición** del hero visual
+(420×420, `border-radius: 28px !important`) que pisaba el marco blob original,
+y el `overflow: hidden` del wrap recortaba el `::before`: el marco orgánico
+existía pero no se veía. La foto toma ahora la silueta del mochi
+(`55% 45% 62% 38% / 48% 58% 42% 52%`), el marco detrás lleva el radio
+contrario con su rotación, y el wrap ya no recorta. De paso se borró un bloque
+de `.ico` duplicado que el mismo cambio dejó pegado.
+
+### 30.2 La aurora parecía estática
+
+El shader **sí animaba** (verificado con capturas aisladas cada 3 s), pero a
+0.04 de factor temporal y con un desplazamiento de mouse de 0.15: imperceptible
+detrás del contenido. La marcha sube a 0.10, el recorrido del mouse a 0.4, y el
+puntero se interpola con inercia (0.06 por frame) para que la aurora persiga al
+mouse en vez de seguirlo en seco.
+
+### 30.3 La sección "Por qué MyMochis" sin borde
+
+`.why` tenía el fondo clay translúcido sin `border-radius` ni margen, única
+sección translúcida sin los 48px que llevan las demás.
+
+### 30.4 La foto de los combos se sube desde el dashboard
+
+Los combos tenían título, descripción y precio, pero **ninguno tenía imagen**:
+el formulario solo traía un campo de URL con un botón que mandaba a la galería
+de otra sección, así que la landing los mostraba con el placeholder SVG. El
+modal del combo ahora sube el archivo directo a `POST /api/uploads`
+(categoría `combo`), rellena la URL, muestra la vista previa y conserva la
+galería como alternativa. Verificado de punta a punta: subida → guardado → la
+landing muestra la foto con su descripción y precio.
