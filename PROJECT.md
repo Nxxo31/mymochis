@@ -1,20 +1,20 @@
-# MyMochis — PROJECT.md
+﻿# MyMochis â€” PROJECT.md
 
-Fuente única de verdad del proyecto. Regla vigente: decisiones, arquitectura, estado operativo, roadmap y runbooks viven aquí; no crear `.md` adicionales salvo `AGENTS.md` cuando aplique.
+Fuente Ãºnica de verdad del proyecto. Regla vigente: decisiones, arquitectura, estado operativo, roadmap y runbooks viven aquÃ­; no crear `.md` adicionales salvo `AGENTS.md` cuando aplique.
 
-## Arquitectura autónoma single-tenant con deploy gratuito
+## Arquitectura autÃ³noma single-tenant con deploy gratuito
 
 Fecha: 2026-10-08
-Estado: decisión aprobada por operador (**sin SaaS multi-tenant**)
-Ámbito: app actual `mymochis` v2.0.0 (`Express + node:sqlite + frontend estático`)
+Estado: decisiÃ³n aprobada por operador (**sin SaaS multi-tenant**)
+Ãmbito: app actual `mymochis` v2.0.0 (`Express + node:sqlite + frontend estÃ¡tico`)
 
-## 1. Decisión arquitectónica
+## 1. DecisiÃ³n arquitectÃ³nica
 
-**Decisión:** mantener MyMochis como **monolito single-tenant portable**, desplegado primero en **Oracle Cloud Always Free** con persistencia local SQLite y backups cifrados fuera del proveedor. No continuar con MyMochis Studio multi-tenant como requisito para operar el negocio del amigo.
+**DecisiÃ³n:** mantener MyMochis como **monolito single-tenant portable**, desplegado primero en **Oracle Cloud Always Free** con persistencia local SQLite y backups cifrados fuera del proveedor. No continuar con MyMochis Studio multi-tenant como requisito para operar el negocio del amigo.
 
-**Motivación:**
-- El negocio necesita autonomía operativa: catálogo, pedidos, promos, horarios, delivery y dashboard sin depender de Sebas.
-- El código actual ya cubre esas capacidades en modo single-tenant.
+**MotivaciÃ³n:**
+- El negocio necesita autonomÃ­a operativa: catÃ¡logo, pedidos, promos, horarios, delivery y dashboard sin depender de Sebas.
+- El cÃ³digo actual ya cubre esas capacidades en modo single-tenant.
 - SaaS multi-tenant agrega complejidad de plataforma (tenants, provisioning, DNS wildcard, billing, soporte) innecesaria para este caso.
 - Render free + disk persistente deja de ser "gratis" si se cobra el disco; la persistencia es obligatoria para SQLite/uploads.
 
@@ -22,70 +22,70 @@ Estado: decisión aprobada por operador (**sin SaaS multi-tenant**)
 - No construir meta-plataforma multi-tenant.
 - No procesar tarjetas ni guardar datos sensibles de pago.
 - No migrar a microservicios.
-- No depender de Sebas para operación diaria.
+- No depender de Sebas para operaciÃ³n diaria.
 
 ## 2. Requisitos
 
 ### Funcionales
-- RF-01: el cliente puede ver catálogo, promos, horarios, métodos de pago y release windows vigentes.
+- RF-01: el cliente puede ver catÃ¡logo, promos, horarios, mÃ©todos de pago y release windows vigentes.
 - RF-02: cliente puede crear pedido programado o inmediato con validaciones actuales.
-- RF-03: operador/admin puede gestionar catálogo, combos, promos, pedidos, stock, delivery, uploads, usuarios y métricas.
-- RF-04: el negocio puede operar sin intervención del desarrollador para el flujo normal.
-- RF-05: el sistema puede restaurarse ante pérdida del servidor.
+- RF-03: operador/admin puede gestionar catÃ¡logo, combos, promos, pedidos, stock, delivery, uploads, usuarios y mÃ©tricas.
+- RF-04: el negocio puede operar sin intervenciÃ³n del desarrollador para el flujo normal.
+- RF-05: el sistema puede restaurarse ante pÃ©rdida del servidor.
 
 ### No funcionales
-- RNF-01 Disponibilidad práctica: servicio accesible 24/7 con auto-restart.
+- RNF-01 Disponibilidad prÃ¡ctica: servicio accesible 24/7 con auto-restart.
 - RNF-02 Persistencia: SQLite y uploads deben sobrevivir reinicios/redeploys.
-- RNF-03 Backup: RPO objetivo ≤ 24h; RTO objetivo ≤ 60 min con runbook.
-- RNF-04 Seguridad: TLS, rate limiting, auth scrypt+JWT, mínimos permisos, backups cifrados.
+- RNF-03 Backup: RPO objetivo â‰¤ 24h; RTO objetivo â‰¤ 60 min con runbook.
+- RNF-04 Seguridad: TLS, rate limiting, auth scrypt+JWT, mÃ­nimos permisos, backups cifrados.
 - RNF-05 Costo: mantenerse dentro de free tiers razonables.
 - RNF-06 Datos: minimizar PII; pagos siguen siendo manuales/off-platform.
 
 ## 3. Restricciones y hechos verificados
 
-- App actual: `mymochis` v2.0.0, Express, SQLite `node:sqlite`, frontend estático, auth propia scrypt+JWT.
-- Persistencia actual README asume Render disk; Render pricing muestra compute free pero **persistent disks `$0.25/GB/mo`**, por lo que no es la mejor opción "gratis con persistencia".
-- Oracle Cloud Always Free incluye cómputo VM Ampere A1 Flex hasta 2 OCPUs/12GB RAM, 200GB block volume total y 10TB egress/mes.
+- App actual: `mymochis` v2.0.0, Express, SQLite `node:sqlite`, frontend estÃ¡tico, auth propia scrypt+JWT.
+- Persistencia actual README asume Render disk; Render pricing muestra compute free pero **persistent disks `$0.25/GB/mo`**, por lo que no es la mejor opciÃ³n "gratis con persistencia".
+- Oracle Cloud Always Free incluye cÃ³mputo VM Ampere A1 Flex hasta 2 OCPUs/12GB RAM, 200GB block volume total y 10TB egress/mes.
 - Cloudflare R2 free tier: 10GB-mes storage Standard, 1M Class A ops/mes, 10M Class B ops/mes, egress free.
 - Cloudflare D1 free tier: 5M rows read/day, 100k rows write/day, 5GB storage; viable solo si se migra la app a Workers/D1.
 
 ## 4. Opciones evaluadas
 
-| Opción | Persistencia | Cambio de código | Costo objetivo | Riesgo | Veredicto |
+| OpciÃ³n | Persistencia | Cambio de cÃ³digo | Costo objetivo | Riesgo | Veredicto |
 |---|---|---|---|---|---|
-| Render free + disk | SQLite same | Nulo | Disk pago | Bajo esfuerzo, costo pequeño | **Descartada para "gratis estricto"** |
+| Render free + disk | SQLite same | Nulo | Disk pago | Bajo esfuerzo, costo pequeÃ±o | **Descartada para "gratis estricto"** |
 | Fly.io | Necesita volume pago | Nulo | No tiene free tier nuevo | Serverless-like pero no gratis | **Descartada** |
-| Cloudflare Pages/Workers + D1/R2 | D1/R2 | Alto | $0 hasta límites | Migración Express/SQLite→Workers/D1 | **Opción futura si se quiere cero servidor** |
-| Oracle Cloud Always Free VM | Block volume local | Nulo/bajo | $0 Always Free | Capacidad/región/ocio puede reclamar instancias idle | **Recomendada ahora** |
+| Cloudflare Pages/Workers + D1/R2 | D1/R2 | Alto | $0 hasta lÃ­mites | MigraciÃ³n Express/SQLiteâ†’Workers/D1 | **OpciÃ³n futura si se quiere cero servidor** |
+| Oracle Cloud Always Free VM | Block volume local | Nulo/bajo | $0 Always Free | Capacidad/regiÃ³n/ocio puede reclamar instancias idle | **Recomendada ahora** |
 
 ## 5. Arquitectura recomendada
 
-### 5.1 Vista lógica
+### 5.1 Vista lÃ³gica
 
 ```text
 Cliente (browser)
-  │ HTTPS
-  ▼
+  â”‚ HTTPS
+  â–¼
 Dominio propio o sslip/nip temporal
-  │ DNS
-  ▼
+  â”‚ DNS
+  â–¼
 Cloudflare DNS (proxy opcional)
-  │
-  ▼
+  â”‚
+  â–¼
 OCI Always Free VM (Ubuntu + Docker)
-  ├─ Caddy (80/443, TLS automático)
-  ├─ MyMochis app (Node/Express, container)
-  │   ├─ /api/public, /api/orders, ... rutas actuales
-  │   └─ SQLite file + uploads en volumen persistente
-  └─ Backup job (cron/contenedor sidecar)
-      ├─ SQLite online backup / VACUUM INTO
-      ├─ tar uploads
-      ├─ age encrypt
-      └─ upload a Cloudflare R2 bucket privado
+  â”œâ”€ Caddy (80/443, TLS automÃ¡tico)
+  â”œâ”€ MyMochis app (Node/Express, container)
+  â”‚   â”œâ”€ /api/public, /api/orders, ... rutas actuales
+  â”‚   â””â”€ SQLite file + uploads en volumen persistente
+  â””â”€ Backup job (cron/contenedor sidecar)
+      â”œâ”€ SQLite online backup / VACUUM INTO
+      â”œâ”€ tar uploads
+      â”œâ”€ age encrypt
+      â””â”€ upload a Cloudflare R2 bucket privado
 
 Backups
-  ├─ R2 cifrado (fuera de OCI)
-  └─ OCI block volume backups (máx 5 Always Free), si se habilitan
+  â”œâ”€ R2 cifrado (fuera de OCI)
+  â””â”€ OCI block volume backups (mÃ¡x 5 Always Free), si se habilitan
 ```
 
 ### 5.2 Vista de despliegue
@@ -93,7 +93,7 @@ Backups
 ```text
 OCI Home Region
   VCN
-    Subnet pública
+    Subnet pÃºblica
       VM.Standard.A1.Flex Always Free
         - Ubuntu LTS
         - Docker Engine + docker compose plugin
@@ -115,39 +115,39 @@ OCI Home Region
 
 ## 6. Componentes
 
-| Componente | Responsabilidad | Decisión |
+| Componente | Responsabilidad | DecisiÃ³n |
 |---|---|---|
-| Frontend estático | Landing + dashboard operador | Se mantiene `public/` actual |
+| Frontend estÃ¡tico | Landing + dashboard operador | Se mantiene `public/` actual |
 | API Express | Reglas de negocio actuales | Se mantiene `server.js` + `src/routes/*` |
 | SQLite local | Datos del negocio/clientes | Se mantiene `node:sqlite`; archivo en volumen persistente |
-| Uploads | Imágenes/videos productos | Carpeta local persistente; backup cifrado |
-| Caddy | HTTPS, cabeceras de proxy, compresión | Reemplaza exponer Node directo a Internet |
-| Cloudflare DNS | DNS + proxy opcional | Gratis; mejora TLS/DDoS básico |
+| Uploads | ImÃ¡genes/videos productos | Carpeta local persistente; backup cifrado |
+| Caddy | HTTPS, cabeceras de proxy, compresiÃ³n | Reemplaza exponer Node directo a Internet |
+| Cloudflare DNS | DNS + proxy opcional | Gratis; mejora TLS/DDoS bÃ¡sico |
 | R2 | Backup externo cifrado | Free tier suficiente para este volumen |
-| OCI Vol backups | Copia rápida del volumen | Complementario; no reemplaza backup lógico |
+| OCI Vol backups | Copia rÃ¡pida del volumen | Complementario; no reemplaza backup lÃ³gico |
 
-## 7. Seguridad y protección de datos
+## 7. Seguridad y protecciÃ³n de datos
 
-### Clasificación de datos
+### ClasificaciÃ³n de datos
 | Dato | Sensibilidad | Control |
 |---|---|---|
 | Email/password admin y usuarios | alta | scrypt + salt; nunca logs; env secret fuera del repo |
-| Cliente nombre/teléfono/dirección | PII media | acceso solo autenticado para administración; TLS; backups cifrados |
-| Órdenes/notas | PII media + negocio | auth admin para consulta; retention policy |
-| Imágenes productos | baja/media | uploads validados por tipo/tamaño; servir con cache y nosniff |
+| Cliente nombre/telÃ©fono/direcciÃ³n | PII media | acceso solo autenticado para administraciÃ³n; TLS; backups cifrados |
+| Ã“rdenes/notas | PII media + negocio | auth admin para consulta; retention policy |
+| ImÃ¡genes productos | baja/media | uploads validados por tipo/tamaÃ±o; servir con cache y nosniff |
 | Pagos | fuera de alcance | no almacenar tarjetas; comprobantes solo por WhatsApp/manual |
 
-### Controles mínimos antes de producción
+### Controles mÃ­nimos antes de producciÃ³n
 1. **Fail-fast secrets**: quitar defaults inseguros; si falta `NEXOMOCHIS_JWT_SECRET`, la app no arranca.
 2. **CORS cerrado**: `NEXOMOCHIS_CORS=https://dominio-del-negocio`.
-3. **JWT TTL reducido**: bajar de 7 días a 12h o 24h para admin; refresh manual por login.
-4. **Admin seed seguro**: `ADMIN_PASSWORD` generado, primer login obliga cambio manual documentado; `ADMIN_PASSWORD_RESET` solo durante rotación y luego se elimina.
-5. **Subir duración de lockout auth** si el negocio recibe fuerza bruta; mantener rate limits.
+3. **JWT TTL reducido**: bajar de 7 dÃ­as a 12h o 24h para admin; refresh manual por login.
+4. **Admin seed seguro**: `ADMIN_PASSWORD` generado, primer login obliga cambio manual documentado; `ADMIN_PASSWORD_RESET` solo durante rotaciÃ³n y luego se elimina.
+5. **Subir duraciÃ³n de lockout auth** si el negocio recibe fuerza bruta; mantener rate limits.
 6. **Logs sin PII**: confirmar que no se loguean bodies ni passwords; revisar antes de habilitar logs persistentes.
-7. **Permisos filesystem**: DB y env con `0600`; uploads con permisos mínimos.
+7. **Permisos filesystem**: DB y env con `0600`; uploads con permisos mÃ­nimos.
 8. **Backups cifrados**: clave privada offline (age o GPG); repo solo con public key/config.
-9. **Formulario público anti-abuso**: evaluar Cloudflare Turnstile si aparece spam de pedidos.
-10. **Privacidad básica**: publicar aviso de datos personales en landing (nombre, WhatsApp, dirección para delivery, finalidad, contacto para modificación/eliminación).
+9. **Formulario pÃºblico anti-abuso**: evaluar Cloudflare Turnstile si aparece spam de pedidos.
+10. **Privacidad bÃ¡sica**: publicar aviso de datos personales en landing (nombre, WhatsApp, direcciÃ³n para delivery, finalidad, contacto para modificaciÃ³n/eliminaciÃ³n).
 
 ## 8. Backup y disaster recovery
 
@@ -155,10 +155,10 @@ OCI Home Region
 - **RTO**: 60 min con runbook probado.
 - **Estrategia**: 3-2-1 simplificado:
   - 1 copia primaria: volumen OCI.
-  - 1 copia lógica cifrada: R2.
+  - 1 copia lÃ³gica cifrada: R2.
   - 1 copia infraestructural opcional: OCI block volume backup (max 5 Always Free).
 
-### Retención recomendada R2
+### RetenciÃ³n recomendada R2
 - 7 diarios
 - 4 semanales
 - 6 mensuales
@@ -166,11 +166,11 @@ OCI Home Region
 ### Prueba obligatoria
 Una vez al mes: restaurar backup en VM local o VM temporal y abrir `/manage.html` + revisar pedidos recientes.
 
-## 9. Observabilidad mínima sin cargar operación
+## 9. Observabilidad mÃ­nima sin cargar operaciÃ³n
 
 - `GET /api/health` ya existe; usarlo para uptime externo.
 - Docker restart policy `unless-stopped`.
-- Logs de aplicación: journald/docker logs, retención corta.
+- Logs de aplicaciÃ³n: journald/docker logs, retenciÃ³n corta.
 - Alerta simple por correo/Telegram/WhatsApp manual si uptime externo falla.
 - Revisar semanalmente backups recientes en R2 con un checklist de 5 minutos.
 
@@ -212,7 +212,7 @@ volumes:
   caddy_config:
 ```
 
-`Caddyfile` mínimo:
+`Caddyfile` mÃ­nimo:
 
 ```caddy
 {$DOMAIN} {
@@ -229,88 +229,88 @@ volumes:
 
 ## 11. Plan de despliegue
 
-### Fase 0 — freeze de alcance
-- Confirmar que `mymochis-studio` queda fuera del camino crítico.
-- Confirmar negocio: dominio, email/teléfono admin, política de datos y backups.
+### Fase 0 â€” freeze de alcance
+- Confirmar que `mymochis-studio` queda fuera del camino crÃ­tico.
+- Confirmar negocio: dominio, email/telÃ©fono admin, polÃ­tica de datos y backups.
 
-### Fase 1 — hardening mínimo del código
+### Fase 1 â€” hardening mÃ­nimo del cÃ³digo
 - Quitar fallback `dev-secret` de JWT.
 - Agregar `.env.production.example` completo.
-- Opcional: exigir cambio de contraseña documentado tras primer login.
+- Opcional: exigir cambio de contraseÃ±a documentado tras primer login.
 - Opcional: restringir vistas internas a admin donde aplique (`include_all`, `include_inactive`).
-- Smoke tests locales y revisión rápida de logs sin PII.
+- Smoke tests locales y revisiÃ³n rÃ¡pida de logs sin PII.
 
-### Fase 2 — infraestructura
+### Fase 2 â€” infraestructura
 - Crear cuenta OCI y VM A1 Always Free.
-- Configurar DNS en Cloudflare; usar dominio propio recomendado. Si se exige costo cero absoluto, iniciar con `sslip.io`/`nip.io` y migrar a dominio propio después.
+- Configurar DNS en Cloudflare; usar dominio propio recomendado. Si se exige costo cero absoluto, iniciar con `sslip.io`/`nip.io` y migrar a dominio propio despuÃ©s.
 - Docker + compose + Caddy.
-- Crear bucket R2 privado + token permisos mínimos.
+- Crear bucket R2 privado + token permisos mÃ­nimos.
 
-### Fase 3 — deploy
+### Fase 3 â€” deploy
 - Primer arranque, seed admin, prueba login, cambio de clave.
-- Smoke E2E: health, catálogo, crear pedido programado, crear pedido inmediato si aplica, dashboard, upload imagen.
+- Smoke E2E: health, catÃ¡logo, crear pedido programado, crear pedido inmediato si aplica, dashboard, upload imagen.
 - Verificar TLS/CSP/HSTS.
 
-### Fase 4 — backup/recovery
+### Fase 4 â€” backup/recovery
 - Instalar job diario SQLite backup + uploads tar + encrypt + upload.
 - Hacer restore drill en local.
 - Guardar runbook impreso/exportado para el negocio.
 
-### Fase 5 — handoff autónomo
+### Fase 5 â€” handoff autÃ³nomo
 - Crear cuenta admin del amigo y retirar/rotar credenciales de Sebas.
-- Entregar guía operativa corta: "si falla", "cómo recuperar pedidos", "a quién contactar".
+- Entregar guÃ­a operativa corta: "si falla", "cÃ³mo recuperar pedidos", "a quiÃ©n contactar".
 - Programar recordatorio mensual de prueba de backup.
 
-## 12. Criterios de aceptación
+## 12. Criterios de aceptaciÃ³n
 
 - [ ] La app opera el negocio actual sin MyMochis Studio.
 - [ ] SQLite y uploads persistentes en volumen.
-- [ ] HTTPS válido con renovación automática.
+- [ ] HTTPS vÃ¡lido con renovaciÃ³n automÃ¡tica.
 - [ ] Backups diarios cifrados restaurables.
-- [ ] Auth admin endurecida y sin defaults de producción.
-- [ ] El amigo puede operar catálogo/pedidos sin hablar con Sebas.
+- [ ] Auth admin endurecida y sin defaults de producciÃ³n.
+- [ ] El amigo puede operar catÃ¡logo/pedidos sin hablar con Sebas.
 - [ ] Gasto mensual objetivo: `$0`, salvo dominio propio opcional.
 
 ## 13. Riesgos y mitigaciones
 
-| Riesgo | Impacto | Mitigación |
+| Riesgo | Impacto | MitigaciÃ³n |
 |---|---|---|
-| OCI reclama instancia idle Always Free | Caída del servicio | tráfico real + uptime monitor + restore runbook |
+| OCI reclama instancia idle Always Free | CaÃ­da del servicio | trÃ¡fico real + uptime monitor + restore runbook |
 | Capacidad Always Free no disponible en home region | No se puede crear VM | reintentar AD/region permitido; plan B Render disk pago o VPS barato |
-| Backup corrupto | Pérdida de datos | backup lógico SQLite `.backup`/`VACUUM INTO` + restore drill mensual |
-| Credenciales admin expuestas | Toma de control | rotación, mínimo privilegio, logs, 2FA futuro |
+| Backup corrupto | PÃ©rdida de datos | backup lÃ³gico SQLite `.backup`/`VACUUM INTO` + restore drill mensual |
+| Credenciales admin expuestas | Toma de control | rotaciÃ³n, mÃ­nimo privilegio, logs, 2FA futuro |
 | PII de clientes filtrada | Riesgo legal/reputacional | minimizar campos, TLS, backups cifrados, aviso de privacidad |
 | Ataques al formulario de pedidos | Spam/fraude | rate limit + Turnstile opcional + validaciones actuales |
 
 ## 14. Camino futuro opcional (si cambia el negocio)
 
 Si el negocio crece y se necesita "cero servidor" o varios negocios independientes:
-- Migrar SQLite→D1/Postgres y Express→Workers o mantener Node en VPS pago.
-- Añadir pagos online hosted (Wompi/MercadoPago) sin guardar PAN.
-- Añadir 2FA y auditoría detallada de cambios admin.
+- Migrar SQLiteâ†’D1/Postgres y Expressâ†’Workers o mantener Node en VPS pago.
+- AÃ±adir pagos online hosted (Wompi/MercadoPago) sin guardar PAN.
+- AÃ±adir 2FA y auditorÃ­a detallada de cambios admin.
 - No reabrir SaaS multi-tenant salvo que el modelo de negocio cambie a producto para muchos negocios.
 
-## 15. Conclusión
+## 15. ConclusiÃ³n
 
-La arquitectura correcta para el objetivo es **single-tenant autónomo**, no SaaS multi-tenant. La ruta más barata y menos intrusiva es:
+La arquitectura correcta para el objetivo es **single-tenant autÃ³nomo**, no SaaS multi-tenant. La ruta mÃ¡s barata y menos intrusiva es:
 
 **Oracle Cloud Always Free VM + Caddy + Docker + SQLite persistente + uploads persistentes + backups cifrados a Cloudflare R2.**
 
-Esto conserva las características actuales, protege datos del negocio/clientes y permite desligar la operación diaria de Sebas.
+Esto conserva las caracterÃ­sticas actuales, protege datos del negocio/clientes y permite desligar la operaciÃ³n diaria de Sebas.
 
-## 16. Estado de implementación — 2026-10-08
+## 16. Estado de implementaciÃ³n â€” 2026-10-08
 
-Implementación inicial completada en repo:
+ImplementaciÃ³n inicial completada en repo:
 
 - `Dockerfile`: build Node 24 Alpine, sin devDependencies, usuario `node`, healthcheck `/api/health`.
-- `Caddyfile`: TLS automático con `DOMAIN` + `LETSENCRYPT_EMAIL`.
+- `Caddyfile`: TLS automÃ¡tico con `DOMAIN` + `LETSENCRYPT_EMAIL`.
 - `docker-compose.yml`: servicios `app` + `caddy`, volumen persistente `mymochis_data:/var/data`.
-- `.env.production.example`: variables requeridas para producción/backups.
+- `.env.production.example`: variables requeridas para producciÃ³n/backups.
 - `scripts/backup-sqlite.mjs`: backup consistente de SQLite con `VACUUM INTO`.
 - `scripts/backup-mymochis.sh`: empaqueta DB + uploads, cifra con `age`, sube a R2 (`daily/weekly/monthly`).
-- `scripts/restore-mymochis.sh`: restaura desde backup cifrado local/R2 con confirmación explícita (`CONFIRM_RESTORE=yes`).
-- `scripts/stack-smoke.sh`: smoke mínimo de `/api/health`, `/api/public`, `/manage.html`.
-- Hardening aplicado: producción falla si falta `NEXOMOCHIS_JWT_SECRET`; TTL JWT configurable por `NEXOMOCHIS_JWT_TTL_SECONDS` y acortado por defecto a 12h en producción.
+- `scripts/restore-mymochis.sh`: restaura desde backup cifrado local/R2 con confirmaciÃ³n explÃ­cita (`CONFIRM_RESTORE=yes`).
+- `scripts/stack-smoke.sh`: smoke mÃ­nimo de `/api/health`, `/api/public`, `/manage.html`.
+- Hardening aplicado: producciÃ³n falla si falta `NEXOMOCHIS_JWT_SECRET`; TTL JWT configurable por `NEXOMOCHIS_JWT_TTL_SECONDS` y acortado por defecto a 12h en producciÃ³n.
 
 Despliegue en VM Oracle Always Free:
 
@@ -333,40 +333,40 @@ Restore manual:
 CONFIRM_RESTORE=yes bash scripts/restore-mymochis.sh "r2:mymochis-backups/mymochis/daily/mymochis-YYYYMMDDTHHMMSSZ.tar.age"
 ```
 
-Verificación local ejecutada: `npm test` → 7/7 tests passing.
+VerificaciÃ³n local ejecutada: `npm test` â†’ 7/7 tests passing.
 
-## 17. Verificación MVP E2E — 2026-10-09
+## 17. VerificaciÃ³n MVP E2E â€” 2026-10-09
 
-Smoke E2E funcional sobre el server Node (mismo código que el contenedor Docker): **13/13 PASS**.
+Smoke E2E funcional sobre el server Node (mismo cÃ³digo que el contenedor Docker): **13/13 PASS**.
 
-- `GET /api/health` ✓
-- `GET /api/public` ✓ (config, categories, flavors, combos, promos, payment_methods, delivery_schedule, delivery_config, release_windows)
-- Login admin sembrado por env ✓ (`ADMIN_EMAIL`/`ADMIN_PASSWORD` en `src/db.js`)
-- Flujo operador: crear sabor ✓ + abrir release window ✓
-- Flujo cliente: `POST /api/orders` pedido programado ✓ (valida schedule por día + cutoff + ventana `open` + stock). Ver §23 sobre la zona horaria del cutoff, que hoy tiene un bug abierto.
-- Stock decrementa `units_sold` tras pedido ✓
-- Gestión admin: `GET /api/orders` ✓, `GET /api/metrics` ✓
-- Estáticos: landing `/` ✓, dashboard `/manage.html` ✓
-- RBAC: `/api/metrics` sin token → 401 ✓
-- Regla de negocio confirmada: pickup_day en domingo → `no_pickup_schedule` (schedule Lun–Sáb, correcto).
+- `GET /api/health` âœ“
+- `GET /api/public` âœ“ (config, categories, flavors, combos, promos, payment_methods, delivery_schedule, delivery_config, release_windows)
+- Login admin sembrado por env âœ“ (`ADMIN_EMAIL`/`ADMIN_PASSWORD` en `src/db.js`)
+- Flujo operador: crear sabor âœ“ + abrir release window âœ“
+- Flujo cliente: `POST /api/orders` pedido programado âœ“ (valida schedule por dÃ­a + cutoff + ventana `open` + stock). Ver Â§23 sobre la zona horaria del cutoff, que hoy tiene un bug abierto.
+- Stock decrementa `units_sold` tras pedido âœ“
+- GestiÃ³n admin: `GET /api/orders` âœ“, `GET /api/metrics` âœ“
+- EstÃ¡ticos: landing `/` âœ“, dashboard `/manage.html` âœ“
+- RBAC: `/api/metrics` sin token â†’ 401 âœ“
+- Regla de negocio confirmada: pickup_day en domingo â†’ `no_pickup_schedule` (schedule Lunâ€“SÃ¡b, correcto).
 - Payload de pedidos: `items` es **objeto** `{ flavor_id: qty }` (no array).
 
-Los pedidos del cliente final entran por **WhatsApp** (link directo en la landing, diseño intencional); el endpoint público `/api/orders` queda habilitado y validado para uso futuro.
+Los pedidos del cliente final entran por **WhatsApp** (link directo en la landing, diseÃ±o intencional); el endpoint pÃºblico `/api/orders` queda habilitado y validado para uso futuro.
 
 Adicionalmente en este cierre:
-- Aviso de datos personales publicado en el footer de la landing (control §7.10): nombre, WhatsApp, dirección de entrega, finalidad y canal de modificación/eliminación.
-- `render.yaml` eliminado (Render descartado en §4).
-- Docker no disponible en la máquina de desarrollo: el build de imagen se valida en la VM (Fase 3).
+- Aviso de datos personales publicado en el footer de la landing (control Â§7.10): nombre, WhatsApp, direcciÃ³n de entrega, finalidad y canal de modificaciÃ³n/eliminaciÃ³n.
+- `render.yaml` eliminado (Render descartado en Â§4).
+- Docker no disponible en la mÃ¡quina de desarrollo: el build de imagen se valida en la VM (Fase 3).
 
-## 18. Único pendiente para producción
+## 18. Ãšnico pendiente para producciÃ³n
 
-Fases 2–5 del §11 requieren recursos del operador. Todo el paquete de
-deploy ya está en repo y el MVP está verificado; la puesta en producción
+Fases 2â€“5 del Â§11 requieren recursos del operador. Todo el paquete de
+deploy ya estÃ¡ en repo y el MVP estÃ¡ verificado; la puesta en producciÃ³n
 sigue este runbook actualizado 2026-10-11:
 
 ### 18.1 Preflight (idempotente)
 
-Antes de tocar OCI, validar localmente que todos los prerequisitos están
+Antes de tocar OCI, validar localmente que todos los prerequisitos estÃ¡n
 en su lugar. **No modifica nada del host, solo reporta gaps.**
 
 ```bash
@@ -392,9 +392,9 @@ Una vez preflight en verde:
    security list. Mantener la VM en `Always Free-eligible` region
    (ej. us-ashburn-1, eu-frankfurt-1).
 2. **Apuntar DNS**: en Cloudflare (o proveedor del dominio), crear
-   registro A `mymochis.tudominio.com` → IP pública de la VM. Proxy
-   activado (orange cloud) para TLS + DDoS básico.
-3. **Subir SSH pubkey**: en OCI Compute → Instances → Create →
+   registro A `mymochis.tudominio.com` â†’ IP pÃºblica de la VM. Proxy
+   activado (orange cloud) para TLS + DDoS bÃ¡sico.
+3. **Subir SSH pubkey**: en OCI Compute â†’ Instances â†’ Create â†’
    Paste SSH keys. Usar el contenido de `~/.ssh/id_ed25519_oci.pub`.
 4. **Clonar repo + configurar**:
    ```bash
@@ -409,7 +409,7 @@ Una vez preflight en verde:
    - `NEXOMOCHIS_JWT_SECRET`: `openssl rand -hex 32`
    - `ADMIN_PASSWORD`: `openssl rand -base64 24`
    - `AGE_RECIPIENT`: `age-keygen -o ~/age_key.txt && cat ~/age_key.txt`
-     (la pública es el recipient; guardar la privada offline)
+     (la pÃºblica es el recipient; guardar la privada offline)
 5. **Levantar stack**:
    ```bash
    docker compose --env-file .env.production up -d
@@ -430,80 +430,80 @@ Una vez preflight en verde:
    # Esperar: HTTP/2 200
    ```
 
-### 18.3 Lo que NO requiere acción del operador
+### 18.3 Lo que NO requiere acciÃ³n del operador
 
 - Dockerfile, docker-compose.yml, Caddyfile: ya en repo y validados.
 - backup-mymochis.sh: idempotente, valida env vars al inicio.
 - restore-mymochis.sh: idempotente, requiere `CONFIRM_RESTORE=yes`.
 - stack-smoke.sh: 13+ smoke tests pre-deploy.
-- preflight-oci.sh: añadido 2026-10-11 (commit b91d24c) — ejecutable
+- preflight-oci.sh: aÃ±adido 2026-10-11 (commit b91d24c) â€” ejecutable
   ANTES de la secuencia para detectar gaps temprano.
 
 Refs: memo #178 (mymochis MVP cerrado), memo #188 P0, commit b91d24c.
 
-## 19. Histórico de preflight (archivado 2026-10-11) up -d --build`.
+## 19. HistÃ³rico de preflight (archivado 2026-10-11) up -d --build`.
 4. `bash scripts/stack-smoke.sh "https://$DOMAIN"`.
 5. Seed admin, login, cambio de clave (`ADMIN_PASSWORD_RESET=true` y retirar).
-6. Cron backup diario (§16) + restore drill.
+6. Cron backup diario (Â§16) + restore drill.
 7. Handoff: crear cuenta admin del operador del negocio y rotar la de Sebas.
 
-## 19. Cheatsheet del operador para producción (no técnico)
+## 19. Cheatsheet del operador para producciÃ³n (no tÃ©cnico)
 
-Estado código: 100% listo y verificado (commit `8729c4f` 2026-10-09 + E2E 13/13 PASS, memo #178). Deploy pendiente solo de cuentas tuyas + 7 acciones de ~1 hora total. Refiere a §18 para los pasos técnicos.
+Estado cÃ³digo: 100% listo y verificado (commit `8729c4f` 2026-10-09 + E2E 13/13 PASS, memo #178). Deploy pendiente solo de cuentas tuyas + 7 acciones de ~1 hora total. Refiere a Â§18 para los pasos tÃ©cnicos.
 
 ### Recursos que necesitas conseguir
 
-| # | Recurso | Costo | Dónde | Tiempo |
+| # | Recurso | Costo | DÃ³nde | Tiempo |
 |---|---|---|---|---|
-| 1 | Cuenta Oracle Cloud Free Tier | $0 | https://cloud.oracle.com/free | 10 min (sign-up + verificación tarjeta — NO cobran, es anti-fraude) |
-| 2 | Dominio propio | ~$10/año | Namecheap o Cloudflare Registrar | 5 min |
+| 1 | Cuenta Oracle Cloud Free Tier | $0 | https://cloud.oracle.com/free | 10 min (sign-up + verificaciÃ³n tarjeta â€” NO cobran, es anti-fraude) |
+| 2 | Dominio propio | ~$10/aÃ±o | Namecheap o Cloudflare Registrar | 5 min |
 | 3 | Cuenta Cloudflare (DNS gratis + R2) | $0 | https://dash.cloudflare.com/sign-up | 2 min |
-| 4 | Bucket R2 + token escritura | $0 (free 10GB) | Cloudflare → R2 → Create + API token | 5 min |
-| 5 | Llave pública `age` (cifra backups) | $0 | La genero yo y te la paso | 1 min |
+| 4 | Bucket R2 + token escritura | $0 (free 10GB) | Cloudflare â†’ R2 â†’ Create + API token | 5 min |
+| 5 | Llave pÃºblica `age` (cifra backups) | $0 | La genero yo y te la paso | 1 min |
 
-WSP Business queda fuera del MVP inicial: los pedidos se siguen haciendo por WSP personal manual (tu preferencia confirmada 2026-09-29). Si querés WSP Business auto, son 30+ días adicionales de Meta approval — el deploy igual funciona, solo el canal auto queda pendiente.
+WSP Business queda fuera del MVP inicial: los pedidos se siguen haciendo por WSP personal manual (tu preferencia confirmada 2026-09-29). Si querÃ©s WSP Business auto, son 30+ dÃ­as adicionales de Meta approval â€” el deploy igual funciona, solo el canal auto queda pendiente.
 
-### El día del deploy (yo corro los 7 pasos de §18, vos accedés 3 veces)
+### El dÃ­a del deploy (yo corro los 7 pasos de Â§18, vos accedÃ©s 3 veces)
 
-**Bloque 1 — Vos creás los recursos (~1h una sola sesión)**
-- Oracle Cloud → Create VM → Ubuntu 22.04 → shape `VM.Standard.A1.Flex` 1 OCPU/1GB (free tier) → subís tu SSH key → abris puertos 22/80/443.
-- Comprás dominio y lo apuntás a los nameservers de Cloudflare (te paso los NS exactos).
-- En Cloudflare: DNS → A record a la IP pública de la VM + bucket R2 + API token con scope Object Storage Write.
+**Bloque 1 â€” Vos creÃ¡s los recursos (~1h una sola sesiÃ³n)**
+- Oracle Cloud â†’ Create VM â†’ Ubuntu 22.04 â†’ shape `VM.Standard.A1.Flex` 1 OCPU/1GB (free tier) â†’ subÃ­s tu SSH key â†’ abris puertos 22/80/443.
+- ComprÃ¡s dominio y lo apuntÃ¡s a los nameservers de Cloudflare (te paso los NS exactos).
+- En Cloudflare: DNS â†’ A record a la IP pÃºblica de la VM + bucket R2 + API token con scope Object Storage Write.
 
-**Bloque 2 — Pasamos credenciales (5 min)**
+**Bloque 2 â€” Pasamos credenciales (5 min)**
 - Me das por chat: `ORACLE_VM_IP`, `DOMAIN`, `R2_ACCESS_KEY`, `R2_SECRET_KEY`, `R2_BUCKET`, `AGE_PUBLIC_KEY`.
 - Yo las guardo cifradas en Windows Credential Manager (dark-memory keyring). No tocan tu repo.
-- Yo corro los 7 pasos del §18 y dejo `https://$DOMAIN` operativo.
+- Yo corro los 7 pasos del Â§18 y dejo `https://$DOMAIN` operativo.
 
-**Bloque 3 — Verificación (30 min)**
-- Smoke E2E: home 200, catálogo público 200, login admin, crear pedido, ver métricas admin.
+**Bloque 3 â€” VerificaciÃ³n (30 min)**
+- Smoke E2E: home 200, catÃ¡logo pÃºblico 200, login admin, crear pedido, ver mÃ©tricas admin.
 - Crear cuenta para el operador del negocio y rotar mi acceso.
 
 ### Decisiones que necesito antes de empezar
 
-| Pregunta | Default si no contestás |
+| Pregunta | Default si no contestÃ¡s |
 |---|---|
-| ¿Qué dominio? (ej: `mymochis.app`, `mimochis.co`, `mochis.lat`) | Te propongo 3 cuando digas GO |
-| ¿Tamaño VM Oracle? (1 OCPU/1GB vs 2/12GB) | 1 OCPU/1GB (sobra para MVP) |
-| ¿Backups automáticos desde día 1? | Después de validar 1 semana |
-| ¿HTTPS con Caddy automático u otro CA? | Caddy (ya en `docker-compose.yml`) |
-| ¿WSP auto o personal manual? | Personal manual (preferencia confirmada) |
+| Â¿QuÃ© dominio? (ej: `mymochis.app`, `mimochis.co`, `mochis.lat`) | Te propongo 3 cuando digas GO |
+| Â¿TamaÃ±o VM Oracle? (1 OCPU/1GB vs 2/12GB) | 1 OCPU/1GB (sobra para MVP) |
+| Â¿Backups automÃ¡ticos desde dÃ­a 1? | DespuÃ©s de validar 1 semana |
+| Â¿HTTPS con Caddy automÃ¡tico u otro CA? | Caddy (ya en `docker-compose.yml`) |
+| Â¿WSP auto o personal manual? | Personal manual (preferencia confirmada) |
 
 ### Riesgos (transparente)
 
-1. **Oracle A1 reclamation**: si CPU <10% por días puede reclamar la VM y avisa 48h antes. Mitigación: el MVP tiene tráfico real, no va a estar ocioso.
-2. **R2 free 10GB**: alcanza para catálogo. Si crece a miles de productos, plan paid (~$0.015/GB-mes).
-3. **DNS propagation**: 5-30 min global en primer apuntado. No bloquea, solo el operador del negocio entra después de propagar.
-4. **Costo sorpresa**: ninguno esperado. Si ves algo raro en Oracle a 30 días, bajamos el shape.
+1. **Oracle A1 reclamation**: si CPU <10% por dÃ­as puede reclamar la VM y avisa 48h antes. MitigaciÃ³n: el MVP tiene trÃ¡fico real, no va a estar ocioso.
+2. **R2 free 10GB**: alcanza para catÃ¡logo. Si crece a miles de productos, plan paid (~$0.015/GB-mes).
+3. **DNS propagation**: 5-30 min global en primer apuntado. No bloquea, solo el operador del negocio entra despuÃ©s de propagar.
+4. **Costo sorpresa**: ninguno esperado. Si ves algo raro en Oracle a 30 dÃ­as, bajamos el shape.
 
 ### Comando para arrancar
 
-Cuando tengas los 4 recursos del Bloque 1, mandame: **"GO deploy MyMochis"** + la info, y arrancamos el mismo día.
+Cuando tengas los 4 recursos del Bloque 1, mandame: **"GO deploy MyMochis"** + la info, y arrancamos el mismo dÃ­a.
 
-## 20. Multi-número, multi-admin y dispatch WhatsApp — 2026-10-17
+## 20. Multi-nÃºmero, multi-admin y dispatch WhatsApp â€” 2026-10-17
 
 Fecha: 2026-10-17. Estado: **implementado, testeado (11/11) y verificado E2E en vivo**.
-Refs: skill `whatsapp-order-dispatch` (canon del patrón), commit de esta sesión.
+Refs: skill `whatsapp-order-dispatch` (canon del patrÃ³n), commit de esta sesiÃ³n.
 
 ### Flujo del pedido (nuevo)
 
@@ -514,99 +514,99 @@ Refs: skill `whatsapp-order-dispatch` (canon del patrón), commit de esta sesió
    `{ whatsapp: { deep_link, primary_phone, primary_label, recipients_count, cloud_status, cloud_results } }`.
 3. El cliente abre el `deep_link` (`api.whatsapp.com/send/`, NUNCA `wa.me`): su
    WhatsApp abre con el mensaje pre-llenado dirigido al admin elegido.
-4. Si `WHATSAPP_CLOUD_TOKEN` + `WHATSAPP_CLOUD_PHONE_ID` están configurados, el
-   server ADEMÁS envía el pedido por Meta Cloud API a TODOS los números activos
-   (`sent`/`partial`/`failed`/`skipped`). Sin credenciales → `skipped`, el pedido
+4. Si `WHATSAPP_CLOUD_TOKEN` + `WHATSAPP_CLOUD_PHONE_ID` estÃ¡n configurados, el
+   server ADEMÃS envÃ­a el pedido por Meta Cloud API a TODOS los nÃºmeros activos
+   (`sent`/`partial`/`failed`/`skipped`). Sin credenciales â†’ `skipped`, el pedido
    nunca falla por el canal.
 
-**Unidad de dinero en TODA la app: pesos COP.** Los `*_cents` históricos son
+**Unidad de dinero en TODA la app: pesos COP.** Los `*_cents` histÃ³ricos son
 pesos (flavor.price 8000 = $8.000). NUNCA dividir total entre 100.
 
-### Multi-número (`order_recipients`)
+### Multi-nÃºmero (`order_recipients`)
 
 - Tabla `(label, phone UNIQUE, active, sort_order)`; seed inicial importa
   `config.whatsapp_number` si no hay destinatarios y no es el placeholder.
-- CRUD admin-only en `POST/GET/PATCH/DELETE /api/recipients` (8–15 dígitos,
-  normaliza no-dígitos, rechaza duplicados). UI: sección **Números de pedido**
+- CRUD admin-only en `POST/GET/PATCH/DELETE /api/recipients` (8â€“15 dÃ­gitos,
+  normaliza no-dÃ­gitos, rechaza duplicados). UI: secciÃ³n **NÃºmeros de pedido**
   del panel (agregar / pausar / eliminar).
-- Respaldo legacy: pool vacío → usa `config.whatsapp_number` (sin placeholder).
+- Respaldo legacy: pool vacÃ­o â†’ usa `config.whatsapp_number` (sin placeholder).
 
 ### Multi-admin
 
-- `POST /api/users` (solo admin) crea cuentas `admin|customer`. UI: sección
-  **Usuarios** del panel. El register público sigue forzando `role=customer`.
-- **Se eliminó el demote global de init()** (antes: cualquier admin distinto de
-  admin@mymochis.app volvía a customer en cada boot — mataba multi-admin).
-- Borrar admins por API sigue bloqueado a propósito; un admin de más se limpia
+- `POST /api/users` (solo admin) crea cuentas `admin|customer`. UI: secciÃ³n
+  **Usuarios** del panel. El register pÃºblico sigue forzando `role=customer`.
+- **Se eliminÃ³ el demote global de init()** (antes: cualquier admin distinto de
+  admin@mymochis.app volvÃ­a a customer en cada boot â€” mataba multi-admin).
+- Borrar admins por API sigue bloqueado a propÃ³sito; un admin de mÃ¡s se limpia
   directo en SQLite.
 
 ### Mensaje WhatsApp (single source of truth en `src/lib/whatsapp.js`)
 
 - Lo arma el SERVER con: # de pedido (cruce con dashboard), ventana de horario
-  real del día (`delivery_schedule`), subtotales por sabor/combo en pesos,
-  notas, y aviso de que quedó registrado en el panel.
+  real del dÃ­a (`delivery_schedule`), subtotales por sabor/combo en pesos,
+  notas, y aviso de que quedÃ³ registrado en el panel.
 - La landing ya no arma mensaje propio: hace `await POST /api/orders` y abre el
   `deep_link` de la respuesta. Fallback con mensaje local SOLO si la API falla.
 
 ### Bugs corregidos en esta pasada (encontrados por QA)
 
-1. `tienda.html` `#cartSheet` inexistente → `init()` crasheaba y **la tienda
-   nunca cargaba catálogo**. Fix: `#cartSheetBack`.
-2. Precios 100× mal: `tienda.html` y el mensaje WSP dividían entre 100 ($8.500
-   → "$85"); también el chart del panel. Fix: formatear pesos directo.
-3. `wa.me` corrompe emojis 4-byte en su redirect (🍡→U+FFFD); verificado
-   empíricamente. Fix: `api.whatsapp.com/send/` en todos los links del repo.
-4. Pedidos de la landing enviaban `pickup_day: "Martes"` → 400 silencioso →
-   **ningún pedido de la landing llegaba al dashboard**. Fix: conversión al
-   próximo `YYYY-MM-DD` real + await del POST.
+1. `tienda.html` `#cartSheet` inexistente â†’ `init()` crasheaba y **la tienda
+   nunca cargaba catÃ¡logo**. Fix: `#cartSheetBack`.
+2. Precios 100Ã— mal: `tienda.html` y el mensaje WSP dividÃ­an entre 100 ($8.500
+   â†’ "$85"); tambiÃ©n el chart del panel. Fix: formatear pesos directo.
+3. `wa.me` corrompe emojis 4-byte en su redirect (ðŸ¡â†’U+FFFD); verificado
+   empÃ­ricamente. Fix: `api.whatsapp.com/send/` en todos los links del repo.
+4. Pedidos de la landing enviaban `pickup_day: "Martes"` â†’ 400 silencioso â†’
+   **ningÃºn pedido de la landing llegaba al dashboard**. Fix: conversiÃ³n al
+   prÃ³ximo `YYYY-MM-DD` real + await del POST.
 5. sw.js cache `mochis-land-v8` (renovar precache de index/manage).
 
 ### Tests
 
-`npm test` → 11/11: los 7 originales + recipients CRUD/RBAC, multi-admin
-sobrevive reinicio, flujo pedido→dashboard→round-robin→mensaje, y pausa de
-número. Paridad completa en `worker/` (D1): tabla, ruta, dispatch y users.
+`npm test` â†’ 11/11: los 7 originales + recipients CRUD/RBAC, multi-admin
+sobrevive reinicio, flujo pedidoâ†’dashboardâ†’round-robinâ†’mensaje, y pausa de
+nÃºmero. Paridad completa en `worker/` (D1): tabla, ruta, dispatch y users.
 
-## 21. Sistema visual v3 — Color + Motion + Shaders
+## 21. Sistema visual v3 â€” Color + Motion + Shaders
 
-Fecha: 2026-10-19. Estado: **implementado (2026-10-23) — ver §25**: build Vite +
+Fecha: 2026-10-19. Estado: **implementado (2026-10-23) â€” ver Â§25**: build Vite +
 isla React con shader aurora WebGL nativo (sin three/R3F: el chunk pesaba 817 kB
-para un plano de 40 líneas; el contexto WebGL directo lo hace en <6 kB) y motion
-para la entrada del contenido. R3F quedó descartado por peso. Refs: context7 motion@^12.
+para un plano de 40 lÃ­neas; el contexto WebGL directo lo hace en <6 kB) y motion
+para la entrada del contenido. R3F quedÃ³ descartado por peso. Refs: context7 motion@^12.
 
-### 21.1 Contexto y decisiones arquitectónicas
+### 21.1 Contexto y decisiones arquitectÃ³nicas
 
 **Hallazgo de marca** (scrape IG `@my.mochiss`, 2026-10-19): la marca real es
 **"Mochi's Land"** (no "MyMochis" en la marca visible) y su paleta actual ya es
-azul cielo (#3B9BE0) + indigo CTA (#4F5BD5) + mochi cartoon (rosa/marrón/beige).
-El pedido del operador (azul/blanco/gris + rosado claro) es una **refinación
-hacia más neutral**, no un rebrand. Tokens derivados del logo + observación.
+azul cielo (#3B9BE0) + indigo CTA (#4F5BD5) + mochi cartoon (rosa/marrÃ³n/beige).
+El pedido del operador (azul/blanco/gris + rosado claro) es una **refinaciÃ³n
+hacia mÃ¡s neutral**, no un rebrand. Tokens derivados del logo + observaciÃ³n.
 
-**Decisión arquitectónica (recomendada):** patrón **React island** vía build
-step con Vite, replicando el patrón validado en NX-Studio v0.8.0 (memo #243).
-- Razón: `motion@^12` y `@react-three/fiber` son React-first. Vanilla Motion
+**DecisiÃ³n arquitectÃ³nica (recomendada):** patrÃ³n **React island** vÃ­a build
+step con Vite, replicando el patrÃ³n validado en NX-Studio v0.8.0 (memo #243).
+- RazÃ³n: `motion@^12` y `@react-three/fiber` son React-first. Vanilla Motion
   existe pero limita a `animate()` sobre el DOM; no soporta `useAnimate` con
-  variantes compuestas ni integración limpia con R3F.
-- Costo: 1-2 días de setup (Vite + punto de entrada + script tag en HTML).
+  variantes compuestas ni integraciÃ³n limpia con R3F.
+- Costo: 1-2 dÃ­as de setup (Vite + punto de entrada + script tag en HTML).
 - Reversibilidad: el `public/` vanilla existente queda intacto; la isla es
   un `<div id="hero-island">` que monta React. Si falla, el fallback es HTML
-  estático sin animación.
+  estÃ¡tico sin animaciÃ³n.
 - Alternativas consideradas:
   - **B) Motion vanilla + CSS shaders**: cero build, drop-in. Sin R3F.
-  - **C) Híbrido vanilla + Canvas2D raw**: bundle mínimo, animaciones ricas
+  - **C) HÃ­brido vanilla + Canvas2D raw**: bundle mÃ­nimo, animaciones ricas
     pero shader custom manual.
-  - **A) React island (recomendada)**: validación previa en NX-Studio.
+  - **A) React island (recomendada)**: validaciÃ³n previa en NX-Studio.
 
 **Stack additions (`package.json` devDependencies):**
 - `vite@^5` (build step)
 - `react@^18.3`, `react-dom@^18.3`
-- `motion@^12` (antes `framer-motion`; v12 lo renombró)
+- `motion@^12` (antes `framer-motion`; v12 lo renombrÃ³)
 - `three@^0.169`, `@react-three/fiber@^8`, `@react-three/drei@^9`
 - `@vitejs/plugin-react@^4`
 
-**Bundle strategy:** isla única en landing (`#hero-island`), una en cada
-sección crítica (galería IG, menu). Resto de `public/*.html` queda vanilla
-HTML+JS. Esto mantiene la app <100KB de JS por página fuera de la landing.
+**Bundle strategy:** isla Ãºnica en landing (`#hero-island`), una en cada
+secciÃ³n crÃ­tica (galerÃ­a IG, menu). Resto de `public/*.html` queda vanilla
+HTML+JS. Esto mantiene la app <100KB de JS por pÃ¡gina fuera de la landing.
 
 ### 21.2 Color tokens (light + dark)
 
@@ -635,7 +635,7 @@ HTML+JS. Esto mantiene la app <100KB de JS por página fuera de la landing.
   --neutral-700: #334155;
   --neutral-900: #0F172A;
 
-  /* Semantic (semánticos sobre los raw) */
+  /* Semantic (semÃ¡nticos sobre los raw) */
   --bg-surface:        var(--neutral-0);
   --bg-elevated:       var(--neutral-50);
   --bg-tint:           var(--brand-blue-50);
@@ -667,24 +667,24 @@ HTML+JS. Esto mantiene la app <100KB de JS por página fuera de la landing.
   --action-primary:    #7BA8F0;          /* blue-400 para contraste AAA en dark */
   --accent-pink-300:   #4A2030;          /* pink muted para dark */
   --accent-pink-400:   #6B2D40;
-  /* neutros y status idénticos (escala universal) */
+  /* neutros y status idÃ©nticos (escala universal) */
 }
 ```
 
 **Reglas de uso:**
-- **NUNCA** usar `--accent-pink-600` en UI base. Solo badges de "última
+- **NUNCA** usar `--accent-pink-600` en UI base. Solo badges de "Ãºltima
   unidad" / "oferta termina hoy" / "error".
 - **NUNCA** mezclar blue-500 (CTA) con blue-400 (focus ring) en el mismo
-  elemento; el focus ring debe ser más claro, nunca más oscuro.
+  elemento; el focus ring debe ser mÃ¡s claro, nunca mÃ¡s oscuro.
 - En dark mode, `--bg-elevated` es para cards/popovers; nunca invertir
-  `--bg-surface` (queda como el "lienzo" más oscuro).
-- Tokens semánticos (`--action-primary`, `--text-primary`) sobre los raw
-  (`--brand-blue-600`). Los componentes consumen los semánticos; los
-  raw son para variantes específicas (e.g. gradient `from-blue-600 to-blue-400`).
+  `--bg-surface` (queda como el "lienzo" mÃ¡s oscuro).
+- Tokens semÃ¡nticos (`--action-primary`, `--text-primary`) sobre los raw
+  (`--brand-blue-600`). Los componentes consumen los semÃ¡nticos; los
+  raw son para variantes especÃ­ficas (e.g. gradient `from-blue-600 to-blue-400`).
 
 ### 21.3 Typography
 
-Mantener stack actual (system font + display). Cambio mínimo:
+Mantener stack actual (system font + display). Cambio mÃ­nimo:
 ```css
 --font-display: 'Inter', system-ui, -apple-system, sans-serif;
 --font-body:    'Inter', system-ui, -apple-system, sans-serif;
@@ -748,11 +748,11 @@ export const duration = {
 } as const;
 
 export const easing = {
-  // CSS-equivalente de cubic-bezier(0.22, 1, 0.36, 1) — "out-expo"
+  // CSS-equivalente de cubic-bezier(0.22, 1, 0.36, 1) â€” "out-expo"
   out:    [0.22, 1, 0.36, 1] as const,
-  // cubic-bezier(0.64, 0, 0.35, 1) — "in-out"
+  // cubic-bezier(0.64, 0, 0.35, 1) â€” "in-out"
   inOut:  [0.64, 0, 0.35, 1] as const,
-  // cubic-bezier(0.16, 1, 0.3, 1) — "out-quart" (más dramático)
+  // cubic-bezier(0.16, 1, 0.3, 1) â€” "out-quart" (mÃ¡s dramÃ¡tico)
   bounce: [0.16, 1, 0.3, 1] as const,
   // CSS linear (reservado para shaders y loaders)
   linear: 'linear' as const,
@@ -766,8 +766,8 @@ export const semantic = {
 } as const;
 ```
 
-**Regla de oro:** nunca duración > 0.6s en UI. Shaders y loaders pueden ir a
-1-2s. Page transitions máximo 0.6s (percepción de respuesta).
+**Regla de oro:** nunca duraciÃ³n > 0.6s en UI. Shaders y loaders pueden ir a
+1-2s. Page transitions mÃ¡ximo 0.6s (percepciÃ³n de respuesta).
 
 ### 21.6 Animation primitives (variants library)
 
@@ -808,7 +808,7 @@ export const cardHover = {
 };
 ```
 
-**Patrón canónico (replicado de NX-Studio v0.8.0):**
+**PatrÃ³n canÃ³nico (replicado de NX-Studio v0.8.0):**
 ```tsx
 import { motion, useReducedMotion } from 'motion/react';
 import { stagger, fadeUp, cardHover } from '../lib/variants';
@@ -893,7 +893,7 @@ const AuroraMaterial = shaderMaterial(
       float n2 = snoise(uv * 4.0 - vec2(t * 0.5, t) + m * 0.5);
       float n  = 0.6 * n1 + 0.4 * n2;
 
-      // Mezcla blue ↔ pink soft según noise
+      // Mezcla blue â†” pink soft segÃºn noise
       vec3 col = mix(uColorA, uColorB, smoothstep(-0.4, 0.4, n));
 
       // Vignette sutil para no distraer
@@ -946,20 +946,20 @@ export function HeroBackground() {
 - `dpr={[1, 1.6]}` para no quemar GPU en mobile.
 - `pointer` lo da R3F; sin listener manual.
 - `transparent` + `alpha=0.55` para que el contenido del hero sea legible encima.
-- Render condicional con `useReducedMotion()`: si true → fallback a gradient
-  CSS estático, sin Canvas.
+- Render condicional con `useReducedMotion()`: si true â†’ fallback a gradient
+  CSS estÃ¡tico, sin Canvas.
 - Lazy mount con `client:visible` o `IntersectionObserver` para no pagar el
   shader en el primer paint.
 
 ### 21.8 Component patterns
 
-**`motion.*` everywhere hay animación.** Reglas:
+**`motion.*` everywhere hay animaciÃ³n.** Reglas:
 - Botones: `whileHover={{ y: -1 }}` + `whileTap={{ scale: 0.98 }}`.
 - Cards: `variants={fadeUp}` + `whileHover={{ y: -4, scale: 1.02 }}`.
 - Modal/sheet: `AnimatePresence` + `initial={{ opacity: 0, y: 8 }}` +
   `exit={{ opacity: 0, y: 8 }}`.
-- Page transitions: NO en MyMochis (single-page flow), pero dejar el patrón
-  listo por si se suma multipágina.
+- Page transitions: NO en MyMochis (single-page flow), pero dejar el patrÃ³n
+  listo por si se suma multipÃ¡gina.
 
 **`AnimateActivity` para listas (disponible en motion v12):**
 ```tsx
@@ -984,36 +984,36 @@ import { motion, AnimateActivity } from 'motion/react';
 **Estructura de directorios nueva:**
 ```
 mymochis/
-├── public/                     # (existente, intacto)
-│   ├── index.html              # + <script type="module" src="/landing-island.js"></script>
-│   ├── tienda.html             # + idem
-│   ├── manage.html             # + idem
-│   └── ...
-├── src/                        # (existente, intacto)
-│   ├── routes/
-│   ├── lib/
-│   ├── db.js
-│   └── server.js
-├── web/                        # NUEVO — entry points Vite
-│   ├── landing/
-│   │   ├── main.tsx            # <AnimatedHero> + <HeroBackground>
-│   │   ├── AnimatedHero.tsx
-│   │   ├── HeroBackground.tsx  # R3F
-│   │   ├── MenuGrid.tsx        # cards de sabores
-│   │   └── variants.ts         # re-export
-│   ├── tienda/
-│   │   ├── main.tsx            # (futuro) carrito animado
-│   │   └── ...
-│   ├── manage/                 # (futuro) panel con transiciones
-│   ├── styles/
-│   │   ├── tokens.css          # vars del §21.2-21.4
-│   │   └── islands.css         # estilos solo de las islas
-│   └── lib/
-│       ├── motion-tokens.ts
-│       └── variants.ts
-├── vite.config.ts              # NUEVO — multi-entry
-├── tsconfig.json               # NUEVO
-└── package.json                # + scripts: "dev:web", "build:web"
+â”œâ”€â”€ public/                     # (existente, intacto)
+â”‚   â”œâ”€â”€ index.html              # + <script type="module" src="/landing-island.js"></script>
+â”‚   â”œâ”€â”€ tienda.html             # + idem
+â”‚   â”œâ”€â”€ manage.html             # + idem
+â”‚   â””â”€â”€ ...
+â”œâ”€â”€ src/                        # (existente, intacto)
+â”‚   â”œâ”€â”€ routes/
+â”‚   â”œâ”€â”€ lib/
+â”‚   â”œâ”€â”€ db.js
+â”‚   â””â”€â”€ server.js
+â”œâ”€â”€ web/                        # NUEVO â€” entry points Vite
+â”‚   â”œâ”€â”€ landing/
+â”‚   â”‚   â”œâ”€â”€ main.tsx            # <AnimatedHero> + <HeroBackground>
+â”‚   â”‚   â”œâ”€â”€ AnimatedHero.tsx
+â”‚   â”‚   â”œâ”€â”€ HeroBackground.tsx  # R3F
+â”‚   â”‚   â”œâ”€â”€ MenuGrid.tsx        # cards de sabores
+â”‚   â”‚   â””â”€â”€ variants.ts         # re-export
+â”‚   â”œâ”€â”€ tienda/
+â”‚   â”‚   â”œâ”€â”€ main.tsx            # (futuro) carrito animado
+â”‚   â”‚   â””â”€â”€ ...
+â”‚   â”œâ”€â”€ manage/                 # (futuro) panel con transiciones
+â”‚   â”œâ”€â”€ styles/
+â”‚   â”‚   â”œâ”€â”€ tokens.css          # vars del Â§21.2-21.4
+â”‚   â”‚   â””â”€â”€ islands.css         # estilos solo de las islas
+â”‚   â””â”€â”€ lib/
+â”‚       â”œâ”€â”€ motion-tokens.ts
+â”‚       â””â”€â”€ variants.ts
+â”œâ”€â”€ vite.config.ts              # NUEVO â€” multi-entry
+â”œâ”€â”€ tsconfig.json               # NUEVO
+â””â”€â”€ package.json                # + scripts: "dev:web", "build:web"
 ```
 
 **`vite.config.ts` (multi-entry, output a `public/build/`):**
@@ -1063,7 +1063,7 @@ export default defineConfig({
 
 - **`useReducedMotion()` siempre presente** en componentes animados. Si true,
   `variants` se reduce a `fadeIn` puro (sin translate, sin scale).
-- `prefers-reduced-motion` en CSS también como red de seguridad:
+- `prefers-reduced-motion` en CSS tambiÃ©n como red de seguridad:
   ```css
   @media (prefers-reduced-motion: reduce) {
     *, *::before, *::after {
@@ -1072,174 +1072,174 @@ export default defineConfig({
     }
   }
   ```
-- Contraste mínimo AA (4.5:1 texto, 3:1 UI). Validar con axe-core en CI.
+- Contraste mÃ­nimo AA (4.5:1 texto, 3:1 UI). Validar con axe-core en CI.
 - Focus visible: outline 2px `--focus-ring` + offset 2px, NUNCA `outline: none`
   sin reemplazo.
 - `<Canvas>` de R3F lleva `aria-hidden="true"`; el contenido textual del hero
-  está fuera del Canvas.
-- Shaders no llevan información; son decorativos. No requieren alt-text.
+  estÃ¡ fuera del Canvas.
+- Shaders no llevan informaciÃ³n; son decorativos. No requieren alt-text.
 
-### 21.11 Migración desde el sistema actual
+### 21.11 MigraciÃ³n desde el sistema actual
 
 **Plan por olas (zero-downtime, todos reversibles):**
 
-**Ola 1 — Tokens** (1-2h):
-1. Crear `web/styles/tokens.css` con §21.2-21.4.
+**Ola 1 â€” Tokens** (1-2h):
+1. Crear `web/styles/tokens.css` con Â§21.2-21.4.
 2. Importar en `public/index.html` ANTES de cualquier otro CSS.
-3. Mapeo de las vars existentes del proyecto a los nuevos tokens semánticos.
-4. Build del sitio estático NO cambia; solo cambia la paleta.
+3. Mapeo de las vars existentes del proyecto a los nuevos tokens semÃ¡nticos.
+4. Build del sitio estÃ¡tico NO cambia; solo cambia la paleta.
 5. QA visual: dark mode toggle (`localStorage nx-theme` + `<meta name="color-scheme">`).
 
-**Ola 2 — Build pipeline** (½ día):
+**Ola 2 â€” Build pipeline** (Â½ dÃ­a):
 1. Crear `vite.config.ts` + `tsconfig.json` + `package.json` scripts.
-2. Mover entry point mínimo (`web/landing/main.tsx` con un `motion.div` "Hello").
+2. Mover entry point mÃ­nimo (`web/landing/main.tsx` con un `motion.div` "Hello").
 3. Importar en `public/index.html` como `<script type="module" src="/build/landing.js">`.
-4. Verificar que el sitio sigue funcionando CON y SIN el script (degradación
-   graciosa: si el bundle falla, el HTML estático sigue).
+4. Verificar que el sitio sigue funcionando CON y SIN el script (degradaciÃ³n
+   graciosa: si el bundle falla, el HTML estÃ¡tico sigue).
 5. npm scripts: `npm run build:web` antes de `docker build` (en el Dockerfile
    de deploy, agregar `RUN npm run build:web`).
 
-**Ola 3 — Isla Hero** (1 día):
+**Ola 3 â€” Isla Hero** (1 dÃ­a):
 1. Implementar `<AnimatedHero>` con `useAnimate` + `stagger` + `fadeUp`.
 2. Implementar `<HeroBackground>` con el shader aurora.
 3. Mover el HTML actual del hero a un `<div id="hero-island">` que monta React.
 4. QA cross-browser: Chrome, Firefox, Safari, mobile (Safari iOS especialmente
-   — WebGL ahí es más restrictivo).
+   â€” WebGL ahÃ­ es mÃ¡s restrictivo).
 5. Test de performance: Lighthouse mobile, FCP < 1.8s, TTI < 3.5s.
 
-**Ola 4 — Resto de islas** (opcional, +1 día):
+**Ola 4 â€” Resto de islas** (opcional, +1 dÃ­a):
 - `<MenuGrid>` con cards animadas.
 - `<GalleryIG>` con masonry + hover.
 - `<TiendaCarrito>` con sheet animado.
 
 **Rollback:** borrar `web/`, restaurar `public/index.html`. La paleta CSS
-también se puede revertir comentando el `<link>` de tokens.
+tambiÃ©n se puede revertir comentando el `<link>` de tokens.
 
 ### 21.12 Open questions (para el operador)
 
-1. **¿Lanzar la Ola 1 (solo tokens) YA sin build step?** Es la más barata y
+1. **Â¿Lanzar la Ola 1 (solo tokens) YA sin build step?** Es la mÃ¡s barata y
    ya mejora el sitio. Sin React, sin shader, sin build. Solo CSS vars.
-2. **¿Dark mode desde el día 1 o solo light?** El operador usa el sitio
-   mayormente de día; dark mode podría ser nice-to-have.
-3. **¿Shader en todas las páginas o solo landing?** Spec actual: solo landing.
+2. **Â¿Dark mode desde el dÃ­a 1 o solo light?** El operador usa el sitio
+   mayormente de dÃ­a; dark mode podrÃ­a ser nice-to-have.
+3. **Â¿Shader en todas las pÃ¡ginas o solo landing?** Spec actual: solo landing.
    Si se quiere en tienda, +1 ola.
-4. **¿Migra a Astro en lugar de Vite + HTML?** Astro sería más limpio (file-
+4. **Â¿Migra a Astro en lugar de Vite + HTML?** Astro serÃ­a mÃ¡s limpio (file-
    based routing) pero es un cambio mayor. Lo dejo fuera de scope.
 
-## 22. Backend de pagos digitales v1 — spec
+## 22. Backend de pagos digitales v1 â€” spec
 
-Fecha: 2026-10-19. Estado: **implementado — el camino automático funciona end-to-end (ver §24); faltan credenciales Nequi reales y UI de checkout**. Refs:
-artículos de sistema de pagos (idempotency, webhooks, ledger, outbox, sagas,
-reconciliation), docs Nequi API, Daviplata botón, Bancolombia API Market,
-Mercado Pago, NIIO aggregator. Patrón canónico del dev.to / singhajit.
+Fecha: 2026-10-19. Estado: **implementado â€” el camino automÃ¡tico funciona end-to-end (ver Â§24); faltan credenciales Nequi reales y UI de checkout**. Refs:
+artÃ­culos de sistema de pagos (idempotency, webhooks, ledger, outbox, sagas,
+reconciliation), docs Nequi API, Daviplata botÃ³n, Bancolombia API Market,
+Mercado Pago, NIIO aggregator. PatrÃ³n canÃ³nico del dev.to / singhajit.
 
 ### 22.1 Contexto y objetivos
 
 MyMochis hoy recibe pedidos y el cliente paga **off-platform** (transferencia
 manual a Nequi/Daviplata/Bancolombia/efectivo). Esto requiere confirmar
 manualmente cada pago. El operador quiere digitalizar el cierre del pedido:
-que el cliente pague desde la app y el sistema reconcilie automáticamente.
+que el cliente pague desde la app y el sistema reconcilie automÃ¡ticamente.
 
 **Objetivo:** backend que orqueste cobros a Nequi, Daviplata, Bancolombia
-QR, Mercado Pago y (futuro) WhatsApp Pay, con reconciliación diaria, ledger
+QR, Mercado Pago y (futuro) WhatsApp Pay, con reconciliaciÃ³n diaria, ledger
 double-entry, idempotencia duradera, y webhook handlers autenticados.
 
 **Casos de uso primarios:**
-- **C1**: cliente confirma pedido → app genera link de pago Nequi push → cliente
-  autoriza en su app Nequi → webhook confirma → pedido pasa a "paid".
-- **C2**: cliente paga con Daviplata desde el dashboard → DaviPlata notifica
-  al backend vía webhook → pedido se reconcilia.
-- **C3**: cliente paga con tarjeta vía Mercado Pago Checkout Pro → MP webhook
-  notifica → pedido se reconcilia.
-- **C4**: cliente transfiere manual a Bancolombia (no API) → operador sube
+- **C1**: cliente confirma pedido â†’ app genera link de pago Nequi push â†’ cliente
+  autoriza en su app Nequi â†’ webhook confirma â†’ pedido pasa a "paid".
+- **C2**: cliente paga con Daviplata desde el dashboard â†’ DaviPlata notifica
+  al backend vÃ­a webhook â†’ pedido se reconcilia.
+- **C3**: cliente paga con tarjeta vÃ­a Mercado Pago Checkout Pro â†’ MP webhook
+  notifica â†’ pedido se reconcilia.
+- **C4**: cliente transfiere manual a Bancolombia (no API) â†’ operador sube
   comprobante + sistema hace match con el pedido.
-- **C5 (futuro)**: cliente paga vía WhatsApp Pay desde el deep-link.
+- **C5 (futuro)**: cliente paga vÃ­a WhatsApp Pay desde el deep-link.
 
-### 22.2 No-objetivos (explícitos)
+### 22.2 No-objetivos (explÃ­citos)
 
 - **NO** guardar datos de tarjeta crudos (PCI scope reduction). Tokens via
-  MP Checkout Pro o tokenización de Nequi cuando exista.
+  MP Checkout Pro o tokenizaciÃ³n de Nequi cuando exista.
 - **NO** hacer settlement / payouts / acquirer. Cada provider paga al
-  operador por su lado; nosotros solo confirmamos "el cliente pagó".
+  operador por su lado; nosotros solo confirmamos "el cliente pagÃ³".
 - **NO** subscriptions / recurring billing. Solo one-time.
 - **NO** FX / multi-currency. Solo COP.
-- **NO** fraud scoring ML. Solo reglas (monto máximo, IP rate limit, etc.).
+- **NO** fraud scoring ML. Solo reglas (monto mÃ¡ximo, IP rate limit, etc.).
 
 ### 22.3 Arquitectura general
 
 ```
 Cliente (web/wsp)
-  │
-  ▼
-[MyMochis app — Express]
-  │
-  ├─ /api/payments (crear intent, idempotency-key)
-  │    │
-  │    ▼
-  │  [Payment Service]  ← state machine
-  │    │
-  │    ├─ → [Provider Adapter Nequi]  → API Nequi (push)
-  │    ├─ → [Provider Adapter Daviplata] → API DaviPlata
-  │    ├─ → [Provider Adapter MercadoPago] → API MP
-  │    └─ → [Provider Adapter Bancolombia] → API Market
-  │
-  ├─ /api/webhooks/{provider}  ← POST firmado por cada provider
-  │    │
-  │    ▼
-  │  [Webhook Handler]  (verify signature → durable inbox → enqueue)
-  │    │
-  │    ▼
-  │  [Outbox Worker]  (relay eventos a consumers)
-  │    │
-  │    ▼
-  │  Consumers: orders, notifications, ledger-poster
-  │
-  └─ /api/admin/reconcile  ← cron diario, operador manual trigger
-       │
-       ▼
+  â”‚
+  â–¼
+[MyMochis app â€” Express]
+  â”‚
+  â”œâ”€ /api/payments (crear intent, idempotency-key)
+  â”‚    â”‚
+  â”‚    â–¼
+  â”‚  [Payment Service]  â† state machine
+  â”‚    â”‚
+  â”‚    â”œâ”€ â†’ [Provider Adapter Nequi]  â†’ API Nequi (push)
+  â”‚    â”œâ”€ â†’ [Provider Adapter Daviplata] â†’ API DaviPlata
+  â”‚    â”œâ”€ â†’ [Provider Adapter MercadoPago] â†’ API MP
+  â”‚    â””â”€ â†’ [Provider Adapter Bancolombia] â†’ API Market
+  â”‚
+  â”œâ”€ /api/webhooks/{provider}  â† POST firmado por cada provider
+  â”‚    â”‚
+  â”‚    â–¼
+  â”‚  [Webhook Handler]  (verify signature â†’ durable inbox â†’ enqueue)
+  â”‚    â”‚
+  â”‚    â–¼
+  â”‚  [Outbox Worker]  (relay eventos a consumers)
+  â”‚    â”‚
+  â”‚    â–¼
+  â”‚  Consumers: orders, notifications, ledger-poster
+  â”‚
+  â””â”€ /api/admin/reconcile  â† cron diario, operador manual trigger
+       â”‚
+       â–¼
      [Reconciliation Job]  (ledger vs provider reports)
 ```
 
 ### 22.4 State machine
 
 ```
-INITIATED ─→ PROCESSING ─→ SUCCEEDED
-    │            │              │
-    │            ├─→ FAILED    │
-    │            │              │
-    │            ├─→ REQUIRES_ACTION (cliente debe hacer algo en su app)
-    │            │              │
-    │            └─→ UNRESOLVED  (timeout, red cayó — requiere reconcile)
-    │
-    └─→ EXPIRED  (45min sin acción, según Nequi)
+INITIATED â”€â†’ PROCESSING â”€â†’ SUCCEEDED
+    â”‚            â”‚              â”‚
+    â”‚            â”œâ”€â†’ FAILED    â”‚
+    â”‚            â”‚              â”‚
+    â”‚            â”œâ”€â†’ REQUIRES_ACTION (cliente debe hacer algo en su app)
+    â”‚            â”‚              â”‚
+    â”‚            â””â”€â†’ UNRESOLVED  (timeout, red cayÃ³ â€” requiere reconcile)
+    â”‚
+    â””â”€â†’ EXPIRED  (45min sin acciÃ³n, segÃºn Nequi)
 ```
 
-**Reglas de transición (con optimistic locking):**
+**Reglas de transiciÃ³n (con optimistic locking):**
 ```sql
 UPDATE payments
 SET state = :next, state_version = state_version + 1, updated_at = :now
 WHERE payment_id = :id
   AND state = :expected_state
   AND state_version = :expected_version;
--- Si 0 filas: otro proceso ya cambió el estado; recargar y evaluar.
+-- Si 0 filas: otro proceso ya cambiÃ³ el estado; recargar y evaluar.
 ```
 
 **Estados terminales:** SUCCEEDED, FAILED, EXPIRED.
 **Estados que pueden transicionar a SUCCEEDED:** PROCESSING, REQUIRES_ACTION,
-UNRESOLVED (vía reconcile), y INITIATED (solo si el provider respondió
-sincrónicamente con success — raro pero posible en algunos flows).
+UNRESOLVED (vÃ­a reconcile), y INITIATED (solo si el provider respondiÃ³
+sincrÃ³nicamente con success â€” raro pero posible en algunos flows).
 
 ### 22.5 DB schema (SQLite, compatible con D1)
 
 ```sql
 -- ===========================================================================
--- 1. payments (la "operación" lógica: pagar pedido X por Y pesos)
+-- 1. payments (la "operaciÃ³n" lÃ³gica: pagar pedido X por Y pesos)
 -- ===========================================================================
 CREATE TABLE payments (
   payment_id        TEXT PRIMARY KEY,                  -- "pay_<uuidv7>"
   merchant_id       TEXT NOT NULL DEFAULT 'mymochis',  -- futuro: multi-merchant
   order_id          TEXT NOT NULL,                     -- FK a orders.id
-  amount_minor      INTEGER NOT NULL,                  -- pesos * 100 (COP × 100 = centavos)
+  amount_minor      INTEGER NOT NULL,                  -- pesos * 100 (COP Ã— 100 = centavos)
   currency          TEXT NOT NULL DEFAULT 'COP',
   state             TEXT NOT NULL DEFAULT 'INITIATED', -- enum
   state_version     INTEGER NOT NULL DEFAULT 0,        -- optimistic lock
@@ -1263,7 +1263,7 @@ CREATE TABLE idempotency_records (
   operation           TEXT NOT NULL,         -- "create_payment", "refund"
   idempotency_key     TEXT NOT NULL,
   request_fingerprint TEXT NOT NULL,         -- sha256 del body canonical
-  payment_id          TEXT,                  -- FK si aplicó
+  payment_id          TEXT,                  -- FK si aplicÃ³
   response_status     INTEGER,               -- status HTTP cacheado
   response_body_json  TEXT,                  -- body cacheado
   created_at          TEXT NOT NULL DEFAULT (datetime('now')),
@@ -1272,16 +1272,16 @@ CREATE TABLE idempotency_records (
 );
 
 -- ===========================================================================
--- 3. payment_attempts (cada interacción con un provider)
+-- 3. payment_attempts (cada interacciÃ³n con un provider)
 -- ===========================================================================
 CREATE TABLE payment_attempts (
   attempt_id            TEXT PRIMARY KEY,                -- "att_<uuidv7>"
   payment_id            TEXT NOT NULL,
   provider              TEXT NOT NULL,                   -- 'nequi' | 'daviplata' | 'mercadopago' | 'bancolombia'
-  provider_idempotency_key TEXT NOT NULL,                -- la que el provider recordará
+  provider_idempotency_key TEXT NOT NULL,                -- la que el provider recordarÃ¡
   provider_reference     TEXT,                           -- txn_id / payment_id del provider
   attempt_state          TEXT NOT NULL,                  -- mismo enum que payments.state
-  provider_response_json TEXT,                           -- último response del provider
+  provider_response_json TEXT,                           -- Ãºltimo response del provider
   error_code             TEXT,
   error_message          TEXT,
   created_at             TEXT NOT NULL DEFAULT (datetime('now')),
@@ -1316,7 +1316,7 @@ CREATE TABLE ledger_entries (
   entry_id        TEXT PRIMARY KEY,                    -- "led_<uuidv7>"
   payment_id      TEXT NOT NULL,
   account         TEXT NOT NULL,                       -- 'customer_cash' | 'merchant_receivable' | 'provider_fee' | 'refund_clearing'
-  amount_minor    INTEGER NOT NULL,                    -- signed: + debit, - credit (o convención que elijas)
+  amount_minor    INTEGER NOT NULL,                    -- signed: + debit, - credit (o convenciÃ³n que elijas)
   currency        TEXT NOT NULL DEFAULT 'COP',
   memo            TEXT,
   posted_at       TEXT NOT NULL DEFAULT (datetime('now')),
@@ -1325,7 +1325,7 @@ CREATE TABLE ledger_entries (
 CREATE INDEX idx_ledger_payment ON ledger_entries(payment_id);
 CREATE INDEX idx_ledger_account ON ledger_entries(account, posted_at);
 
--- View: balance por cuenta (para reconciliation rápida)
+-- View: balance por cuenta (para reconciliation rÃ¡pida)
 CREATE VIEW ledger_balances AS
 SELECT account, currency, SUM(amount_minor) AS balance_minor
 FROM ledger_entries
@@ -1371,7 +1371,7 @@ ALTER TABLE payment_methods ADD COLUMN credentials_ref TEXT;  -- keyring key, NU
 -- 9. Extender orders para enlazar al payment
 -- ===========================================================================
 ALTER TABLE orders ADD COLUMN payment_id TEXT REFERENCES payments(payment_id);
-ALTER TABLE orders ADD COLUMN payment_state TEXT;        -- duplicado denormalizado para queries rápidos
+ALTER TABLE orders ADD COLUMN payment_state TEXT;        -- duplicado denormalizado para queries rÃ¡pidos
 ```
 
 ### 22.6 Idempotency model
@@ -1380,23 +1380,23 @@ ALTER TABLE orders ADD COLUMN payment_state TEXT;        -- duplicado denormaliz
 1. **Clave durable** en `idempotency_records` con UNIQUE por
    `(merchant_id, operation, idempotency_key)`.
 2. **Request fingerprint**: SHA-256 del body canonical. Si misma key con
-   fingerprint distinto → 409 Conflict (es OTRO request, no retry).
-3. **In-progress behavior**: si el original está corriendo, devolver
+   fingerprint distinto â†’ 409 Conflict (es OTRO request, no retry).
+3. **In-progress behavior**: si el original estÃ¡ corriendo, devolver
    `202 Accepted` con `state=PROCESSING` y el `payment_id`. El cliente puede
    hacer poll a `GET /api/payments/{id}`.
 4. **Provider-side idempotency**: cada attempt lleva `provider_idempotency_key`
-   (re-uso del mismo si se reintenta el mismo attempt lógico).
+   (re-uso del mismo si se reintenta el mismo attempt lÃ³gico).
 5. **TTL**: el idempotency record NO expira (es durable). El response cacheado
-   se mantiene por 24h mínimo para retries de cliente.
+   se mantiene por 24h mÃ­nimo para retries de cliente.
 
 **Flujo de POST /api/payments con idempotency:**
 ```
-1. INSERT INTO idempotency_records (merchant, op, key, fingerprint) — atómico.
+1. INSERT INTO idempotency_records (merchant, op, key, fingerprint) â€” atÃ³mico.
    Si UNIQUE violation: recargar el record existente.
 2. Comparar fingerprint del nuevo request con el stored.
-   - Match + completed_at NOT NULL → devolver el response cacheado.
-   - Match + completed_at NULL → 202 con el payment_id en PROCESSING.
-   - Mismatch → 409 Conflict.
+   - Match + completed_at NOT NULL â†’ devolver el response cacheado.
+   - Match + completed_at NULL â†’ 202 con el payment_id en PROCESSING.
+   - Mismatch â†’ 409 Conflict.
 3. Crear payment (state=INITIATED).
 4. Actualizar idempotency_records con payment_id.
 5. Llamar provider adapter.
@@ -1408,10 +1408,10 @@ ALTER TABLE orders ADD COLUMN payment_state TEXT;        -- duplicado denormaliz
 
 ### 22.7 Outbox pattern
 
-**Por qué:** no podemos hacer `UPDATE payments + PUBLISH payment.succeeded`
-atómicamente. Si la app crashea entre ambas, el evento se pierde.
+**Por quÃ©:** no podemos hacer `UPDATE payments + PUBLISH payment.succeeded`
+atÃ³micamente. Si la app crashea entre ambas, el evento se pierde.
 
-**Tabla `outbox_events` (ver §22.5.6) + relay:**
+**Tabla `outbox_events` (ver Â§22.5.6) + relay:**
 
 ```ts
 // worker/outbox-relay.mjs (corre como sidecar / cron)
@@ -1431,7 +1431,7 @@ for (const evt of pending) {
       .run({ now: new Date().toISOString(), id: evt.event_id });
   } catch (e) {
     db.prepare(`UPDATE outbox_events SET publish_attempts = publish_attempts + 1 WHERE event_id = :id`).run({ id: evt.event_id });
-    // Si supera N intentos → DLQ (outbox_dead_letters)
+    // Si supera N intentos â†’ DLQ (outbox_dead_letters)
   }
 }
 ```
@@ -1444,15 +1444,15 @@ puede aplicar el `payment.succeeded` con un guard `state_version`).
 
 **Endpoint:** `POST /api/webhooks/{provider}` (uno por provider).
 
-**Reglas del handler (dev.to §7):**
+**Reglas del handler (dev.to Â§7):**
 1. **Verificar firma** contra los bytes exactos del request. NUNCA confiar
    en el JSON parseado. Para Nequi/Daviplata/MP/Bancolombia cada uno tiene
-   su mecanismo (HMAC SHA-256 típicamente, con timestamp para replay
+   su mecanismo (HMAC SHA-256 tÃ­picamente, con timestamp para replay
    protection).
-2. **Insertar en `provider_events`** con el `provider_event_id` extraído.
-   Dedupe vía UNIQUE constraint.
-3. **Ack inmediatamente** (HTTP 200) según el contrato del provider. NO
-   procesar síncronamente.
+2. **Insertar en `provider_events`** con el `provider_event_id` extraÃ­do.
+   Dedupe vÃ­a UNIQUE constraint.
+3. **Ack inmediatamente** (HTTP 200) segÃºn el contrato del provider. NO
+   procesar sÃ­ncronamente.
 4. **Worker async** toma el evento, lo aplica al payment (con guard
    `state_version`), postea al ledger, escribe al outbox.
 
@@ -1512,7 +1512,7 @@ export interface PaymentAdapter {
 
 export interface CreateInput {
   paymentId: string;                  // nuestro ID
-  amountMinor: number;                // COP × 100
+  amountMinor: number;                // COP Ã— 100
   currency: 'COP';
   description: string;
   customerPhone?: string;             // requerido para Nequi push
@@ -1524,7 +1524,7 @@ export interface CreateInput {
 export interface CreateOutput {
   providerReference: string;          // txn_id del provider
   providerResponse: Record<string, any>;
-  // Estado inmediato (algunos providers devuelven SUCCEEDED aquí)
+  // Estado inmediato (algunos providers devuelven SUCCEEDED aquÃ­)
   immediateState?: 'PROCESSING' | 'REQUIRES_ACTION' | 'SUCCEEDED' | 'FAILED';
   // Para flows donde el cliente debe hacer algo en su app
   deepLink?: string;                  // 'nequi://...'
@@ -1560,7 +1560,7 @@ export class NequiAdapter extends PaymentAdapter {
       immediateState: 'REQUIRES_ACTION', // cliente debe aprobar en su app
       deepLink: `nequi://payment?token=${res.paymentId}`,
       qrCode: res.qrImage,
-      instructions: 'Abrí tu app Nequi y aprobá el pago.',
+      instructions: 'AbrÃ­ tu app Nequi y aprobÃ¡ el pago.',
     };
   }
 
@@ -1580,7 +1580,7 @@ POST   /api/payments/:id/cancel      Cancela antes de SUCCEEDED.
 POST   /api/payments/:id/refund      Reembolso (admin, post-SUCCEEDED).
 GET    /api/payments/:id/attempts    Historial de attempts.
 
-POST   /api/webhooks/nequi           (no auth — verified por signature)
+POST   /api/webhooks/nequi           (no auth â€” verified por signature)
 POST   /api/webhooks/daviplata
 POST   /api/webhooks/mercadopago
 POST   /api/webhooks/bancolombia
@@ -1589,10 +1589,10 @@ POST   /api/admin/payments/reconcile           Trigger manual del reconciler.
 GET    /api/admin/payments/reconcile/runs      Historial de runs.
 GET    /api/admin/payments/mismatches          Lista de mismatches abiertos.
 
-GET    /api/admin/ledger                       (opcional) Visualización del ledger.
+GET    /api/admin/ledger                       (opcional) VisualizaciÃ³n del ledger.
 ```
 
-**Request/response canónico (POST /api/payments):**
+**Request/response canÃ³nico (POST /api/payments):**
 ```json
 // Request
 {
@@ -1614,19 +1614,19 @@ Idempotency-Key: "checkout-MYM-MVCXSPB7-v1"
   "provider": "nequi",
   "provider_reference": "NEQ-TXN-12345",
   "whatsapp": { "deep_link": "nequi://...", "qr_code": "data:image/png;base64,..." },
-  "instructions": "Abrí tu app Nequi y aprobá el pago.",
+  "instructions": "AbrÃ­ tu app Nequi y aprobÃ¡ el pago.",
   "expires_at": "2026-10-19T18:00:00Z"
 }
 ```
 
 ### 22.11 Reconciliation cron
 
-**Cuándo correr:** diario 04:00 COL (después del cierre de batches bancarios
-típicamente). Manual trigger desde `/api/admin/payments/reconcile`.
+**CuÃ¡ndo correr:** diario 04:00 COL (despuÃ©s del cierre de batches bancarios
+tÃ­picamente). Manual trigger desde `/api/admin/payments/reconcile`.
 
 **Estrategia de 2 capas:**
 
-**Capa 1 — Operational reconciliation (cada 5 min, solo UNRESOLVED):**
+**Capa 1 â€” Operational reconciliation (cada 5 min, solo UNRESOLVED):**
 ```sql
 SELECT * FROM payments
 WHERE state IN ('PROCESSING', 'UNRESOLVED')
@@ -1635,15 +1635,15 @@ WHERE state IN ('PROCESSING', 'UNRESOLVED')
 Para cada uno, llamar `adapter.getPaymentStatus(providerRef)` y aplicar
 state transition.
 
-**Capa 2 — Financial reconciliation (diaria, full sweep):**
-1. Por cada provider, descargar el report del día anterior (API o CSV).
+**Capa 2 â€” Financial reconciliation (diaria, full sweep):**
+1. Por cada provider, descargar el report del dÃ­a anterior (API o CSV).
 2. Comparar cada `provider_reference` del report con `payment_attempts` local.
 3. Detectar:
-   - **Missing webhooks**: provider reporta SUCCEEDED, local sigue PROCESSING →
-     aplicar transición + postear ledger.
-   - **Phantom payments**: provider NO reporta nada, local dice SUCCEEDED →
+   - **Missing webhooks**: provider reporta SUCCEEDED, local sigue PROCESSING â†’
+     aplicar transiciÃ³n + postear ledger.
+   - **Phantom payments**: provider NO reporta nada, local dice SUCCEEDED â†’
      INVESTIGAR (no auto-flip; posible bug).
-   - **Amount mismatch**: provider dice X, local dice Y → quarantine.
+   - **Amount mismatch**: provider dice X, local dice Y â†’ quarantine.
 4. Reporte en `reconciliation_runs` con array de mismatches.
 
 **Mismatches que NO se auto-resuelven** (siempre requieren operador):
@@ -1651,21 +1651,21 @@ state transition.
 - Amount mismatch.
 - Refunds no reflejados.
 
-**Mismatches que SÍ se auto-resuelven** (con log):
-- Missing webhooks (provider confirma SUCCEEDED, local rezagado) → aplicar
-  transición con nota `reconciled_at`.
+**Mismatches que SÃ se auto-resuelven** (con log):
+- Missing webhooks (provider confirma SUCCEEDED, local rezagado) â†’ aplicar
+  transiciÃ³n con nota `reconciled_at`.
 
 ### 22.12 Provider-specific notes
 
 **Nequi (`/payments/v2/-services-paymentservice-generatecodeqr`):**
-- API push: el cliente recibe notificación en su app Nequi.
+- API push: el cliente recibe notificaciÃ³n en su app Nequi.
 - Espera `customer_phone`. Si no, solo QR.
 - Webhook firma: HMAC-SHA256 sobre body con `X-Nequi-Signature` header.
 - Timeout: 45 minutos (configurable).
-- Sandbox: requiere onboarding con Nequi (no público; tramitamos).
-- Documentación: https://www.nequi.com.co/negocios/apis
+- Sandbox: requiere onboarding con Nequi (no pÃºblico; tramitamos).
+- DocumentaciÃ³n: https://www.nequi.com.co/negocios/apis
 
-**Daviplata (Botón DaviPlata):**
+**Daviplata (BotÃ³n DaviPlata):**
 - SDK embebible o redirect.
 - `payment_id` interno nuestro, `reference` para reconciliation.
 - Webhook: IP whitelist + token compartido.
@@ -1682,32 +1682,32 @@ state transition.
 **Mercado Pago Checkout Pro:**
 - SDK completa, sandbox generoso.
 - Webhook: `merchant_order` o `payment` topics; firmar con `x-signature`.
-- Tokenización fuera de PCI scope (Checkout Pro hosted).
-- Documentación: https://www.mercadopago.com.co/developers/en/reference
+- TokenizaciÃ³n fuera de PCI scope (Checkout Pro hosted).
+- DocumentaciÃ³n: https://www.mercadopago.com.co/developers/en/reference
 
 **WhatsApp Pay (futuro):**
-- Requiere Meta Business verification (30+ días).
+- Requiere Meta Business verification (30+ dÃ­as).
 - Spec adelantada, NO implementar hasta approval.
 
 **NIIO aggregator (opcional):**
-- 1 sola integración para PSE, Nequi, Daviplata, Bancolombia, cards, crypto.
-- Fee por transacción.
+- 1 sola integraciÃ³n para PSE, Nequi, Daviplata, Bancolombia, cards, crypto.
+- Fee por transacciÃ³n.
 - Trade-off: vendor lock-in vs simplicidad.
-- Documentación: https://pay.niiopay.com/docs
+- DocumentaciÃ³n: https://pay.niiopay.com/docs
 
 ### 22.13 Money handling
 
-- **TODO en pesos × 100 = centavos (integer)**, NUNCA float.
-- Schema: `INTEGER` (en SQLite, 8 bytes safe hasta ~9.2 × 10^18).
+- **TODO en pesos Ã— 100 = centavos (integer)**, NUNCA float.
+- Schema: `INTEGER` (en SQLite, 8 bytes safe hasta ~9.2 Ã— 10^18).
 - COP no tiene sub-centavo; redondear al entero.
-- Display: helper `formatCOP(minor) → '$25.000'` (sin decimales).
+- Display: helper `formatCOP(minor) â†’ '$25.000'` (sin decimales).
 - Regla operativa: NUNCA `parseFloat` ni `Number()` en dinero. Solo
   `Math.trunc` y operaciones con integers.
 
 ### 22.14 Security y PCI scope
 
 - **Card data**: NUNCA tocan nuestro backend. Siempre Checkout Pro (MP) o
-  redirect a provider (Nequi, Daviplata). PCI scope = SAQ-A (mínimo).
+  redirect a provider (Nequi, Daviplata). PCI scope = SAQ-A (mÃ­nimo).
 - **Secrets**: `NEQUI_API_KEY`, `MP_ACCESS_TOKEN`, `BANCO_WEBHOOK_SECRET`
   viven en dark-memory keyring / Windows Credential Manager. NUNCA en
   archivos del repo. Solo la REFERENCIA (`credentials_ref`) en DB.
@@ -1718,39 +1718,39 @@ state transition.
 - **Audit log**: `reconciliation_runs` + `provider_events` ya son audit trail.
   Sumar `audit_log` table para acciones admin (refunds, manual override).
 
-### 22.15 Migración desde el sistema actual
+### 22.15 MigraciÃ³n desde el sistema actual
 
-**Ola 0 — Schema (sin tocar UI, ~1h):**
-1. Correr migrations de §22.5 sobre DB local.
+**Ola 0 â€” Schema (sin tocar UI, ~1h):**
+1. Correr migrations de Â§22.5 sobre DB local.
 2. Migrar `payment_methods` para sumar `provider` y `enabled`.
 3. Verificar que `npm test` sigue 11/11 (no debe romperse).
 
-**Ola 1 — Adapter Nequi + endpoint POST /api/payments (1-2 días):**
+**Ola 1 â€” Adapter Nequi + endpoint POST /api/payments (1-2 dÃ­as):**
 1. Implementar `NequiAdapter` con sandbox (credenciales de Nequi business).
 2. Crear ruta `POST /api/payments` con idempotency.
 3. Crear handler `POST /api/webhooks/nequi` con signature verify.
 4. Tests: 8 nuevos (idempotency, state machine, signature, outbox).
 5. QA manual en sandbox: crear payment, simular webhook, ver SUCCEEDED.
 
-**Ola 2 — Outbox + workers (1 día):**
+**Ola 2 â€” Outbox + workers (1 dÃ­a):**
 1. Implementar `outbox-relay` y `process-events` workers.
-2. Decidir: ¿cron cada 30s, o `setInterval` in-process?
-   Recomendación: in-process setInterval (Express app), con restart
+2. Decidir: Â¿cron cada 30s, o `setInterval` in-process?
+   RecomendaciÃ³n: in-process setInterval (Express app), con restart
    recovery del sweep.
-3. Test: simular crash entre INSERT outbox y PUBLISH → recover on next sweep.
+3. Test: simular crash entre INSERT outbox y PUBLISH â†’ recover on next sweep.
 
-**Ola 3 — Reconciler (1 día):**
+**Ola 3 â€” Reconciler (1 dÃ­a):**
 1. Operational reconciliation cada 5 min (in-process setInterval).
 2. Financial reconciliation diario 04:00 COL (in-process timer).
-3. UI admin: `/admin/reconcile.html` con botón "Run now" + lista de runs.
+3. UI admin: `/admin/reconcile.html` con botÃ³n "Run now" + lista de runs.
 
-**Ola 4 — Daviplata + Mercado Pago (2-3 días):**
-1. Repetir el patrón de Nequi para los 2 providers.
-2. UI de selección de método al confirmar pedido.
+**Ola 4 â€” Daviplata + Mercado Pago (2-3 dÃ­as):**
+1. Repetir el patrÃ³n de Nequi para los 2 providers.
+2. UI de selecciÃ³n de mÃ©todo al confirmar pedido.
 
-**Ola 5 — Bancolombia QR (1 día):**
-1. Migrar la opción "Bancolombia" de manual-transfer a QR + webhook.
-2. UI: mostrar QR generado, esperar webhook, mostrar "¡Listo!".
+**Ola 5 â€” Bancolombia QR (1 dÃ­a):**
+1. Migrar la opciÃ³n "Bancolombia" de manual-transfer a QR + webhook.
+2. UI: mostrar QR generado, esperar webhook, mostrar "Â¡Listo!".
 
 **Rollback:** las migrations son `CREATE TABLE` / `ALTER TABLE ADD COLUMN`,
 ambas reversibles. `DROP TABLE` no se necesita; en el peor caso borrar las
@@ -1758,463 +1758,511 @@ tablas nuevas.
 
 ### 22.16 Open questions (para el operador)
 
-1. **¿Nequi sandbox account existe ya?** Si no, ¿la tramitamos nosotros
+1. **Â¿Nequi sandbox account existe ya?** Si no, Â¿la tramitamos nosotros
    (necesita RUT/NIT del negocio del amigo) o lo hace el operador?
-2. **¿MP sandbox token está disponible?** (gratis en MP developers).
-3. **¿NIIO aggregator o integración directa por provider?** Trade-off:
+2. **Â¿MP sandbox token estÃ¡ disponible?** (gratis en MP developers).
+3. **Â¿NIIO aggregator o integraciÃ³n directa por provider?** Trade-off:
    simplicidad (NIIO) vs lock-in + fee (NIIO) vs control (directo).
-4. **¿Auto-cobro al confirmar pedido o step manual del operador?** Hoy el
+4. **Â¿Auto-cobro al confirmar pedido o step manual del operador?** Hoy el
    operador confirma cada pedido. Spec asume auto-cobro al confirmar.
-5. **¿Límite de monto por transacción?** (recomendación: 5M COP / attempt).
-6. **¿Refunds desde el panel admin?** Spec dice sí, pero requiere
-   implementación de `POST /api/payments/:id/refund` por provider.
-7. **¿WhatsApp Pay cuándo?** NO para v1, esperar Meta approval.
+5. **Â¿LÃ­mite de monto por transacciÃ³n?** (recomendaciÃ³n: 5M COP / attempt).
+6. **Â¿Refunds desde el panel admin?** Spec dice sÃ­, pero requiere
+   implementaciÃ³n de `POST /api/payments/:id/refund` por provider.
+7. **Â¿WhatsApp Pay cuÃ¡ndo?** NO para v1, esperar Meta approval.
 
 ### 22.17 Riesgos y mitigaciones
 
-| Riesgo | Impacto | Mitigación |
+| Riesgo | Impacto | MitigaciÃ³n |
 |---|---|---|
 | Nequi webhook se pierde | Pedido queda PROCESSING forever | Reconciler capa 1 cada 5min |
-| Provider downtime | Pagos fallan | Mostrar "sistema caído, intenta más tarde"; reconciler recover |
-| Customer paga pero webhook nunca llega + reconciler tampoco | Pedido sin cerrar | UI: "si pagaste y no se reflejó, escribinos por WSP"; operador tiene vista admin para manual flip |
-| Idempotency key mal generado por bug del cliente | Duplicados o "lost" payments | Validar fingerprint; 409 explícito si mismatch |
+| Provider downtime | Pagos fallan | Mostrar "sistema caÃ­do, intenta mÃ¡s tarde"; reconciler recover |
+| Customer paga pero webhook nunca llega + reconciler tampoco | Pedido sin cerrar | UI: "si pagaste y no se reflejÃ³, escribinos por WSP"; operador tiene vista admin para manual flip |
+| Idempotency key mal generado por bug del cliente | Duplicados o "lost" payments | Validar fingerprint; 409 explÃ­cito si mismatch |
 | Outbox relay duplica eventos | Orders procesados 2 veces | Consumer-side idempotencia con `state_version` |
-| DB corruption en SQLite | Ledger pierde entries | Backup R2 cada 24h (§8 ya documentado) + verify en startup |
-| PCI scope creep si guardamos tarjeta | Auditoría, multas | Test E2E obligatorio: ningún endpoint acepta card data |
+| DB corruption en SQLite | Ledger pierde entries | Backup R2 cada 24h (Â§8 ya documentado) + verify en startup |
+| PCI scope creep si guardamos tarjeta | AuditorÃ­a, multas | Test E2E obligatorio: ningÃºn endpoint acepta card data |
 
 ---
 
-## 23. Fecha de recogida: el cutoff manda, no el calendario — 2026-10-21
+## 23. Fecha de recogida: el cutoff manda, no el calendario â€” 2026-10-21
 
 Regla: **el cliente nunca ofrece una fecha que el backend va a rechazar.** El
-`<select>` de "Día de recogida" se puebla desde lo que el server declara
-aceptable, no desde una aproximación del calendario del cliente.
+`<select>` de "DÃ­a de recogida" se puebla desde lo que el server declara
+aceptable, no desde una aproximaciÃ³n del calendario del cliente.
 
-### 23.1 Por qué el flag lo calcula el server
+### 23.1 Por quÃ© el flag lo calcula el server
 
 `GET /api/public` publica por cada release_window:
 
 | Campo | Significado |
 |---|---|
 | `orderable` | `status === 'open'` **Y** el cutoff no ha vencido. Es lo que el cliente puede ofrecer. |
-| `not_orderable_reason` | `window_not_open` · `past_cutoff` · `no_pickup_schedule` |
-| `cutoff_computed_at` | El instante del cutoff, para depurar sin leer código. |
+| `not_orderable_reason` | `window_not_open` Â· `past_cutoff` Â· `no_pickup_schedule` |
+| `cutoff_computed_at` | El instante del cutoff, para depurar sin leer cÃ³digo. |
 
-El cálculo vive en `pickupCutoffFor()` (`src/routes/orders.js`), que es la
-**misma función** que usa `validateScheduled()` para rechazar el pedido. Una
-sola copia de la regla. Cuando existieron dos —el server rejecting y el front
-calculando por su cuenta— divergieron, y esa divergencia era el bug: el
-cliente ofrecía una fecha, el usuario llenaba el formulario entero y recibía un
-`400 past_cutoff` sin explicación útil.
+El cÃ¡lculo vive en `pickupCutoffFor()` (`src/routes/orders.js`), que es la
+**misma funciÃ³n** que usa `validateScheduled()` para rechazar el pedido. Una
+sola copia de la regla. Cuando existieron dos â€”el server rejecting y el front
+calculando por su cuentaâ€” divergieron, y esa divergencia era el bug: el
+cliente ofrecÃ­a una fecha, el usuario llenaba el formulario entero y recibÃ­a un
+`400 past_cutoff` sin explicaciÃ³n Ãºtil.
 
 **No reimplementar la regla del cutoff en el front.** Si el server no manda el
 flag, el cliente cae a `status + fecha` solo para no quedar inservible.
 
-### 23.2 Orden de inicialización (bug que se llevó 4 días sin commitear)
+### 23.2 Orden de inicializaciÃ³n (bug que se llevÃ³ 4 dÃ­as sin commitear)
 
-`configureDateInput()` se llamaba **antes** del `fetch` del catálogo, así que
+`configureDateInput()` se llamaba **antes** del `fetch` del catÃ¡logo, asÃ­ que
 `catalog` era `undefined` y el `<select>` se renderizaba siempre deshabilitado
-con "Sin días abiertos por ahora". La tienda no aceptaba ningún pedido. Todo
-setup derivado de datos traídos por fetch va **debajo** de la asignación,
-junto a los demás `render()`.
+con "Sin dÃ­as abiertos por ahora". La tienda no aceptaba ningÃºn pedido. Todo
+setup derivado de datos traÃ­dos por fetch va **debajo** de la asignaciÃ³n,
+junto a los demÃ¡s `render()`.
 
-### 23.3 BUG ABIERTO — el cutoff corre 5 horas adelantado (t_f6d7dd48)
+### 23.3 BUG ABIERTO â€” el cutoff corre 5 horas adelantado (t_f6d7dd48)
 
 `combineDateAndTime()` construye el cutoff con `Date.UTC(y, m, d, hh, mm)`, o
 sea interpreta `"15:00"` como **15:00 UTC**. El negocio opera en Colombia
-(UTC−5):
+(UTCâˆ’5):
 
 ```
-Negocio cree:   pickup 15:00 local → cutoff 07:00 local
-Código computa: 15:00 UTC − 8h     = 07:00 UTC = 02:00 local
-                                        ↑ 5 horas antes
+Negocio cree:   pickup 15:00 local â†’ cutoff 07:00 local
+CÃ³digo computa: 15:00 UTC âˆ’ 8h     = 07:00 UTC = 02:00 local
+                                        â†‘ 5 horas antes
 ```
 
-Los pedidos se cerraron a las **2:00 AM** cuando el dueño pensaba que cerrarían a
-las 7:00 AM. No se arregló porque altera *cuándo vende el negocio*, que es
-decisión del operador, no una corrección técnica.
+Los pedidos se cerraron a las **2:00 AM** cuando el dueÃ±o pensaba que cerrarÃ­an a
+las 7:00 AM. No se arreglÃ³ porque altera *cuÃ¡ndo vende el negocio*, que es
+decisiÃ³n del operador, no una correcciÃ³n tÃ©cnica.
 
 Decidir antes de tocarlo:
-1. ¿La zona horaria canónica es Colombia? Entonces `combineDateAndTime` debe
+1. Â¿La zona horaria canÃ³nica es Colombia? Entonces `combineDateAndTime` debe
    construir hora local, no UTC. Opciones: una columna `tz` en `config`, o
-   `America/Bogota` fijo (UTC−5, sin DST desde 2015).
-2. Hay dos fuentes de cutoff —la columna `release_windows.cutoff_at` y el
-   computado desde `delivery_schedule`— y hoy la segunda manda sola. ¿Cuál es
+   `America/Bogota` fijo (UTCâˆ’5, sin DST desde 2015).
+2. Hay dos fuentes de cutoff â€”la columna `release_windows.cutoff_at` y el
+   computado desde `delivery_schedule`â€” y hoy la segunda manda sola. Â¿CuÃ¡l es
    la oficial?
 
 ### 23.4 Estado al 2026-10-21
 
 Las 3 ventanas abiertas en la DB (2026-10-15, 10-20, 10-21) tienen su cutoff ya
-vencido, así que la tienda muestra correctamente "no abrimos por ahora". Para
-volver a vender hay que abrir ventanas futuras; no es un bug del código.
+vencido, asÃ­ que la tienda muestra correctamente "no abrimos por ahora". Para
+volver a vender hay que abrir ventanas futuras; no es un bug del cÃ³digo.
 
-## 24. Pagos: el camino automático funciona end-to-end — 2026-10-23
+## 24. Pagos: el camino automÃ¡tico funciona end-to-end â€” 2026-10-23
 
 Cierre de la ola P0 del backend de pagos (spec_id=25). La cadena completa
-**webhook → transitionState → outbox → relay → consumer → pedido pagado + stock
-comprometido** está implementada, testeada y commiteada (e261c03..477b1bc):
+**webhook â†’ transitionState â†’ outbox â†’ relay â†’ consumer â†’ pedido pagado + stock
+comprometido** estÃ¡ implementada, testeada y commiteada (e261c03..477b1bc):
 
-| Pieza | Dónde | Nota |
+| Pieza | DÃ³nde | Nota |
 |---|---|---|
 | Reservas compartidas | `src/lib/stock.js` | commit/release salen de routes/orders.js; las necesita el consumer sin cerrar el ciclo de imports |
-| Relay del outbox | `src/lib/payments/relay.js` | drenaje compartido server/Worker; antes el server **nunca drenaba** y `payment.succeeded` moría en la cola |
+| Relay del outbox | `src/lib/payments/relay.js` | drenaje compartido server/Worker; antes el server **nunca drenaba** y `payment.succeeded` morÃ­a en la cola |
 | Consumer de pago OK | `src/lib/payments/consumers.js` | `payment.succeeded` marca el pedido pagado **y convierte la reserva en venta** |
-| Estado real vs dominio | `src/lib/payments/index.js` | `orders.payment_state` lleva el estado del grafo (SUCCEEDED…); `payment_status` el dominio (pending\|paid) |
+| Estado real vs dominio | `src/lib/payments/index.js` | `orders.payment_state` lleva el estado del grafo (SUCCEEDEDâ€¦); `payment_status` el dominio (pending\|paid) |
 | Nequi fail-closed | `src/lib/payments/adapters/nequi.js` | sin `NEQUI_API_KEY` lanza; el mock solo entra con `NEXOMOCHIS_ALLOW_PROVIDER_FALLBACK=1` |
 | KPIs limpios | `src/routes/metrics.js` | gross/hoy/last_7/serie diaria excluyen cancelados |
 
-**Regresión:** `test/payment-auto-flow.test.js` fija la cadena completa con
+**RegresiÃ³n:** `test/payment-auto-flow.test.js` fija la cadena completa con
 workers activos (relay a 500ms via `MYMOCHIS_OUTBOX_RELAY_INTERVAL_MS`), el
 dedupe del inbox y que `SUCCEEDED` es punto de no retorno. Suite 88/88.
 
-**Lección de la sesión:** el webhook marca `payment_status='paid'` de forma
-*sincrónica* (transitionState) pero el stock llega *async* por el relay — el
-test debe esperar el efecto de negocio (reserva→0, sold→qty), no la
-denormalización intermedia, o es una carrera.
+**LecciÃ³n de la sesiÃ³n:** el webhook marca `payment_status='paid'` de forma
+*sincrÃ³nica* (transitionState) pero el stock llega *async* por el relay â€” el
+test debe esperar el efecto de negocio (reservaâ†’0, soldâ†’qty), no la
+denormalizaciÃ³n intermedia, o es una carrera.
 
 **Pendiente para cerrar pagos del todo:** (1) credenciales Nequi reales (hoy el
-adapter fail-closed; requiere sandbox + aprobación), (2) que la tienda llame
-`POST /api/payments` — hoy ninguna pantalla lo invoca, el cliente sigue pagando
-por transferencia y el operador confirma a mano, (3) deploy (§18 sigue siendo el
+adapter fail-closed; requiere sandbox + aprobaciÃ³n), (2) que la tienda llame
+`POST /api/payments` â€” hoy ninguna pantalla lo invoca, el cliente sigue pagando
+por transferencia y el operador confirma a mano, (3) deploy (Â§18 sigue siendo el
 runbook vigente).
 
-## 25. Frente visual — onda del 2026-10-23 (spec_id=26)
+## 25. Frente visual â€” onda del 2026-10-23 (spec_id=26)
 
 Estado: **implementado**. Commits b0d4b4b..e5aebe8. Suite 88/88.
 
-| Cambio | Dónde | Commit |
+| Cambio | DÃ³nde | Commit |
 |---|---|---|
 | WSP al admin al confirmar pago (auto + manual) | `src/lib/payments/order-notify.js` | b0d4b4b |
 | Logo footer 72px, redes 32px, NX-Studio, privacidad, sin Marketing | `index.html` + `manage.html` | 6f155e7 |
-| Sección **Producción** (insumos, costo/lote, unitario, margen; localStorage a la espera de API propia) | `manage.html` | ddef815 |
-| Checkboxes clay + botón entrega inmediata fresa | `manage.html` | ddef815 |
-| Sección **Fotos**: subir a categoría marketplace + "Usar como hero" (`PUT /api/config`) | `manage.html` | 240bab0 |
+| SecciÃ³n **ProducciÃ³n** (insumos, costo/lote, unitario, margen; localStorage a la espera de API propia) | `manage.html` | ddef815 |
+| Checkboxes clay + botÃ³n entrega inmediata fresa | `manage.html` | ddef815 |
+| SecciÃ³n **Fotos**: subir a categorÃ­a marketplace + "Usar como hero" (`PUT /api/config`) | `manage.html` | 240bab0 |
 | Hero de la landing usa `config.hero_image_url` (foto del admin) | `index.html` | 0eea9fc |
 | Promos como popout flotante | `index.html` | a58229b |
-| Carrito: líneas clay + qty +/− | `tienda.html` | a0730a1 |
-| **Shader aurora ambiental** fijo detrás de toda la página, paleta v5 (cielo→sakura→mist) | `web/` + `index.html` | 0eea9fc |
+| Carrito: lÃ­neas clay + qty +/âˆ’ | `tienda.html` | a0730a1 |
+| **Shader aurora ambiental** fijo detrÃ¡s de toda la pÃ¡gina, paleta v5 (cieloâ†’sakuraâ†’mist) | `web/` + `index.html` | 0eea9fc |
 | Doble footer eliminado (isla de contenido montada al final del body) | `index.html` | 0eea9fc |
 | Meta CSP sin `frame-ancestors` (console limpia; helmet manda el header) | `index.html` | 0eea9fc |
 | Dockerfile multi-stage: `npm run build:web` antes de empaquetar (public/build es gitignored) | `Dockerfile` | e5aebe8 |
 
-**Lección:** el bundle de las islas (§21) nunca se había compilado — `/build/landing.js`
-y `islands.css` daban 404 y la isla de contenido quedó montada al final del body,
-viéndose como "un segundo footer con shaders". Una isla sin build verificado no
-está implementada.
+**LecciÃ³n:** el bundle de las islas (Â§21) nunca se habÃ­a compilado â€” `/build/landing.js`
+y `islands.css` daban 404 y la isla de contenido quedÃ³ montada al final del body,
+viÃ©ndose como "un segundo footer con shaders". Una isla sin build verificado no
+estÃ¡ implementada.
 
-**Pendiente de esta onda:** producción aún persiste en localStorage (migrar a
-tabla + endpoints cuando el operador quiera historial real); sección Cobros del
-panel se puede retirar cuando el checkout UI (§24.2) exista.
+**Pendiente de esta onda:** producciÃ³n aÃºn persiste en localStorage (migrar a
+tabla + endpoints cuando el operador quiera historial real); secciÃ³n Cobros del
+panel se puede retirar cuando el checkout UI (Â§24.2) exista.
 
-## 26. Onda spec_id=30 — checkout, panel sin redundancia y UI en español
+## 26. Onda spec_id=30 â€” checkout, panel sin redundancia y UI en espaÃ±ol
 
 Estado al 2026-10-23: **en curso**. Commits 87c3f07 + a44a3ad. Suite 93/93.
 
-**Panel sin redundancia (87c3f07):** fuera Cobros/Fotos/Métodos de pago del
-sidebar (Cobros accesible desde Pedidos; portada dentro de Productos; métodos
-en Entregas→pagos). "Sabores" → "Productos" (portafolio ampliable). "Dashboard"
-→ "Panel". UI entendible sin saber programar ni inglés: estados en español
-(vía `STATUS_ES` — los valores que viajan al server siguen siendo los ingleses),
+**Panel sin redundancia (87c3f07):** fuera Cobros/Fotos/MÃ©todos de pago del
+sidebar (Cobros accesible desde Pedidos; portada dentro de Productos; mÃ©todos
+en Entregasâ†’pagos). "Sabores" â†’ "Productos" (portafolio ampliable). "Dashboard"
+â†’ "Panel". UI entendible sin saber programar ni inglÃ©s: estados en espaÃ±ol
+(vÃ­a `STATUS_ES` â€” los valores que viajan al server siguen siendo los ingleses),
 chips traducidos, login sin endpoints. FIX: `render.dashboard` crasheaba en
-`by-status` (elemento huérfano) — el panel llevaba tiempo a media render;
+`by-status` (elemento huÃ©rfano) â€” el panel llevaba tiempo a media render;
 cazado con Playwright, bloque muerto eliminado.
 
 **Checkout con domicilio por distancia (a44a3ad):** el carrito elige recoger
 vs domicilio; en domicilio, `POST /api/delivery/quote` geocodifica (Nominatim
-con caché), mide haversine al centro de la zona y cotiza **tarifa base +
-precio por km redondeada a $50** (estilo DiDi/Rappi). La fórmula vive en
-`src/lib/delivery-fee.js` — fuente única compartida con POST /api/orders.
+con cachÃ©), mide haversine al centro de la zona y cotiza **tarifa base +
+precio por km redondeada a $50** (estilo DiDi/Rappi). La fÃ³rmula vive en
+`src/lib/delivery-fee.js` â€” fuente Ãºnica compartida con POST /api/orders.
 Config nueva `delivery_immediate_base_fare_cents` / `_price_per_km_cents`
-(defaults 0 = tarifa plana, backward compatible). El carrito también elige
-forma de pago (efectivo o los `payment_methods` del admin → `payment_method_id`).
-Domicilio desactivado = pill deshabilitada con explicación.
+(defaults 0 = tarifa plana, backward compatible). El carrito tambiÃ©n elige
+forma de pago (efectivo o los `payment_methods` del admin â†’ `payment_method_id`).
+Domicilio desactivado = pill deshabilitada con explicaciÃ³n.
 
-**Pendiente del spec_id=30:** G3 producción persistente + analíticas de unit
+**Pendiente del spec_id=30:** G3 producciÃ³n persistente + analÃ­ticas de unit
 economics, G4-01 captura de Instagram (requiere conectar la cuenta del negocio),
 G2-03 pasada responsiva multi-dispositivo, G5-01 shaders visibles en secciones
 de fondo opaco.
 
-### 26.1 Cierre de la onda — 2026-10-24 (spec_id=30 COMPLETO)
+### 26.1 Cierre de la onda â€” 2026-10-24 (spec_id=30 COMPLETO)
 
 Commits `7bdbeea` (checkout) + `05e84d2` (aurora), suite **99/99**, push
 `ec9d925..05e84d2`.
 
-**G5-01 — la aurora se ve a través de las secciones (05e84d2).** El shader WebGL
-vive en `.page-shader` con `z-index: -1`, pero el `body` tenía `background-color`
+**G5-01 â€” la aurora se ve a travÃ©s de las secciones (05e84d2).** El shader WebGL
+vive en `.page-shader` con `z-index: -1`, pero el `body` tenÃ­a `background-color`
 opaco: en el orden de pintado, un hijo con `z-index: -1` se dibuja **antes** del
-fondo del body, así que la aurora quedaba tapada (por eso "pintado" no era lo
+fondo del body, asÃ­ que la aurora quedaba tapada (por eso "pintado" no era lo
 mismo que "visible"). El body pasa a `color-mix(... 80%, transparent)` y las
-secciones también (`.combos` / `.gallery` / `.how-it-works` → canvas-2 al 78 %,
-`.why` → canvas al 74 %, `.releases` → gradiente con ambos stops al 80 %).
+secciones tambiÃ©n (`.combos` / `.gallery` / `.how-it-works` â†’ canvas-2 al 78 %,
+`.why` â†’ canvas al 74 %, `.releases` â†’ gradiente con ambos stops al 80 %).
 Verificado con Playwright: body `rgba(1,1,1,0.8)`, secciones 0.78 / 0.74, canvas
-WebGL 1280×720 montado, consola 0 errores.
+WebGL 1280Ã—720 montado, consola 0 errores.
 
-**Checkout electrónico cierra el hueco #330 (7bdbeea).** El WIP traía
-`submitOrder` calculando `payInfo` (método + intent de pago) pero
+**Checkout electrÃ³nico cierra el hueco #330 (7bdbeea).** El WIP traÃ­a
+`submitOrder` calculando `payInfo` (mÃ©todo + intent de pago) pero
 `showSuccess(order)` **ignoraba el segundo argumento**: el `#successPay` quedaba
-siempre vacío y oculto, así que el cliente nunca veía cómo pagar. Ahora
-`showSuccess(order, payInfo)` pinta "Cómo pagar tu pedido" con las instrucciones
-del método, la cuenta del negocio (primer `payout_accounts`) cuando existe, y el
-link de la pasarela electrónica cuando el intent devuelve `deep_link`.
+siempre vacÃ­o y oculto, asÃ­ que el cliente nunca veÃ­a cÃ³mo pagar. Ahora
+`showSuccess(order, payInfo)` pinta "CÃ³mo pagar tu pedido" con las instrucciones
+del mÃ©todo, la cuenta del negocio (primer `payout_accounts`) cuando existe, y el
+link de la pasarela electrÃ³nica cuando el intent devuelve `deep_link`.
 Verificado e2e en dev: pedido `#03a2ddf3` creado, `#successPay` visible
-(`display: block`) con título + instrucciones; sin link porque Nequi está
-fail-closed sin credenciales (401) y el flujo manual continúa — por diseño.
-El `pay-box` solo aparece si hay método de pago elegido.
+(`display: block`) con tÃ­tulo + instrucciones; sin link porque Nequi estÃ¡
+fail-closed sin credenciales (401) y el flujo manual continÃºa â€” por diseÃ±o.
+El `pay-box` solo aparece si hay mÃ©todo de pago elegido.
 
-**Verificación:** suite 99/99; e2e Playwright en landing (fondos con alpha +
+**VerificaciÃ³n:** suite 99/99; e2e Playwright en landing (fondos con alpha +
 canvas WebGL) y en tienda (pedido + pay-box); consola 0 errores salvo el 401
 esperado de `/api/payments` (fail-closed de la pasarela).
 
-**Pendiente del operador (fuera del código):** token de Instagram del negocio
-(Credenciales→Instagram), credenciales Nequi reales, DEPLOY OCI (§18/§19) y
+**Pendiente del operador (fuera del cÃ³digo):** token de Instagram del negocio
+(Credencialesâ†’Instagram), credenciales Nequi reales, DEPLOY OCI (Â§18/Â§19) y
 limpiar las dos `release_windows` sembradas en dev para QA (2026-10-25 domingo
 y 2026-10-30 viernes, 50 unidades de `clasico-fresa`).
 
-## 27. Onda visual 2026-10-28 — tienda clay, panel responsive y compra al back-end
+## 27. Onda visual 2026-10-28 â€” tienda clay, panel responsive y compra al back-end
 
-Cierra el pedido de rediseño: la tienda deja de ser una página "del sistema" y
+Cierra el pedido de rediseÃ±o: la tienda deja de ser una pÃ¡gina "del sistema" y
 comparte el lenguaje visual de la landing (aurora + superficies de cristal), el
-panel deja de empujar la página en móvil, y el formulario de compra alimenta el
+panel deja de empujar la pÃ¡gina en mÃ³vil, y el formulario de compra alimenta el
 back-end con los datos que el operador necesita.
 
 ### 27.1 Tienda: la aurora y el cristal
 
-La tienda tenía su propio fondo opaco (`--clay-canvas` al 100 %) y tarjetas
-opacas, así que se veía plana frente a la landing. Ahora:
+La tienda tenÃ­a su propio fondo opaco (`--clay-canvas` al 100 %) y tarjetas
+opacas, asÃ­ que se veÃ­a plana frente a la landing. Ahora:
 
 - `body` a `color-mix(in srgb, var(--clay-canvas) 70%, transparent)` + los
   cuatro halos de color, igual que la landing.
 - `.page-shader` con el island `hero-bg` (mismo bundle `/build/landing.js`) y
-  **fallback CSS**: sin WebGL o sin bundle la página sigue teniendo ambiente.
-- `main`/`footer` en `z-index: 1` y el shader en `0` — sin esto el contenido
+  **fallback CSS**: sin WebGL o sin bundle la pÃ¡gina sigue teniendo ambiente.
+- `main`/`footer` en `z-index: 1` y el shader en `0` â€” sin esto el contenido
   in-flow queda por debajo del shader.
 - Rejilla de puntos (`body::after`) como textura fina sobre la aurora.
 - `.product-card`, `.cart-sheet` y `.success-card` pasan a superficie de
   cristal (`backdrop-filter: blur() saturate()` + borde claro + fondo al 82 %).
-- El destacado conserva su tinte crema, también translúcido: opaco tapaba la
-  aurora justo en la tarjeta que más se mira.
+- El destacado conserva su tinte crema, tambiÃ©n translÃºcido: opaco tapaba la
+  aurora justo en la tarjeta que mÃ¡s se mira.
 
-### 27.2 Formulario de compra → back-end
+### 27.2 Formulario de compra â†’ back-end
 
 Dos huecos reales entre la tienda y el panel:
 
-- **Teléfono.** La tienda mandaba los 10 dígitos locales; el panel y el
-  despacho de WhatsApp trabajan con números completos. Ahora la tienda (y el
-  pedido manual del panel) completan el `57` cuando el número es local de 10
-  dígitos.
-- **Punto de referencia.** El domiciliario no tenía forma de saber la
-  referencia ("portón azul") porque `orders` no tiene columna para eso. Viaja en
+- **TelÃ©fono.** La tienda mandaba los 10 dÃ­gitos locales; el panel y el
+  despacho de WhatsApp trabajan con nÃºmeros completos. Ahora la tienda (y el
+  pedido manual del panel) completan el `57` cuando el nÃºmero es local de 10
+  dÃ­gitos.
+- **Punto de referencia.** El domiciliario no tenÃ­a forma de saber la
+  referencia ("portÃ³n azul") porque `orders` no tiene columna para eso. Viaja en
   `notes` con el prefijo `Referencia:` y el operador lo ve en la tabla y en el
   detalle del pedido.
 
-### 27.3 Panel: lo que la API ya traía y la tabla no mostraba
+### 27.3 Panel: lo que la API ya traÃ­a y la tabla no mostraba
 
-`rowToOrder` ya devolvía `delivery_mode`, `delivery_address`,
+`rowToOrder` ya devolvÃ­a `delivery_mode`, `delivery_address`,
 `delivery_fee_cents`, `delivery_distance_km`, `delivery_free_applied`,
-`source`, `payment_method_id` y `release_window_id`. Nada de eso se veía.
+`source`, `payment_method_id` y `release_window_id`. Nada de eso se veÃ­a.
 
-- La fila ahora lleva el chip de entrega (🏪 Recogida / 🛵 Domicilio), el chip
-  de origen, la dirección, el costo del domicilio y el método de pago.
-- Botón 🔎 que abre el **detalle del pedido**: cliente, WhatsApp, día, entrega,
-  origen, método de pago, estado del pago, dirección, distancia, costo,
-  coordenadas, ventana de producción, notas y productos con precios.
-- Botón **➕ Nuevo pedido**: el canal real del negocio es WhatsApp y el
-  operador no tenía forma de registrar ese pedido — quedaba fuera de las
-  métricas, del stock y de la caja. El formulario usa el **mismo endpoint que
-  la tienda** (`POST /api/orders`), así que el pedido entra por la misma
-  tubería: valida la ventana, reserva stock, recalcula el total en el server y
+- La fila ahora lleva el chip de entrega (ðŸª Recogida / ðŸ›µ Domicilio), el chip
+  de origen, la direcciÃ³n, el costo del domicilio y el mÃ©todo de pago.
+- BotÃ³n ðŸ”Ž que abre el **detalle del pedido**: cliente, WhatsApp, dÃ­a, entrega,
+  origen, mÃ©todo de pago, estado del pago, direcciÃ³n, distancia, costo,
+  coordenadas, ventana de producciÃ³n, notas y productos con precios.
+- BotÃ³n **âž• Nuevo pedido**: el canal real del negocio es WhatsApp y el
+  operador no tenÃ­a forma de registrar ese pedido â€” quedaba fuera de las
+  mÃ©tricas, del stock y de la caja. El formulario usa el **mismo endpoint que
+  la tienda** (`POST /api/orders`), asÃ­ que el pedido entra por la misma
+  tuberÃ­a: valida la ventana, reserva stock, recalcula el total en el server y
   dispara el WhatsApp.
 
 Los ids viajan en `data-*` con un listener delegado, nunca interpolados en un
 `onclick`: un `flavor_id` con apostrofe cerraba el atributo (el mismo bug que
-ya se corrigió en los botones de edición).
+ya se corrigiÃ³ en los botones de ediciÃ³n).
 
-### 27.4 Bug de responsive: la tabla estiraba la página
+### 27.4 Bug de responsive: la tabla estiraba la pÃ¡gina
 
-Con la fila real (dirección, notas y chips), `documentElement.scrollWidth` daba
+Con la fila real (direcciÃ³n, notas y chips), `documentElement.scrollWidth` daba
 **852 px en un viewport de 375**. Causa: con la `<table>` en `static` y las
-`th` en `sticky`, el ancho mínimo de la tabla se escapa del clip de
-`.table-wrap` y el scroll horizontal se va a la página entera. Con
+`th` en `sticky`, el ancho mÃ­nimo de la tabla se escapa del clip de
+`.table-wrap` y el scroll horizontal se va a la pÃ¡gina entera. Con
 `position: relative` en la tabla el overflow queda dentro del contenedor. A
-≤560 px además `table { min-width: 460px }` y `overflow-wrap: anywhere`, para
-que una dirección larga no estire la tabla.
+â‰¤560 px ademÃ¡s `table { min-width: 460px }` y `overflow-wrap: anywhere`, para
+que una direcciÃ³n larga no estire la tabla.
 
-### 27.5 Verificación
+### 27.5 VerificaciÃ³n
 
-- `npm test` → **131/131**.
-- `npx playwright test` → **54/54** en 3 viewports (375 / 768 / 1440):
+- `npm test` â†’ **131/131**.
+- `npx playwright test` â†’ **54/54** en 3 viewports (375 / 768 / 1440):
   - `e2e/tienda.spec.ts`: la aurora se monta (`canvas` dentro de
-    `.page-shader`), el body es translúcido y las tarjetas tienen
+    `.page-shader`), el body es translÃºcido y las tarjetas tienen
     `backdrop-filter`.
   - `e2e/dashboard.spec.ts` (nuevo): login, el formulario de compra abre con
-    los días de la ventana y sus productos, el total se calcula, el pedido
+    los dÃ­as de la ventana y sus productos, el total se calcula, el pedido
     creado aparece en la tabla con sus chips, el detalle lo muestra y el
-    panel no desborda en móvil.
+    panel no desborda en mÃ³vil.
 - `npm run build:web` verde; el dev server sirve `/`, `/tienda.html` y
   `/manage.html` con 200 y `/api/health` = `{"ok":true}`.
 
-## 28. Onda 2026-10-29 (cerrada el 2026-11-01) — base compartida, modal de pedido y el panel clay
+## 28. Onda 2026-10-29 (cerrada el 2026-11-01) â€” base compartida, modal de pedido y el panel clay
 
-Cierra el trabajo visual que quedó sin commitear el 2026-10-29, con la auditoría
-real del panel del 2026-10-31 como filtro. Siete commits atómicos, del más general
-al más puntual: `ui.css` → onda de las páginas públicas → fix del overlay → onda
-del panel → fix de checkbox y KPI → test del CTA → documentos.
+Cierra el trabajo visual que quedÃ³ sin commitear el 2026-10-29, con la auditorÃ­a
+real del panel del 2026-10-31 como filtro. Siete commits atÃ³micos, del mÃ¡s general
+al mÃ¡s puntual: `ui.css` â†’ onda de las pÃ¡ginas pÃºblicas â†’ fix del overlay â†’ onda
+del panel â†’ fix de checkbox y KPI â†’ test del CTA â†’ documentos.
 
-### 28.1 La base visual sale de las páginas (`public/ui.css`)
+### 28.1 La base visual sale de las pÃ¡ginas (`public/ui.css`)
 
-Las cuatro páginas (landing, tienda, cocina, panel) tenían su propia copia de
+Las cuatro pÃ¡ginas (landing, tienda, cocina, panel) tenÃ­an su propia copia de
 superficie, botones, campos, tablas y badges. Ahora la base vive en
-`public/ui.css` y cada página conserva solo lo suyo. El panel mantiene su
+`public/ui.css` y cada pÃ¡gina conserva solo lo suyo. El panel mantiene su
 densidad de herramienta (14 px); la landing y la tienda, su aire.
 
 `theme.css` queda como la fuente de tokens: la paleta clara y la oscura, con
-los alias `--mochi-*` y `--clay-*` que usa el código.
+los alias `--mochi-*` y `--clay-*` que usa el cÃ³digo.
 
 ### 28.2 Landing: el modal de pedido
 
-El hero ya no lleva a la tienda: abre un modal de 2 pasos (qué te antoja →
-datos, tipo de entrega, método de pago). Es la primera vez que la landing
-crea pedidos contra el back-end sin salir de la página.
+El hero ya no lleva a la tienda: abre un modal de 2 pasos (quÃ© te antoja â†’
+datos, tipo de entrega, mÃ©todo de pago). Es la primera vez que la landing
+crea pedidos contra el back-end sin salir de la pÃ¡gina.
 
-### 28.3 Tres bugs de render (y por qué la auditoría mattered)
+### 28.3 Tres bugs de render (y por quÃ© la auditorÃ­a mattered)
 
 - **El overlay del modal tapaba la landing entera.** El modal se muestra con el
-  atributo `hidden`, pero su `style` inline traía `display:flex`, que le gana al
+  atributo `hidden`, pero su `style` inline traÃ­a `display:flex`, que le gana al
   `[hidden]` del navegador: el overlay (`inset:0`, `z-index:1000`) quedaba
   siempre encima y **nada era pulsable**. El layout del modal pasa a una regla
   de autor que respeta `[hidden]`.
-- **El checkbox clay caía encima de su texto.** `.form-group label::before`
-  dibujaba una caja y además `span.check-text` —el elemento que *contiene* el
-  texto— se forzaba a 20×20 con borde y fondo. Ahora la caja la dibuja
+- **El checkbox clay caÃ­a encima de su texto.** `.form-group label::before`
+  dibujaba una caja y ademÃ¡s `span.check-text` â€”el elemento que *contiene* el
+  textoâ€” se forzaba a 20Ã—20 con borde y fondo. Ahora la caja la dibuja
   `span.check-text::before` y el texto conserva su caja.
 - **El KPI de pedidos pendientes flotaba sobre el panel.** Usaba
   `class="kpi mochi"` y `.mochi` es la mascota flotante de 48 px con su
-  animación: la tarjeta se quedaba en 48×48, flotando, y el grid del panel
-  repartía mal sus columnas. El acento pasa a `.kpi crema`.
+  animaciÃ³n: la tarjeta se quedaba en 48Ã—48, flotando, y el grid del panel
+  repartÃ­a mal sus columnas. El acento pasa a `.kpi crema`.
 
-Los tres eran **collisiones de nombre o de cascada**, no fallos de lógica: el
-código hacía lo correcto, el CSS decidía otra cosa.
+Los tres eran **collisiones de nombre o de cascada**, no fallos de lÃ³gica: el
+cÃ³digo hacÃ­a lo correcto, el CSS decidÃ­a otra cosa.
 
-### 28.4 Lo que NO se hizo (decisión de arquitectura)
+### 28.4 Lo que NO se hizo (decisiÃ³n de arquitectura)
 
 `EVALUACION_ARQUITECTURA.md` (sin commitear hasta esta onda) propone
 PostgreSQL + Drizzle + Astro + Tailwind. **No es la arquitectura vigente.** El
-MVP del panel se queda en el stack actual —Express + `node:sqlite` + HTML/CSS/JS
-con islas Vite— porque el backend ya tiene outbox transaccional, idempotencia,
-ledger de doble entrada y reconciliación, verificados con 153 tests, y
-reescribir 97 endpoints para el MVP de administración es riesgo sin beneficio.
-`MVP_ARQUITECTURA_OPENSOURCE.md` sí es compatible con esa decisión (SQLite +
+MVP del panel se queda en el stack actual â€”Express + `node:sqlite` + HTML/CSS/JS
+con islas Viteâ€” porque el backend ya tiene outbox transaccional, idempotencia,
+ledger de doble entrada y reconciliaciÃ³n, verificados con 153 tests, y
+reescribir 97 endpoints para el MVP de administraciÃ³n es riesgo sin beneficio.
+`MVP_ARQUITECTURA_OPENSOURCE.md` sÃ­ es compatible con esa decisiÃ³n (SQLite +
 Node + JS/HTML/CSS, sin build step obligatorio).
 
-### 28.5 Verificación
+### 28.5 VerificaciÃ³n
 
-- `npm test` → **131/131**.
-- `npx playwright test` → **54/54** en 3 viewports (375 / 768 / 1440).
-- El test del CTA del hero se reescribió: esperaba la navegación a la tienda y
+- `npm test` â†’ **131/131**.
+- `npx playwright test` â†’ **54/54** en 3 viewports (375 / 768 / 1440).
+- El test del CTA del hero se reescribiÃ³: esperaba la navegaciÃ³n a la tienda y
   el hero ya abre el modal; ahora comprueba que el modal arranca oculto, que el
   CTA lo abre con su panel y que se cierra.
-- Revisión visual con login real en el panel (375/768/1440): los 12 secciones
+- RevisiÃ³n visual con login real en el panel (375/768/1440): los 12 secciones
   renderizan, el checkbox se ve en los dos estados y el dashboard ya no tiene
   tarjetas pisadas.
 - `gitleaks` limpio en los 7 commits.
 
-## 29. MM-32 — los 5 P0 del panel y 3 bugs más que traía el WIP (2026-11-01)
+## 29. MM-32 â€” los 5 P0 del panel y 3 bugs mÃ¡s que traÃ­a el WIP (2026-11-01)
 
-Cierra la spec MM-32 (10/10 tareas). 11 commits atómicos: uno por cambio
-lógico, del más general al más puntual.
+Cierra la spec MM-32 (10/10 tareas). 11 commits atÃ³micos: uno por cambio
+lÃ³gico, del mÃ¡s general al mÃ¡s puntual.
 
-### 29.1 Lo que la auditoría del 2026-10-31 atribuyó mal
+### 29.1 Lo que la auditorÃ­a del 2026-10-31 atribuyÃ³ mal
 
 - **El checkbox roto no lo introdujo el WIP sin commitear**: ya estaba en
   `HEAD` (commit `cb651fd`). La causa era `.form-group label::before` (que
-  dibuja una caja) **más** `span.check-text` forzado a 20×20 con borde y fondo
-  —el texto dentro de una caja—. La caja ahora la dibuja
+  dibuja una caja) **mÃ¡s** `span.check-text` forzado a 20Ã—20 con borde y fondo
+  â€”el texto dentro de una cajaâ€”. La caja ahora la dibuja
   `span.check-text::before` y el texto conserva la suya.
-- **El "KPI solapado" era una colisión de clases**: la tarjeta de pedidos
+- **El "KPI solapado" era una colisiÃ³n de clases**: la tarjeta de pedidos
   pendientes usaba `class="kpi mochi"` y `.mochi` es **la mascota flotante**
-  de 48 px con su animación. La tarjeta quedaba en 48×48 flotando sobre el
-  panel y el grid repartía mal sus columnas. El acento pasa a `.kpi crema`.
+  de 48 px con su animaciÃ³n. La tarjeta quedaba en 48Ã—48 flotando sobre el
+  panel y el grid repartÃ­a mal sus columnas. El acento pasa a `.kpi crema`.
 
-### 29.2 Tres bugs que la auditoría no vio (venían del WIP)
+### 29.2 Tres bugs que la auditorÃ­a no vio (venÃ­an del WIP)
 
 - **La landing entera era inclicable.** El modal de pedido se muestra con el
-  atributo `hidden`, pero su `style` inline traía `display:flex`, que le gana
+  atributo `hidden`, pero su `style` inline traÃ­a `display:flex`, que le gana
   al `[hidden]` del navegador: el overlay (`inset:0`, `z-index:1000`) quedaba
   siempre encima. Por eso el CTA del hero no navegaba y el e2e fallaba por
   tiempo de espera en los tres viewports.
-- **El modal de pedido no podía crear pedidos.** Mandaba un payload inventado
+- **El modal de pedido no podÃ­a crear pedidos.** Mandaba un payload inventado
   (`customer_address`, `delivery_type`, `total_cents`, `items` como array) y
-  `POST /api/orders` respondía 400 siempre. Ahora usa el contrato real (`id`,
+  `POST /api/orders` respondÃ­a 400 siempre. Ahora usa el contrato real (`id`,
   `pickup_day`, `items` como mapa, `combos` como array, `delivery_mode`,
-  `payment_method_id`), elige el día de recogida entre las ventanas abiertas
-  del server y el total del domicilio sale de la configuración, no de un
+  `payment_method_id`), elige el dÃ­a de recogida entre las ventanas abiertas
+  del server y el total del domicilio sale de la configuraciÃ³n, no de un
   `5000` fijo.
 - **El paso 2 del modal se re-renderizaba** al cambiar el tipo de entrega y
-  vaciaba lo que el cliente había escrito. Ahora se captura antes de
+  vaciaba lo que el cliente habÃ­a escrito. Ahora se captura antes de
   re-renderizar.
 
 ### 29.3 Los 5 P0 del panel
 
 | P0 | Causa | Cierre |
 |---|---|---|
-| XSS almacenado desde `orders.id` | El id lo elige el cliente en un endpoint público y el panel lo interpolaba crudo en atributos y código | El servidor acota el formato (`/^[A-Za-z0-9_-]{1,64}$/`); el panel lo mueve a `data-payload` con listener delegado; 3 tests de regresión |
-| `_paymentMethods` siempre vacío | El panel leía `payMethods.methods`; la API devuelve un array plano | Se acepta el array (y el envelope) |
-| Cambio de estado sin confirmar | Un `<select onchange>` cancelaba pedidos y devolvía el stock reservado sin preguntar | Pide confirmación (avisando que se devuelve el stock) y el `select` vuelve atrás si se rechaza |
-| Umbral de día gratis ×100 | En esta app los `*_cents` son **pesos COP** (`delivery-fee.js`), el panel dividía y multiplicaba por 100 | Se muestra y se guarda en la escala real |
+| XSS almacenado desde `orders.id` | El id lo elige el cliente en un endpoint pÃºblico y el panel lo interpolaba crudo en atributos y cÃ³digo | El servidor acota el formato (`/^[A-Za-z0-9_-]{1,64}$/`); el panel lo mueve a `data-payload` con listener delegado; 3 tests de regresiÃ³n |
+| `_paymentMethods` siempre vacÃ­o | El panel leÃ­a `payMethods.methods`; la API devuelve un array plano | Se acepta el array (y el envelope) |
+| Cambio de estado sin confirmar | Un `<select onchange>` cancelaba pedidos y devolvÃ­a el stock reservado sin preguntar | Pide confirmaciÃ³n (avisando que se devuelve el stock) y el `select` vuelve atrÃ¡s si se rechaza |
+| Umbral de dÃ­a gratis Ã—100 | En esta app los `*_cents` son **pesos COP** (`delivery-fee.js`), el panel dividÃ­a y multiplicaba por 100 | Se muestra y se guarda en la escala real |
 | `available` hardcodeado a `true` | Era imposible despublicar un producto y editar uno despublicado lo reactivaba en silencio | Interruptor "Disponible" en el formulario de sabor |
 
 ### 29.4 Limpieza
 
 `.table-wrap` estaba declarado dos veces, `esc()` y `escapeHtml()` eran el
 mismo escape con dos nombres, `formatCents()` era `fmt()` con otro nombre y
-había dos `fmt()` locales que sombreaban al global. Una implementación cada
+habÃ­a dos `fmt()` locales que sombreaban al global. Una implementaciÃ³n cada
 uno.
 
-### 29.5 Verificación
+### 29.5 VerificaciÃ³n
 
-- `npm test` → **134/134** (131 previos + 3 de regresión del XSS).
-- `npx playwright test` → **57/57** en 3 viewports (375 / 768 / 1440), con DB
+- `npm test` â†’ **134/134** (131 previos + 3 de regresiÃ³n del XSS).
+- `npx playwright test` â†’ **57/57** en 3 viewports (375 / 768 / 1440), con DB
   temporal limpia.
 - Barrido manual con login real: las 12 secciones renderizan con contenido y
   0 errores de consola; con un id de pedido malicioso inyectado en memoria,
-  la fila no genera ningún handler ni etiqueta (0 elementos con
+  la fila no genera ningÃºn handler ni etiqueta (0 elementos con
   `onmouseover`/`onerror`/`onfocus`).
 - `gitleaks` limpio en los 14 commits.
 
-## 30. Onda de feedback del operador — hero mochi, aurora viva y foto de combos (2026-11-01)
+## 30. Onda de feedback del operador â€” hero mochi, aurora viva y foto de combos (2026-11-01)
 
 Cuatro observaciones del operador probando el dev server (:3737), las cuatro
-corregidas el mismo día. 4 commits, verificación 134/134 unit + 57/57 e2e.
+corregidas el mismo dÃ­a. 4 commits, verificaciÃ³n 134/134 unit + 57/57 e2e.
 
 ### 30.1 El hero era un cuadrado, no un mochi
 
-La onda del 2026-10-29 dejó una **segunda definición** del hero visual
-(420×420, `border-radius: 28px !important`) que pisaba el marco blob original,
-y el `overflow: hidden` del wrap recortaba el `::before`: el marco orgánico
-existía pero no se veía. La foto toma ahora la silueta del mochi
-(`55% 45% 62% 38% / 48% 58% 42% 52%`), el marco detrás lleva el radio
-contrario con su rotación, y el wrap ya no recorta. De paso se borró un bloque
-de `.ico` duplicado que el mismo cambio dejó pegado.
+La onda del 2026-10-29 dejÃ³ una **segunda definiciÃ³n** del hero visual
+(420Ã—420, `border-radius: 28px !important`) que pisaba el marco blob original,
+y el `overflow: hidden` del wrap recortaba el `::before`: el marco orgÃ¡nico
+existÃ­a pero no se veÃ­a. La foto toma ahora la silueta del mochi
+(`55% 45% 62% 38% / 48% 58% 42% 52%`), el marco detrÃ¡s lleva el radio
+contrario con su rotaciÃ³n, y el wrap ya no recorta. De paso se borrÃ³ un bloque
+de `.ico` duplicado que el mismo cambio dejÃ³ pegado.
 
-### 30.2 La aurora parecía estática
+### 30.2 La aurora parecÃ­a estÃ¡tica
 
-El shader **sí animaba** (verificado con capturas aisladas cada 3 s), pero a
+El shader **sÃ­ animaba** (verificado con capturas aisladas cada 3 s), pero a
 0.04 de factor temporal y con un desplazamiento de mouse de 0.15: imperceptible
-detrás del contenido. La marcha sube a 0.10, el recorrido del mouse a 0.4, y el
+detrÃ¡s del contenido. La marcha sube a 0.10, el recorrido del mouse a 0.4, y el
 puntero se interpola con inercia (0.06 por frame) para que la aurora persiga al
 mouse en vez de seguirlo en seco.
 
-### 30.3 La sección "Por qué MyMochis" sin borde
+### 30.3 La secciÃ³n "Por quÃ© MyMochis" sin borde
 
-`.why` tenía el fondo clay translúcido sin `border-radius` ni margen, única
-sección translúcida sin los 48px que llevan las demás.
+`.why` tenÃ­a el fondo clay translÃºcido sin `border-radius` ni margen, Ãºnica
+secciÃ³n translÃºcida sin los 48px que llevan las demÃ¡s.
 
 ### 30.4 La foto de los combos se sube desde el dashboard
 
-Los combos tenían título, descripción y precio, pero **ninguno tenía imagen**:
-el formulario solo traía un campo de URL con un botón que mandaba a la galería
-de otra sección, así que la landing los mostraba con el placeholder SVG. El
+Los combos tenÃ­an tÃ­tulo, descripciÃ³n y precio, pero **ninguno tenÃ­a imagen**:
+el formulario solo traÃ­a un campo de URL con un botÃ³n que mandaba a la galerÃ­a
+de otra secciÃ³n, asÃ­ que la landing los mostraba con el placeholder SVG. El
 modal del combo ahora sube el archivo directo a `POST /api/uploads`
-(categoría `combo`), rellena la URL, muestra la vista previa y conserva la
-galería como alternativa. Verificado de punta a punta: subida → guardado → la
-landing muestra la foto con su descripción y precio.
+(categorÃ­a `combo`), rellena la URL, muestra la vista previa y conserva la
+galerÃ­a como alternativa. Verificado de punta a punta: subida â†’ guardado â†’ la
+landing muestra la foto con su descripciÃ³n y precio.
+
+## 31. Las etiquetas de los combos (2026-11-02)
+
+Los sabores tenian un sistema de presentacion -**ribbon** (etiqueta de la
+esquina), **acento de color** y **foto de referencia**, todo desde
+`img/mochis/mochis.config.json`- y los combos no tenian nada de eso: solo el
+badge de destacado, un placeholder SVG y las unidades en un parrafo. 5 commits,
+134/134 unit + 57/57 e2e.
+
+### 31.1 `img/mochis/combos.config.json`
+
+El equivalente del config de sabores para los combos: foto de referencia, acento,
+ribbon y la etiqueta de unidades. Se indexa por el **slug del nombre** del
+combo, no por su id: el id de la tabla `combos` es autoincrement y cambia
+entre bases, mientras que el nombre es la clave con la que el seed y el
+operador hablan del combo.
+
+La foto que el operador sube desde el panel **siempre gana** sobre la de
+referencia. Las de referencia son fotos reales de producto del catalogo de
+sabores, con su acento correspondiente.
+
+### 31.2 Las tres superficies
+
+- **Landing**: la tarjeta de combo toma el ribbon, el acento, la foto y las
+  unidades en pastilla (`6 unidades` + `Tu eliges los sabores`), con la
+  descripcion debajo. Se borro de paso un bloque `.combos-grid` duplicado que
+  habia dejado la onda del 2026-10-29.
+- **Tienda**: el ribbon "Combo" solo salia en los destacados, asi que un combo
+  normal no se distinguia de un sabor. Ahora todos llevan su etiqueta y la foto.
+- **Panel**: la tarjeta de combo lleva la miniatura de la foto subida, o un
+  "sin foto" explicito - sin eso no habia forma de saber si la imagen habia
+  quedado pegada.
+
+### 31.3 Un bug de etiquetas que salio de paso
+
+`FLAVOR_LABELS` (el resumen del pedido en la landing) usaba los slugs viejos
+(`fresas-crema`, `chokis-cream`, `blueberry`) mientras la tabla
+`flavors` usa `clasico-fresa`, `clasico-chokis`,
+`blueberry-cheesecake`: **ninguna clave coincidia**, asi que el resumen
+mostraba el id crudo (`clasico-fresa`) en vez de "Fresas con crema".
+Corregido.
+
+### 31.4 Cache
+
+`combos.config.json` entra al precache del service worker (version `v12`)
+para que la landing conserve las etiquetas sin red. El servidor manda
+`Cache-Control: public, max-age=300` sobre los assets: tras tocar el config
+hay que recargar con Ctrl+F5 (o esperar 5 minutos) para verlo.
