@@ -1685,10 +1685,13 @@ function renderCombos() {
   }).join('');
 }
 
+// Las claves son los ids de la tabla flavors (panel admin). Antes estaban los
+// slugs viejos ('fresas-crema', 'chokis-cream', 'blueberry') y ya no
+// coincidian con nada: el resumen del pedido mostraba el id crudo.
 const FLAVOR_LABELS = {
-  'fresas-crema': 'Fresas con crema',
-  'chokis-cream': 'Chokis & cream',
-  'blueberry': 'Blueberry',
+  'clasico-fresa': 'Fresas con crema',
+  'clasico-chokis': 'Chokis & cream',
+  'blueberry-cheesecake': 'Blueberry',
   'durazno-caramelizado': 'Durazno caramelizado',
   'crema-pastelera': 'Crema pastelera'
 };
