@@ -1074,6 +1074,13 @@ footer {
   const STORAGE_KEY = 'mymochis_cart_v1';
   let catalog = null;
   let cart = loadCart();
+  let COMBOS_CONFIG = {};
+
+  function comboSlug(name) {
+    return String(name || '')
+      .normalize('NFD').replace(/[\u0300-\u036f]/g, '')
+      .toLowerCase().replace(/[^a-z0-9]+/g, '-').replace(/^-+|-+$/g, '');
+  }
 
   // G2 — checkout: modo de entrega, cotización de domicilio y forma de pago.
   let _deliveryMode = 'recoger';
@@ -1244,10 +1251,14 @@ footer {
     const card = document.createElement('div');
     card.className = 'product-card featured';
     const qty = Number((cart.combos.find(x => String(x.id) === String(c.id)) || {}).qty) || 0;
+    // La foto que subio el admin gana; si no hay, la de referencia del config.
+    const cfg = COMBOS_CONFIG[comboSlug(c.name)] || {};
+    const photo = (c.image_url && String(c.image_url).trim()) || cfg.photo || '';
+    const ribbon = cfg.ribbon || 'Combo';
     card.innerHTML = `
-      ${c.featured ? '<div class="ribbon">Combo</div>' : ''}
+      <div class="ribbon">${escapeHtml(ribbon)}</div>
       <div class="photo">
-        ${c.image_url ? `<img src="${escapeAttr(c.image_url)}" alt="${escapeAttr(c.name)}">` : `<div class="fallback" style="background:var(--mochi-cyan);color:var(--mochi-cyan-d)">${escapeHtml(initials(c.name))}</div>`}
+        ${photo ? `<img src="${escapeAttr(photo)}" alt="${escapeAttr(c.name)}">` : `<div class="fallback" style="background:var(--mochi-cyan);color:var(--mochi-cyan-d)">${escapeHtml(initials(c.name))}</div>`}
       </div>
       <div class="body">
         <h3>${escapeHtml(c.name)}</h3>
@@ -1838,6 +1849,15 @@ footer {
       $('#storeEmpty').textContent = 'No pudimos cargar el catálogo. Recargá la página.';
       $('#storeEmpty').style.display = 'block';
       return;
+    }
+
+    // Presentacion de los combos (foto de referencia, etiqueta). El id de la
+    // tabla combos es autoincrement, asi que se indexa por el slug del nombre.
+    try {
+      const cr = await fetch('/img/mochis/combos.config.json');
+      if (cr.ok) COMBOS_CONFIG = await cr.json();
+    } catch (e) {
+      console.warn('No se pudo cargar combos.config.json:', e.message);
     }
 
     if (!catalog.flavors.length && !catalog.combos.length) {
