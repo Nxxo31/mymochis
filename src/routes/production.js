@@ -104,6 +104,18 @@ router.post('/apply-suggested', adminOnly, (req, res) => {
   const unitCost = batchCost > 0 ? Math.round(batchCost / units) : 0;
   if (unitCost <= 0) return res.status(400).json({ error: 'no_cost', message: 'Primero agregá insumos para calcular el precio sugerido.' });
   const suggested = Math.ceil((unitCost / (1 - targetPct / 100)) / 50) * 50;
+  // 2026-11-02: preview por defecto. Sin `apply: true` NO se escribe nada.
+  // Antes un solo clic pisaba el precio de TODOS los sabores del catalogo.
+  const affected = db.prepare('SELECT id, name, price AS current_price FROM flavors ORDER BY sort_order, name').all();
+  if (req.body?.apply !== true) {
+    return res.json({
+      preview: true,
+      price_cents: suggested,
+      unit_cost_cents: unitCost,
+      batch_cost_cents: batchCost,
+      affected: affected.map(f => ({ id: f.id, name: f.name, current_price: f.current_price, new_price: suggested })),
+    });
+  }
   const info = db.prepare('UPDATE flavors SET price = ? WHERE price IS NOT NULL').run(suggested);
   res.json({ ok: true, updated: info.changes, price_cents: suggested });
 });

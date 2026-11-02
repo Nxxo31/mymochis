@@ -4639,7 +4639,15 @@ window.saveProduccionSettings = async function () {
 window.applySuggestedPrices = async function () {
   if (!confirm('Vas a cambiar el precio de todos los productos del catálogo al precio sugerido. ¿Continuar?')) return;
   try {
-    const out = await api('/production/apply-suggested', { method: 'POST', body: JSON.stringify({ confirm: true }) });
+    // 2026-11-02: primero previsualiza (sin escribir) y muestra el impacto real.
+    const preview = await api('/production/apply-suggested', { method: 'POST', body: JSON.stringify({ confirm: true }) });
+    if (preview?.preview) {
+      const n = (preview.affected || []).length;
+      const ej = (preview.affected || [])[0];
+      const detalle = ej ? ` Ejemplo: ${ej.name} ${fmt(ej.current_price)} -> ${fmt(ej.new_price)}.` : '';
+      if (!confirm(`Se va a poner el precio ${fmt(preview.price_cents)} a ${n} productos.${detalle} Continuar?`)) return;
+    }
+    const out = await api('/production/apply-suggested', { method: 'POST', body: JSON.stringify({ confirm: true, apply: true }) });
     await loadAll();
     toast(`Precios actualizados: ${out.updated} productos`, 'success');
     render.produccion();

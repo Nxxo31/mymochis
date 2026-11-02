@@ -158,7 +158,17 @@ test('settings guarda referencia de mercado y summary la contrasta', async () =>
 test('apply-suggested exige confirmación y actualiza precios', async () => {
   const noConfirm = await api('POST', '/api/production/apply-suggested', { token, body: {} });
   assert.equal(noConfirm.status, 400);
-  const apply = await api('POST', '/api/production/apply-suggested', { token, body: { confirm: true } });
+  // 2026-11-02: preview por defecto (no escribe); la escritura exige apply:true.
+  const before = await api('GET', '/api/production/summary', { token });
+  const priceBefore = before.json.catalog_products[0]?.price_cents;
+  const preview = await api('POST', '/api/production/apply-suggested', { token, body: { confirm: true } });
+  assert.equal(preview.status, 200, JSON.stringify(preview.json));
+  assert.equal(preview.json.preview, true);
+  assert.ok(Array.isArray(preview.json.affected));
+  assert.ok(preview.json.price_cents > 0);
+  const during = await api('GET', '/api/production/summary', { token });
+  assert.equal(during.json.catalog_products[0]?.price_cents, priceBefore, 'la preview no debe escribir precios');
+  const apply = await api('POST', '/api/production/apply-suggested', { token, body: { confirm: true, apply: true } });
   assert.equal(apply.status, 200, JSON.stringify(apply.json));
   assert.ok(apply.json.updated >= 0);
   assert.ok(apply.json.price_cents > 0);
