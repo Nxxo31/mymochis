@@ -1834,6 +1834,18 @@ Los pedidos se cerraron a las **2:00 AM** cuando el dueÃ±o pensaba que cerrar�
 las 7:00 AM. No se arreglÃ³ porque altera *cuÃ¡ndo vende el negocio*, que es
 decisiÃ³n del operador, no una correcciÃ³n tÃ©cnica.
 
+> **Corrección de estado (2026-11-02).** Esta sección decía "bug abierto" pero el
+> código ya lo resolvió: commit `bc2724c` (2026-10-22) aplicó el fix y fijó la
+> regresión en `test/audit-regression.test.js`. `combineDateAndTime()` ya no usa
+> `Date.UTC` crudo: resta `BUSINESS_TZ_OFFSET_MINUTES = -300`
+> (`src/lib/business-time.js:2`, `src/routes/orders.js:67-68`, y el espejo
+> `worker/routes/orders.js:49-53`). Se conserva el análisis original porque
+> explica la clase de bug: interpretar una hora local como UTC.
+>
+> **Fuente de cutoff oficial (decidido):** el computado desde
+> `delivery_schedule` (`pickupCutoffFor`, `src/routes/orders.js:88-105`). La
+> columna `release_windows.cutoff_at` queda como dato informativo.
+
 Decidir antes de tocarlo:
 1. Â¿La zona horaria canÃ³nica es Colombia? Entonces `combineDateAndTime` debe
    construir hora local, no UTC. Opciones: una columna `tz` en `config`, o
@@ -2266,3 +2278,659 @@ Corregido.
 para que la landing conserve las etiquetas sin red. El servidor manda
 `Cache-Control: public, max-age=300` sobre los assets: tras tocar el config
 hay que recargar con Ctrl+F5 (o esperar 5 minutos) para verlo.
+
+## 32. Caso de uso 1 — El panel opera el negocio y la landing lo refleja (2026-11-02)
+
+> **Estado: PROPUESTA para aprobación del operador.** Esta es la definición de
+> la lógica de funcionalidad del primer caso de uso. No hay código de esto
+> todavía: describe el modelo, las reglas y el plan.
+
+### 32.1 El caso de uso, en una frase
+
+El admin es el **único autor**. Sube sus productos, los categoriza, sube sus
+imágenes y su contenido, arma promociones, combos y ofertas **a partir de los
+productos que hay**, edita la landing con el contenido que quiera, y recibe en
+su panel y en su WhatsApp cada pedido y cada confirmación. El cliente ve en la
+landing el resultado de todo eso, y **nadie tiene que tocar el repo** para que
+la landing cambie.
+
+### 32.2 La regla que hoy está rota
+
+Hoy hay tres fuentes de verdad y solo una es editable desde el panel:
+
+| Dato | Dónde vive HOY | ¿Editable desde el panel? |
+|---|---|---|
+| Nombre, precio, disponibilidad del sabor | tabla `flavors` (`src/db.js:45`) | Sí |
+| Categoría del sabor | `flavors.category_id` (`src/db.js:639`) | API sí, **UI no** (el modal no manda `category_id`, `manage.html:2320-2329`) |
+| Foto de referencia, acento, ribbon del sabor | `public/img/mochis/mochis.config.json` (archivo del repo) | **No** |
+| Foto de referencia, acento, ribbon del combo | `public/img/mochis/combos.config.json` (archivo del repo, indexado por slug) | **No** |
+| Texto del hero, "cómo funciona", trust, "por qué" | HTML fijo (`public/index.html:1138-1197`) | **No** |
+| Orden y visibilidad de las secciones | HTML fijo | **No** |
+| WhatsApp | `config.whatsapp_number` **y** `573213050426` hardcodeado (`index.html:2172`) | Sí, pero la landing **ignora** el valor |
+| Qué sabores trae un combo | **no existe** (`combos` no tiene items, `src/db.js:57`) | — |
+| Si una promo descuenta | **no existe** (`src/lib/pricing.js` no lee `promos`) | — |
+| `alt_text` y referencias de una imagen | `uploads` (`src/db.js:212`) sin refs | Parcial |
+
+**Principio que corrige todo lo demás:** *todo lo que el cliente ve y compra
+sale de la DB; lo que vive en el repo es semilla, no configuración.*
+
+### 32.3 Cuatro capas y una sola dirección de escritura
+
+```
+C1 CATÁLOGO     panel  -> producto, categoría, media, stock por día
+C2 DERIVADOS    panel  -> combos y promos (el server los CALCULA sobre C1)
+C3 CONTENIDO    panel  -> secciones de la landing, copy, SEO, imágenes
+C4 PEDIDOS      cliente-> checkout autoritativo en el server
+                 -> panel (el admin ve) + WSP (el admin recibe)
+```
+
+Reglas de dependencia: C2 no puede referring a nada que no exista en C1; C3 no
+puede mencionar un producto que no exista; C4 solo lee lo que C1 y C2
+publicaron. Ninguna capa escribe en otra: el panel escribe en C1/C2/C3, el
+cliente escribe en C4, el server deriva.
+
+### 32.4 C1 — Catálogo: producto, categoría, media y disponibilidad
+
+Un **producto** (sabor) tiene: id (slug), nombre, descripción, precio,
+acento/color, ribbon, categoría, imagen, orden, destacado, disponible.
+
+- **R1** El `id` (slug) es **inmutable**: es la clave de la presentación y la
+  clave con la que los pedidos lo referencian. Renombrar el sabor no lo cambia.
+- **R2** El precio es **pesos COP enteros**, nunca centavos
+  (`src/lib/pricing.js:5-9`). Prohibido dividir entre 100.
+- **R3** Todo sabor pertenece a **exactamente una** categoría; las categorías
+  se editan desde el panel (hoy el CRUD de `src/routes/categories.js` es
+  inalcanzable: 0 llamadas a `/api/categories` en `manage.html`).
+- **R4** La presentación (acento, ribbon, foto de referencia, texto corto) vive
+  en la DB. Los dos JSON del repo pasan a ser **semilla** (backfill) y luego se
+  borran: si el admin no puede cambiarlo desde el panel, no está en la landing.
+- **R5** `available` es el flag global; el **stock real por día** está en
+  `release_items` por ventana de recogida (`src/db.js:172-179`). "Disponible
+  hoy" = ventana abierta ∧ stock > 0 ∧ cutoff no vencido, y ese cálculo es
+  **del server** (el bug del cutoff 5 h adelantado sigue abierto, `PROJECT.md`
+  §23.3).
+- **R6** `sort_order` y "destacado" son editables desde el panel (hoy
+  `sort_order` se manda siempre 99 y `featured` no existe en `flavors`).
+- **R7** Toda imagen tiene `alt_text`; borrar un asset con referencias se
+  bloquea o desasigna (hoy `DELETE /api/uploads/:filename` borra el archivo
+  físico y deja referencias colgadas, `src/routes/uploads.js:92`).
+- **R8** La galería de Instagram es contenido **externo**: no se edita, pero sí
+  se puede ocultar.
+
+### 32.5 C2 — Derivados: combos, promos y ofertas
+
+**Combos.** Tabla nueva `combo_items(combo_id, flavor_id, qty)`.
+
+- El combo se **arma en el panel** eligiendo productos del catálogo y
+  cantidades. Es lo que el operador pidió: combos *según los productos que
+  haya*.
+- `units` pasa a ser **derivado** (Σ qty de los items) y se recalcula al guardar.
+- **Precio**: por defecto derivado = Σ (precio del item × qty), con el
+  descuento que defina el admin; `compare_at_price` = la misma Σ sin descuento
+  (el "antes" tachado). Modo "precio fijo" (override) = no se recalcula.
+- **Disponibilidad**: `combo disponible = available ∧ ∀ item (disponible ∧
+  stock suficiente)`. Si un item se agota, el combo se marca agotado en
+  landing, tienda y panel, y el server lo rechaza en el checkout.
+- **Composición visible**: el cliente ve "2× Fresas + 1× Durazno" en la landing,
+  la tienda, el resumen del pedido y el mensaje de WSP. Hoy el combo no dice
+  qué trae.
+
+**Promos.** Hoy son decorativas: `pricing.js` no las lee, solo se pintan en una
+barra (`src/routes/public.js:23`), y el panel ni siquiera manda la ventana
+(`manage.html:2656` vs `src/routes/promos.js:32`).
+
+- Campos nuevos: `applies_to` (sabor/categoría/combo/todo), `applies_to_id`,
+  `max_discount`, `usage_limit`, `used_count`, `stackable`.
+- **Motor de aplicación (server, en este orden)**:
+  1. la promo está activa y dentro de la ventana `starts_at`/`ends_at`;
+  2. el pedido alcanza `min_purchase`;
+  3. solo se affectan las líneas elegibles según `applies_to`;
+  4. una promo por pedido (o varias si `stackable`);
+  5. `percent` = % del subtotal elegible acotado por `max_discount`; `fixed` =
+     monto fijo acotado al subtotal elegible; `bxgy` = "compra X y paga Y"
+     sobre la línea elegible más cara.
+- El resultado se **desglosa**: `subtotal · promo · envío · total`. El cliente
+  ve ese desglose antes de confirmar; el pedido lo guarda (`pricing_snapshot`)
+  y el admin ve exactamente lo que se descontó.
+- La barra de promos de la landing muestra solo promos **realmente aplicables**.
+
+**Ofertas.** Lo que hoy el sistema llama "oferta del día" son las ventanas de
+recogida con stock por sabor (`release_windows` + `release_items`): el admin
+define qué se produce y para qué día, y la landing muestra solo lo
+disponible. Se le suma la promo de esa ventana como oferta acotada.
+
+### 32.6 C3 — Contenido: la landing editable desde el panel
+
+Hoy no existe: no hay tabla de contenido, ni endpoint, ni UI
+(0 hits de `site_config`/`landing_content`/`sections` en `src/` y `worker/`).
+
+- Tabla nueva `landing_sections`:
+  `key, kind, visible, sort_order, title, subtitle, body, image_url, cta_label,
+  cta_url, config_json`.
+- `kind` ∈ `hero · flavors · combos · promos · why · how · hours · gallery ·
+  faq · order_form`.
+- La landing pasa a ser un **template con slots** (`data-section="key"`); el
+  JS rellena cada slot con el payload de `GET /api/public` (que ya es el
+  payload único que consume la landing, `src/routes/public.js:9`). Si una
+  sección no existe o está oculta, no sale.
+- Panel: sección nueva **"Contenido"** con editor por sección (texto, imagen,
+  visible, orden con drag, CTA) y vista previa. Se escribe con
+  `PUT /api/landing/sections/:key`.
+- SEO (`title`, `description`, `og:image`) y ajustes de marca en
+  `landing_settings` (key/value) o en la fila `config` extendida.
+- **Límite explícito**: se edita el *contenido*, no el *diseño*. El CSS y el
+  JS son código del repo; el texto y las imágenes son datos.
+
+### 32.7 C4 — El pedido: de la landing al panel y de vuelta al WhatsApp
+
+Estados: `pending → confirmed → preparing → ready → completed`, más
+`cancelled` y `expired`. Hoy `status` es texto libre sin transiciones
+(`src/db.js:87`).
+
+1. El cliente ve el catálogo real (C1+C2) y arma el pedido: nombre, teléfono,
+   día de recogida, modo (recogida/domicilio), dirección si aplica, método de
+   pago, notas y promo.
+2. `POST /api/orders` (público, `src/routes/orders.js:253`): el server valida
+   cutoff, **recalcula** los precios (`pricing.js`), **aplica la promo**,
+   reserva stock, **genera el id del pedido** (hoy lo genera el cliente,
+   `index.html:2151`) y guarda el desglose. Devuelve
+   `{order, breakdown, whatsapp.deep_link}`.
+3. La landing **abre el WhatsApp con el `deep_link` del server** (hoy lo ignora
+   y usa un número hardcodeado, `index.html:2171-2172`), y el mensaje lo arma
+   **un solo formateador** (`src/lib/whatsapp.js:88`) → el round-robin entre
+   `order_recipients` funciona de verdad y el mensaje incluye el desglose y el
+   código del pedido.
+4. El admin ve el pedido en el panel: filtro "sin confirmar", contador, badge
+   y sonido.
+5. El admin confirma el pago (`POST /api/orders/:id/confirm-payment`,
+   `orders.js:515`): se hace el **commit del stock** (la reserva se convierte en
+   venta) y se notifica. Idempotente.
+6. Cada cambio de estado notifica por WSP (al admin y, opcionalmente, al
+   cliente): nuevo, confirmado, listo, entregado, cancelado. Hoy solo se
+   notifica la confirmación y con `business_name: null`
+   (`src/lib/payments/order-notify.js:48`).
+
+### 32.8 Invariantes (no negociables)
+
+- **I1** El precio de toda línea y todo descuento lo calcula el server. El
+  cliente nunca manda precios.
+- **I2** La disponibilidad de un combo = ∩ de sus items; la de un pedido = ∩
+  de sus líneas.
+- **I3** Todo texto visible en la landing sale de la DB. Si el admin no lo
+  puede cambiar desde el panel, no está en la landing.
+- **I4** El `id` de un sabor es inmutable.
+- **I5** La presentación de un producto no vive en un archivo del repo.
+- **I6** El número de WhatsApp sale de la DB (`config.whatsapp_number` +
+  `order_recipients`); nunca hardcodeado.
+- **I7** Toda imagen tiene `alt_text`; no se borra un asset referenciado.
+- **I8** Todo cambio de estado de pedido deja rastro y notifica.
+- **I9** El dinero son pesos COP enteros. Nunca `/100`.
+
+### 32.9 Flujos end-to-end
+
+| # | Flujo | Resultado verificable |
+|---|---|---|
+| F1 | Admin crea/edita un producto (categoría, imagen, acento, precio, disponibilidad) | La landing lo muestra con su foto y su categoría; el panel no tiene otro checkout |
+| F2 | Admin arma un combo con 3 productos | La landing muestra qué trae, su precio derivado y "agotado" si un item se agota |
+| F3 | Admin activa una promo de 15% con ventana y mínimo | El checkout descuenta 15% server-side, desglosado, y el panel ve el mismo desglose |
+| F4 | Admin edita el hero y reordena secciones | La landing cambia sin tocar el repo |
+| F5 | Cliente pide → admin recibe en panel y WSP → admin confirma | El pedido aparece en "sin confirmar", llega al WSP del admin (número del round-robin), y al confirmar el stock se vende y se notifica |
+
+### 32.10 Gap verificado contra el código
+
+| Gap | Dónde | Efecto en este caso de uso |
+|---|---|---|
+| Sin UI de categorías; el modal no manda `category_id` | `manage.html:2320-2329`, `src/routes/categories.js` | "los categoriza" no se puede hacer |
+| Presentación en JSON del repo | `mochis.config.json`, `combos.config.json` | El panel no manda sobre fotos/acentos/ribbons |
+| Combos sin items | `src/db.js:57` | No hay combos "según los productos que haya" |
+| Promos decorativas | `src/lib/pricing.js` | Las promociones no descuentan |
+| Landing no editable | `public/index.html` (HTML fijo) | "editar la landing" no existe |
+| WSP hardcodeado + mensaje duplicado | `index.html:2171-2172` vs `src/lib/whatsapp.js:88` | El round-robin no aplica al cliente final |
+| Id de pedido lo genera el cliente | `index.html:2151` | El cliente elige su propia clave |
+| `source:'landing'` fuera de `SOURCE_ES` | `manage.html:1921` | La tabla muestra el literal crudo |
+| `sort_order` fijo en 99; sin `featured` en sabores | `manage.html:2328` | No se puede ordenar ni destacar desde el panel |
+| Delete de media deja refs colgadas | `src/routes/uploads.js:92` | Imágenes rotas en la landing |
+| Secciones `social` y `pagos` inalcanzables | `manage.html:1397`, `:1440` | Trabajo a medias visible |
+| Cutoff 5 h adelantado | `PROJECT.md` §23.3 | "disponible hoy" puede mentir |
+| Dos checkouts (landing y `/tienda`) | `index.html:2147`, `tienda.html:1726` | El formulario se mantiene duplicado |
+
+### 32.11 Cambios de schema propuestos
+
+- `flavors`: + `accent`, `ribbon`, `description_short`, `featured`
+- `combos`: + `accent`, `ribbon`, `description_short`, `price_mode`
+  (`derived`/`fixed`), `discount_pct`; **nueva** `combo_items(combo_id,
+  flavor_id, qty)`
+- `promos`: + `applies_to`, `applies_to_id`, `max_discount`, `usage_limit`,
+  `used_count`, `stackable`, `auto_apply`
+- `uploads`: + `entity_type`, `entity_id` (o tabla `media_refs`)
+- `orders`: `status` con CHECK + `pricing_snapshot` + `promo_code`
+- **nuevas**: `landing_sections`, `landing_settings`
+- Backfill: `mochis.config.json` y `combos.config.json` → columnas de
+  `flavors`/`combos`; después los JSON se borran del repo.
+
+### 32.12 Decisiones que bloquean (preguntas al operador)
+
+- **D1** ¿El precio del combo es siempre derivado del catálogo o el admin lo
+  fija a mano? *Propuesta: derivado por defecto, con override manual.*
+- **D2** ¿Las promos se aplican automáticamente (la mejor elegible) o el cliente
+  mete un código? *Propuesta: automática si `auto_apply`; por código si no.*
+- **D3** ¿Landing editable por sección (10 secciones, con visible + orden) o
+  solo bloques de texto? *Propuesta: por sección.*
+- **D4** ¿El cliente recibe confirmación por WSP o solo el admin?
+  *Propuesta: ambos; al cliente "tu pedido #X quedó confirmado".*
+- **D5** ¿Quién más opera el panel además del dueño? *Si hay una segunda
+  persona, se activa el gating por rol de MM-33.*
+- **D6** ¿El formulario de compra vive en la landing, en `/tienda` o en ambos?
+  *Propuesta: un solo checkout (el de la landing) y `/tienda` como vitrine.*
+
+### 32.13 Plan: cuatro specs nuevas (y reconciliación con el plan vigente)
+
+| Spec | Nombre | Tareas |
+|---|---|---|
+| **MM-37** (spec 44) | Catálogo como fuente de verdad | categorías en la UI + `category_id`; presentación a la DB (backfill y borrado de los JSON); media con `alt_text` y referencias; `sort_order`/`featured`; alt-text obligatorio; fin de los JSON |
+| **MM-38** (spec 45) | Combos y promos que se calculan | `combo_items` + constructor de combos; precio/unidades/disponibilidad derivados; motor de promos (ventana, elegibilidad, mínimo, bxgy) + desglose en el checkout; snapshot del desglose en el pedido |
+| **MM-39** (spec 46) | Landing editable | `landing_sections` + `landing_settings`; template con slots; `GET /api/public` ampliado; editor por sección en el panel con vista previa; SEO; secciones visibles y ordenables |
+| **MM-40** (spec 47) | Cierre del pedido: panel ↔ WSP | id de pedido server-side; la landing usa el `deep_link`; un solo formateador de mensaje; estados con transiciones; notificación en cada cambio; contador/badge de "sin confirmar"; `SOURCE_ES`; id de combo por slug |
+
+**Reconciliación** con el plan vigente (specs 39-43): MM-32 está cerrada. MM-33
+(modularidad del panel) es requisito previo y no se toca. **MM-34 se
+re-escopifica**: sus 11 tareas se reparten entre MM-37/38/40 (promos que no
+descontan, categorías muertas, paginación y contador de "sin confirmar",
+secciones huérfanas, `apply-suggested` con previsualización). MM-35 (cobertura)
+se amplía a las cuatro specs nuevas. MM-36 (producción) se queda al final.
+
+Orden: MM-33 → MM-37 → MM-38 → MM-39 → MM-40 → MM-35 → MM-36.
+
+### 32.14 Verificación
+
+Base actual: **134/134 unit + 57/57 e2e**. Para este caso de uso:
+- e2e del ciclo completo admin → landing → pedido → panel → WSP (con aserciones
+  sobre el desglose y el `deep_link`);
+- contrato de API de `GET /api/public` (que la landing y el panel no se
+  desincronicen);
+- regresión: el total del cliente nunca manda; el WSP nunca usa un número
+  hardcodeado; ningún JSON de presentación sobrevive en el repo.
+
+> **Actualizado en §33.15**: el plan de specs de este capítulo (MM-37..MM-40)
+> queda sustituido por el plan del patrón (§33), que lo descompone en 8 specs
+> (MM-37..MM-44) e integra el módulo de producción y el de domicilios, que en
+> este capítulo no estaban dentro del caso de uso 1.
+
+## 33. El patrón de diseño: Núcleo + Perfil de Negocio (2026-11-02)
+
+> **Estado: PROPUESTA para aprobación del operador.** Define el patrón con el
+> que se construye el caso de uso 1 y, con el mismo núcleo, cualquier otro
+> modelo de negocio de este tipo (artesanal por lotes, panadería,/node-food).
+> No es código todavía.
+
+### 33.1 Qué motivó el patrón (medido sobre el código, no opiniado)
+
+| Hallazgo | Dónde | Consecuencia |
+|---|---|---|
+| 3.561 líneas de `<style>` inline que re-declaran lo que `ui.css` ya tiene | `index.html:45-1099` (1054), `tienda.html:18-851` (833), `manage.html:16-1689` (1674) | Tres "design systems" que se contradicen |
+| 2 checkouts duplicados con DOM distinto para la misma card | `index.html:1990-2036` vs `tienda.html:960-1037`; `.product-card` en `ui.css:403-545` y re-declarado en `tienda.html:214-330` | Cada arreglo se hace dos veces (o ninguna) |
+| 8 funciones de render + 3 loaders, y `/api/public` se pide **dos veces** | `index.html:1519-1749`, `1719` | La landing no es un render, es un guion |
+| ~60 líneas de copy hardcodeado en el HTML | `index.html:1138-1380` | "Editar la landing" no existe |
+| Panel de 4.734 líneas escrito a mano, 100 callables, 68 `innerHTML` | `public/manage.html` | Agregar un campo = HTML + JS + wiring |
+| Botones **muertos** en la landing: `data-flavor-add` y `data-combo` no tienen listener | `index.html:1554`, `1697` vs el delegado `2197-2247` | "Añadir al carrito" y "Pedir <combo>" no hacen nada |
+| `.glass` y `.product-selector*` sin ninguna regla CSS | `index.html:1961-1975`, `2051-2064` | Elementos sin estilo |
+| Producción: **una sola receta global** para todos los sabores | `production_items` (`src/db.js:241-248`) | "Materia prima" = una hoja de papel |
+| `apply-suggested` escribe **el mismo precio en todos los sabores** | `src/routes/production.js:107` (`WHERE price IS NOT NULL` es un no-op con `price NOT NULL DEFAULT 8000`) | DESTRUCTIVO: un clic destruye el precio del catálogo |
+| `production_items.name` no es UNIQUE | `src/db.js:243` | "Harina" repetida infla el costo del lote |
+| Producción no alimenta el stock vendible | `production_items` no tiene FK; `release_items` se carga a mano | Dos silos: costeo y stock |
+| Dos calendarios para lo mismo: día de semana y fecha | `delivery_schedule` (`db.js:181`) vs `release_windows` (`db.js:160`) | "Semanas y días" no se pueden editar con un modelo |
+| El domicilio no valida stock, ventana ni cutoff | `src/routes/orders.js:320-362` | Se puede vender lo que no hay |
+| La landing no usa el motor de cotización | `index.html:2091-2092` (tarifa plana) vs `tienda.html:1584` (`/api/delivery/quote`) | El precio mostrado puede diferir del cobrado |
+| El WSP al admin no incluye dirección ni modo de entrega | `src/lib/whatsapp.js:88-114` | El admin no sabe si es domicilio |
+| Sin estados de entrega, repartidor ni cola | `orders.status` es genérico (`orders.js:18`) | No hay operación de reparto |
+
+**Conclusión:** no faltan funciones; falta el modelo. Cada necesidad se
+resolvió a mano, dentro de una página, y por eso todo se duplica y nada se
+puede editar desde el panel.
+
+### 33.2 El patrón en una frase
+
+**Un núcleo declarativo (esquemas + slots + motor de reglas) y un "perfil de
+negocio" por tipo de modelo (entidades, reglas, secciones y workflows)
+declarados como datos. El panel y la landing son dos vistas del mismo perfil.**
+
+Regla de oro: **el admin edita DATOS; el núcleo los convierte en PANTALLA.**
+Si algo necesita código para cambiarse, es código: no se pone en el panel.
+Y al revés: si el negocio va a cambiarlo cada semana, es dato: se pone en el
+panel aunque hoy parezca un texto fijo.
+
+### 33.3 Las seis piezas del núcleo
+
+| # | Pieza | Qué resuelve | Hoy |
+|---|---|---|---|
+| N1 | Registro de esquemas | formularios generados: el panel no escribe un form por entidad | 4.734 líneas a mano |
+| N2 | Registro de secciones (`kind`) | cada sección de la landing editable sin tocar HTML | 0 editables |
+| N3 | Renderer de slots | una sola ruta de render, responsive, un solo fetch | 8 renders, 2 fetch, CSS duplicado |
+| N4 | Motor de reglas | precio, disponibilidad, combo, promo, cutoff: un solo cálculo | 3 copias de la fórmula |
+| N5 | Calendario de servicio | semanas → instancias → slots, todo editable | 2 calendarios desligados |
+| N6 | Salidas + RBAC | todo cambio notifica (WSP), deja rastro y respeta el rol | WSP duplicado, sin audit, sin roles |
+
+### 33.4 N1 — Registro de esquemas (los formularios se generan)
+
+Cada entidad se declara con un esquema: `key`, `label`, `fields[]`
+(`name`, `type`, `label`, `required`, `options`, `min`, `max`, `help`, `group`,
+`visible_by`), `list[]` (columnas), `order`, `parent`, `api`.
+
+Tipos de campo: `text`, `textarea`, `number` (pesos), `money`, `select`,
+`multiselect`, `switch`, `date`, `datetime`, `time`, `weekday`, `image`,
+`color`, `richtext-lite`, `ref` (relación a otra entidad), `json`.
+
+- El panel recibe **una pantalla genérica** por entidad: filtro + tabla +
+  formulario, con permisos por campo y por rol.
+- Agregar "categoría" o "proveedor" deja de ser 200 líneas de HTML y pasa a ser
+  una entrada en el registro.
+- **Lo que no se mete en el registro**: apps especiales que se construyen
+  encima del núcleo (el constructor de combos, el plan de producción, la
+  matriz de precios). Se hacen como *apps* con sus propios componentes, no
+  como páginas aparte ni como formularios genéricos.
+
+### 33.5 N2 — Registro de secciones (cada sección editable)
+
+`landing_sections(key, kind, visible, sort_order, title, subtitle, body,
+image_url, cta_label, cta_url, config_json)`.
+
+Cada `kind` declara: sus **campos editables**, su **componente de render** y
+los **datos que consume**.
+
+Catálogo inicial de kinds:
+
+| kind | Campos editables | Datos |
+|---|---|---|
+| `hero` | eyebrow, title, lead, cta, imagen, badge | config + media |
+| `flavors` | título, subtítulo, filtro por categoría, orden, límite, layout | catálogo |
+| `combos` | título, subtítulo, filtro, orden, destacado | catálogo |
+| `promos` | título, mostrar/ocultar, estilo | promos aplicables |
+| `releases` | título, weeks_label, mostrar cupos, mostrar "cerrado" | calendario N5 |
+| `hours` | título, nota | `service_templates` |
+| `why` | título, ítems (texto + icono + texto) | datos |
+| `how` | título, pasos (título + texto + imagen) | datos |
+| `gallery` | título, visible, origen (IG / manual) | `ig_posts` / media |
+| `faq` | título, preguntas (pregunta + respuesta) | datos |
+| `social` | título, usuario, enlaces | config |
+| `footer` | columnas (título + links) | datos |
+| `order_form` | título, campos visibles, nota, métodos de pago | config + métodos |
+
+- El panel: editor por sección con (a) los campos del kind, (b) visible,
+  (c) orden con drag, (d) **previsualización real** (el mismo renderer que
+  usa la landing).
+- Los kinds de catálogo (`flavors`, `combos`, `promos`) se configuran con
+  filtros y orden, no con HTML.
+- **Semanas y días**: el kind `releases` se alimenta del calendario N5, así que
+  cuando el admin edite el patrón semanal y las excepciones, la sección de la
+  landing cambia sola.
+
+### 33.6 N3 — Renderer de slots y sistema de diseño
+
+- HTML final mínimo: `<section data-slot="hero"></section>`, `<section
+  data-slot="flavors"></section>`, … El JS monta; **si no hay sección, el slot
+  desaparece**.
+- Un **solo** `GET /api/public` devuelve `sections` + datos; el front no
+  vuelve a pedirlo (hoy `loadReleases()` lo hace, `index.html:1719`).
+- Sistema de diseño: `theme.css` (tokens, fuente canónica) + `ui.css`
+  (componentes) ya existen → el trabajo es **matar los `<style>` inline**
+  (3.561 líneas) y subir a `ui.css` lo que aún vive dentro de una página.
+- Responsive por defecto, no por excepción:
+  - grids fluidos `repeat(auto-fit, minmax(Xpx, 1fr))`;
+  - tipografía con `clamp()`;
+  - **container queries** para los componentes (hoy no hay ninguna);
+  - **variables de breakpoint** (hoy 11 valores escritos a mano por página);
+  - un solo `.product-card` y un solo modal (hoy hay 2 de cada uno).
+
+### 33.7 N4 — Motor de reglas (la parte que se calcula)
+
+Un módulo `src/rules/` con funciones puras y **una sola** implementación:
+
+```
+priceLine(item, qty)          precio de una línea
+priceCombo(combo)              precio de un combo (derivado o fijo)
+availableCombo(combo)          disponible = ∩ de sus items
+applyPromo(order, promo)       descuento con ventana, elegibilidad, mínimo, tope
+cutoffFor(instance)            cutoff único (fecha + hora + zona)
+orderableWeek(template, date)  qué días se puede pedir
+quoteDelivery(address, basket) tarifa, distancia, ETA, fuera de cobertura
+```
+
+- El **server** las usa para cobrar; el **panel** las usa para previsualizar
+  ("así lo verá el cliente"); la **landing** recibe resultados, no recalcula.
+- Reglas que deben salir del motor: precio del combo, promos, disponibilidad
+  por ventana, cutoff, tarifa de domicilio, mínimo de pedido, precio sugerido
+  por producto (hoy duplicado y divergente: `production.js:106` vs `:122`).
+- Regla: **el panel no calcula nada que el servidor vaya a cobrar.** Si el
+  panel y el server discrepan, el server manda y el panel muestra el valor
+  del server.
+
+### 33.8 N5 — Calendario: semanas, días y cupos
+
+Se unifican los dos calendarios actuales en tres tablas:
+
+```
+service_templates  patrón semanal: day_of_week, start, end, modes,
+                   capacity, cutoff_hours, active
+service_instances  fecha concreta: date, template_id, status,
+                   capacity_override, notes
+service_slots      franja: instance_id, start, end, capacity, reserved
+```
+
+- El **cliente** ve la semana: "Semana del 3 al 9 de noviembre", con los días
+  abiertos, su horario y si quedan cupos (hoy ve un `<select>` plano de
+  fechas, `index.html:2012-2016`).
+- El **admin** edita el patrón una vez (se aplica a todas las semanas) y las
+  excepciones por fecha (cerrar un día, cambiar horario, más cupos).
+- El **stock por sabor** se cuelga de la instancia (hoy vive en
+  `release_items` con una fecha suelta).
+- El **cutoff** sale de plantilla + instancia con una sola función.
+
+### 33.9 N6 — Salidas, notificación y RBAC
+
+- **Un solo formateador de WSP** (`src/lib/whatsapp.js`) para: pedido nuevo,
+  cambio de estado, resumen al cliente. Hoy hay 2 formatos y la landing arma el
+  suyo (`index.html:2171`).
+- **Eventos**: `order.created`, `order.payment_confirmed`, `order.ready`,
+  `order.delivered`, `order.cancelled`, `stock.low`, `window.closing`. Cada
+  evento decide a quién notifica (admin, cliente, ambos).
+- **Audit log**: todo cambio del panel deja rastro (actor, antes, después).
+  Hoy `apply-suggested` pisa precios sin rastro.
+- **RBAC**: roles `owner` / `editor` / `operator` con permisos por módulo
+  (catálogo, contenido, producción, reparto, caja). El panel oculta lo que no
+  se puede tocar.
+
+### 33.10 El perfil MyMochis (el "pack")
+
+**Catálogo unificado** — la clave para que "productos" y "combos" se
+administren igual:
+
+```
+catalog_items      id (slug inmutable), kind ('product'|'combo'), name,
+                   description, description_short, category_id, price,
+                   compare_at_price, accent, ribbon, image_url, units,
+                   sort_order, featured, available, price_mode
+combo_items        combo_id, item_id, qty      (solo kind='combo')
+```
+
+- Un solo formulario, una sola card, un solo motor de precio y de stock para
+  los dos. El combo añade **composición** (`combo_items`) y puede tener
+  precio derivado o fijo.
+- El operador puede **categorizar, poner precio, descripción y nombre** a
+  productos y combos con la misma pantalla.
+
+Resto de entidades del pack: `categories`, `media`, `promos`,
+`service_templates/instances/slots`, `ingredients`, `recipes`,
+`recipe_items`, `suppliers`, `stock_movements`, `production_batches`,
+`delivery_zones`, `couriers`, `payment_methods`, `order_recipients`,
+`landing_sections`, `landing_settings`.
+
+Secciones del pack: las 13 del catálogo N2. Reglas del pack: las 9
+invariantes de §32.8.
+
+### 33.11 Materia prima: qué significa gestionarla (3 niveles)
+
+Hoy: una "receta" global de insumos con costo tecleado por el admin, sin
+stock, sin proveedores, sin lotes, sin merma; `apply-suggested` destruye los
+precios del catálogo; la producción no genera unidades vendibles.
+
+- **Nivel 1 — Costeo por producto (lo mínimo útil)**
+  `recipes(id, item_id)` + `recipe_items(recipe_id, ingredient_id, qty,
+  unit_cost_snapshot)` → costo real **por sabor** → precio sugerido **por
+  producto** → margen real por sabor (hoy el panel ya muestra una tabla de
+  márgenes por producto, pero solo de lectura y con un costo global).
+  Corrige de paso el bug de `apply-suggested`.
+- **Nivel 2 — Inventario de insumos**
+  `ingredients(id, name UNIQUE, unit, qty_on_hand, min_qty, avg_cost,
+  supplier_id)` + `stock_movements(ingredient_id, qty, reason, ref)` →
+  "cuánta harina me queda", "me estoy por quedar", valor del inventario y
+  costo promedio ponderado.
+- **Nivel 3 — Ciclo completo**
+  `suppliers` + `purchase_orders` (entradas con costo real) +
+  `production_batches` (producción de X unidades con merma) + `waste` +
+  escandallo (costo → precio → margen → utilidad por sabor y por día) +
+  comparación contra la referencia de mercado.
+- **Regla que cierra el silo**: `production_batch` → unidades vendibles →
+  `service_instance` (stock por día). Hoy el stock vendible se teclea a mano.
+- **Coherencia de unidades**: toda la app usa **pesos**; los nombres
+  `unit_cost_cents` / `market_reference_cents` son históricos → renombrar al
+  migrar (la app ya avisa de esto en `pricing.js:5-9`).
+
+### 33.12 Domicilios: estado real y recomendaciones
+
+**Estado real (verificado):**
+- Una sola zona: un círculo con radio (`config.delivery_zone_*`), tarifa plana
+  o `base + por km` con redondeo a múltiplos de $50
+  (`src/lib/delivery-fee.js:12-21`).
+- `delivery_schedule` = patrón por día de semana con cutoff;
+  `release_windows` = fecha concreta con stock.
+- El pedido a domicilio **no valida stock, ventana ni cutoff**
+  (`orders.js:320-362`): se puede vender lo que no hay, y la reserva de stock
+  es condicional a `scheduled` (`orders.js:418`, `:438`).
+- La landing **no cotiza**: usa la tarifa plana del config
+  (`index.html:2091-2092`); la tienda sí usa `/api/delivery/quote`
+  (`tienda.html:1584`). El cliente puede ver un precio y ser cobrado otro.
+- Sin estados de entrega, sin repartidor, sin cola, sin hoja de ruta.
+- El mensaje de WSP al admin **no lleva dirección ni modo de entrega**
+  (`whatsapp.js:88-114`).
+- "Efectivo al recibir" es solo una fila de `payment_methods`: no hay cobro
+  contra entrega.
+
+**Recomendaciones**
+
+*P0 — corrección (que el sistema no mienta)*
+1. **Una sola cotización**: la landing usa el motor (`/api/delivery/quote`) y el
+   server cobra lo mismo; el precio del formulario es el precio cobrado.
+2. **El domicilio valida lo mismo que la recogida**: stock, ventana abierta y
+   cutoff.
+3. **Mensaje de despacho completo**: dirección, barrio, modo, ventana, total,
+   código y link al pedido en el panel.
+4. **Estados de entrega propios** (`assigned → picked_up → on_way → delivered →
+   failed`) con ETA y repartidor, sin reusar `status` del pedido.
+5. **Capacidad por franja**: la ventana se cierra cuando se llena; el cliente
+   ve los cupos que quedan.
+
+*P1 — operación (poder repartir de verdad)*
+6. `delivery_zones` como **entidad**: varias zonas, radio o polígono, tarifa y
+   mínimo por zona, en vez de 13 columnas de `config`.
+7. **Reparto propio o apps**: si es propio → `couriers` + cola de pedidos +
+   hoja de ruta; si es apps (Rappi/Pickapp/IVoy) → etiqueta y enlace, sin
+   módulo de reparto. Hoy `delivery_provider` es texto libre validado contra
+   una whitelist (`orders.js:21`) sin ninguna integración.
+8. **Cobro contra entrega** como estado real (`pay_on_delivery`,
+   `cash_collected_by`) si el negocio lo necesita; con cierre de caja.
+9. **Notificar al cliente** en cada cambio de estado ("tu pedido va en camino").
+
+*P2 — avance*
+10. Rutas por zona y priorización por cercanía.
+11. Horarios y mínimos distintos por zona.
+12. Pedido programado a varios días (si el negocio lo necesita).
+
+### 33.13 Decisiones del operador (2026-11-02, respondidas)
+
+- **D7 — Reparto**: el domicilio se calcula por **distancia** entre la
+  ubicación del admin (donde están los mochis, fijada por él en el mapa) y la
+  dirección que el cliente selecciona **en el mapa**; el admin decide a qué
+  domiciliario enviar. → Se mantiene la zona única con origen fijo + tarifa
+  por distancia; se agrega **selector de dirección en mapa** para el cliente y
+  **asignación manual de domiciliario** (sin módulo de rutas por ahora).
+- **D8 — Cobro**: **los dos, según el método de pago**. → Cada
+  `payment_method` declara si se cobra antes (`prepaid`) o contra entrega
+  (`on_delivery`); el flujo de caja depende del método.
+- **D10 — Franjas / eventos**: el admin define horario y días en el
+  cronograma, **y además hace eventos visitando lugares**: el calendario debe
+  mostrar estos eventos y la landing debe anunciarlos. → N5 agrega una
+  entidad de **eventos** (fecha, lugar, horario, descripción) visible en la
+  sección de calendario de la landing.
+- **D9 — Zonas**: **una sola zona** (como hoy). El modelo de tarifas por
+  distancia se mantiene; `delivery_zones` queda como entidad futura si algún
+  día hay varias.
+- **D13 — Stack del panel**: **vanilla + formularios declarativos** (N1). No
+  se migra a React.
+- **D15 — Materia prima**: tablas estilo Excel **con exportación a Excel**,
+  incluyendo precios de productos, cajas, pegatinas, etc., para determinar el
+  gasto del negocio; y un panel de estadísticas que recopile todo y dé datos
+  específicos: qué mochis se compran más, en qué se gasta más, cuánto se está
+  ganando. → Nivel 1 (recetas/costeo por producto) + Nivel 2 (inventario de
+  insumos, incluidos empaques) + **exportación** + **analítica** (top
+  productos, gasto por insumo, margen por producto).
+- **D14 — Checkout**: **solo el de la landing**, y el formulario debe ser lo
+  más rápido y eficaz posible para pagar. → Un solo checkout, optimizado por
+  pasos; `/tienda` queda como vitrine.
+
+**Queda abierta** (no bloquea el arranque): D11/D12 — si alguien más que el
+dueño operará el panel (roles). RBAC se deja para MM-44 y se activa cuando el
+operador defina quién más entra.
+
+### 33.14 Bugs y deudas que hay que arreglar sí o sí (de esta auditoría)
+
+| Severidad | Bug | Dónde |
+|---|---|---|
+| **P0** | `apply-suggested` escribe el mismo precio en **todos** los sabores | `src/routes/production.js:107` |
+| **P0** | Botones muertos en la landing: "Añadir al carrito" y "Pedir <combo>" | `index.html:1554`, `1697` (sin listener en `2197-2247`) |
+| **P0** | El domicilio no valida stock/ventana/cutoff | `src/routes/orders.js:320-362` |
+| **P0** | La landing muestra una tarifa que puede no ser la cobrada | `index.html:2091-2092` |
+| **P0** | El WSP al admin no dice si es domicilio ni dónde | `src/lib/whatsapp.js:88-114` |
+| **P1** | `production_items.name` sin UNIQUE → insumos duplicados inflan el costo | `src/db.js:243` |
+| **P1** | Fórmulas de precio sugerido duplicadas y divergentes | `production.js:106` vs `:122` |
+| **P1** | `.glass` y `.product-selector*` sin reglas CSS | `index.html:1961-1975`, `2051-2064` |
+| **P1** | `/api/public` se pide dos veces en la landing | `index.html:1719` |
+| **P1** | La tienda sobreescribe el `.product-card` compartido | `tienda.html:214-330` vs `ui.css:403-545` |
+| **P1** | Sin audit en producción: borrar un insumo o pisar precios no deja rastro | `production.js:89-93`, `:107` |
+| **P2** | Docs desactualizadas: §23.3 decía "bug abierto" del cutoff (ya corregido en `bc2724c`) | PROJECT.md §23.3 (corregido en esta revisión) |
+| **P2** | `applyServerConfig` lee columnas inexistentes (código muerto) | `index.html:1775-1783` |
+
+### 33.15 Plan (sustituye §32.13)
+
+| Spec | Nombre | Núcleo |
+|---|---|---|
+| **MM-37** (44) | Núcleo: registro de esquemas + registro de secciones | N1, N2 |
+| **MM-38** (45) | Catálogo unificado: productos y combos, categorías, presentación en DB, media | N1 |
+| **MM-39** (46) | Motor de reglas: combos derivados, promos, desglose, disponibilidad | N4 |
+| **MM-40** (47) | Calendario unificado: semanas, instancias, slots, stock por día | N5 |
+| **MM-41** (48) | Landing editable: secciones, slots, un solo fetch, un solo checkout, fin del CSS inline | N2, N3 |
+| **MM-42** (49) | Cierre del pedido: deep_link, un solo mensaje, estados de entrega, capacidad, cotización única | N6 + domicilios P0 |
+| **MM-43** (50) | Materia prima: recetas por producto (N1) + inventario de insumos (N2) + producción que alimenta el stock | pack |
+| **MM-44** (51) | Cobertura e2e del ciclo completo + RBAC + audit | N6 |
+
+**Reconciliación con el plan vigente (specs 39-43).** MM-32 está cerrada.
+**MM-33 (modularidad del panel) se fusiona con MM-37**: la modularidad es
+parte del núcleo (un render por sección, un store con invalidación, una capa
+DOM). **MM-34 se re-escopifica**: sus 11 tareas caen dentro de MM-38 (categorías
+muertas), MM-39 (promos que no descuentan), MM-42 (paginación y contador de "sin
+confirmar", secciones huérfanas) y MM-43 (`apply-suggested` con
+previsualización). **MM-35 (cobertura)** se amplía a MM-44. **MM-36 (producción
+y entrega al admin del negocio)** se queda al final, ya que el patrón cambia
+la forma del panel.
+
+Orden: **MM-37 → MM-38 → MM-39 → MM-40 → MM-41 → MM-42 → MM-43 → MM-44**, y
+MM-36 al cierre.
+
+### 33.16 Verificación del patrón
+
+- Base actual: **134/134 unit + 57/57 e2e**.
+- El patrón no se acepta hasta que: (a) `manage.html` deje de crecer por
+  funcionalidad (toda entidad nueva es una entrada en el registro, no HTML);
+  (b) el CSS inline de las 3 páginas quede en 0 líneas;
+  (c) exista un e2e del ciclo **admin → landing → pedido → panel → WSP**;
+  (d) el panel y el server muestren el mismo precio para el mismo pedido
+  (prueba de paridad, no deSnapshot).
