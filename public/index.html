@@ -398,16 +398,34 @@ section { padding: 80px 24px; position: relative; }
 .combos-grid {
   display: grid;
   grid-template-columns: repeat(3, 1fr);
-  gap: 18px;
-}
-@media (max-width: 920px) { .combos-grid { grid-template-columns: repeat(2, 1fr); } }
-@media (max-width: 560px) { .combos-grid { grid-template-columns: 1fr; } }
-.combos-grid {
-  display: grid; grid-template-columns: repeat(3, 1fr);
   gap: 32px;
 }
 @media (max-width: 920px) { .combos-grid { grid-template-columns: repeat(2, 1fr); } }
 @media (max-width: 620px) { .combos-grid { grid-template-columns: 1fr; } }
+
+/* Etiquetas de los combos: unidades y la promesa de "tu eliges los sabores".
+   Son el equivalente de las etiquetas de los sabores: el dato en una pastilla,
+   no en un parrafo. */
+.combo-labels {
+  display: flex; flex-wrap: wrap; gap: 6px;
+  margin: 0 0 8px;
+}
+.combo-tag {
+  display: inline-flex; align-items: center;
+  padding: 4px 10px;
+  border-radius: 999px;
+  background: color-mix(in srgb, var(--flavor-accent, var(--mochi-fresa)) 16%, transparent);
+  color: var(--flavor-accent, var(--mochi-fresa-d));
+  border: 1px solid color-mix(in srgb, var(--flavor-accent, var(--mochi-fresa)) 34%, transparent);
+  font-size: 11.5px; font-weight: 700; letter-spacing: 0.2px;
+  line-height: 1.2;
+}
+.combo-tag-alt {
+  background: color-mix(in srgb, var(--clay-ink) 7%, transparent);
+  color: var(--clay-ink-soft);
+  border-color: color-mix(in srgb, var(--clay-ink) 16%, transparent);
+}
+
 
 /* ============ WHY ============ */
 .why { background: color-mix(in srgb, var(--clay-canvas) 44%, transparent); border-radius: 48px; margin: 0 16px; }
@@ -1447,6 +1465,25 @@ async function loadMochisConfig() {
   }
 }
 
+// Presentacion de los combos (foto de referencia, acento, etiqueta). El id de
+// la tabla combos es autoincrement y cambia entre bases, asi que se indexa por
+// el slug del nombre.
+let COMBOS_CONFIG = {};
+async function loadCombosConfig() {
+  try {
+    const res = await fetch('img/mochis/combos.config.json');
+    if (res.ok) COMBOS_CONFIG = await res.json();
+  } catch (e) {
+    console.warn('No se pudo cargar combos.config.json:', e.message);
+  }
+}
+
+function comboSlug(name) {
+  return String(name || '')
+    .normalize('NFD').replace(/[\u0300-\u036f]/g, '')
+    .toLowerCase().replace(/[^a-z0-9]+/g, '-').replace(/^-+|-+$/g, '');
+}
+
 // getCssVar: setProperty('--fc', 'var(--x)') NO funciona (las custom properties
 // no resuelven var() en su valor computado). Hay que leer el valor ya resuelto.
 function getCssVar(name, fallback) {
@@ -1612,19 +1649,30 @@ function renderCombos() {
   if (!COMBOS.length) { if (section) section.style.display = 'none'; return; }
   if (section) section.style.display = '';
   grid.innerHTML = COMBOS.map(c => {
-    const img = (c.image_url && String(c.image_url).trim())
-      ? `<img src="${escapeAttr(c.image_url)}" alt="${escapeAttr(c.name)}" loading="lazy">`
+    // La foto que el admin subio gana; si no hay, la de referencia del config.
+    const cfg = COMBOS_CONFIG[comboSlug(c.name)] || {};
+    const photo = (c.image_url && String(c.image_url).trim()) || cfg.photo || '';
+    const img = photo
+      ? `<img src="${escapeAttr(photo)}" alt="${escapeAttr(c.name)}" loading="lazy">`
       : `<div class="combo-img-blob"><svg viewBox="0 0 120 100"><ellipse cx="60" cy="58" rx="46" ry="36" fill="#FFF8E7"/><ellipse cx="60" cy="66" rx="39" ry="27" fill="#E94560" opacity="0.3"/><circle cx="47" cy="54" r="4.6" fill="#2D2D2D"/><circle cx="74" cy="54" r="4.6" fill="#2D2D2D"/><path d="M51 64 q9 7 18 0" stroke="#2D2D2D" stroke-width="3" fill="none" stroke-linecap="round"/><ellipse cx="38" cy="63" rx="6" ry="4" fill="#E94560" opacity="0.45"/><ellipse cx="83" cy="63" rx="6" ry="4" fill="#E94560" opacity="0.45"/></svg></div>`;
     const was = c.compare_at_price ? `<span class="price-was">$${c.compare_at_price.toLocaleString('es-CO')}</span>` : '';
     const save = c.compare_at_price ? `<span class="price-save">Ahorras $${(c.compare_at_price - c.price).toLocaleString('es-CO')}</span>` : '';
+    // La etiqueta de la esquina: la del config y, si no hay, la de destacado.
+    const ribbon = cfg.ribbon || (c.featured ? 'Más pedido' : '');
+    const ribbonHtml = ribbon ? `<div class="ribbon">${escapeHtml(ribbon)}</div>` : '';
+    const accent = cfg.accent || 'var(--mochi-fresa)';
+    const tag = cfg.tag || `${c.units} unidades`;
     return `
-      <article class="product-card${c.featured ? ' featured' : ''}">
-        ${c.featured ? '<div class="badge">Más pedido</div>' : ''}
+      <article class="product-card combo-card" style="--flavor-accent: ${accent}; --flavor-on-accent: ${readableOnAccent(accent)}">
+        ${ribbonHtml}
         <div class="photo">${img}</div>
         <div class="body">
           <div class="name">${escapeHtml(c.name)}</div>
-          <p class="desc">${c.units} unidades · tú eliges sabores</p>
-          <p class="desc">${escapeHtml(c.description || '')}</p>
+          <div class="combo-labels">
+            <span class="combo-tag">${escapeHtml(tag)}</span>
+            <span class="combo-tag combo-tag-alt">Tú eliges los sabores</span>
+          </div>
+          <p class="desc">${escapeHtml(c.description || cfg.description_short || '')}</p>
           <div class="price-row">
             <span class="price">$${c.price.toLocaleString('es-CO')}</span>
             ${was}
@@ -1720,7 +1768,7 @@ function applyServerConfig() {
 // flotando a la derecha. No hay aquí ningún listener de scroll que mantener.
 
 // Cargar config del API al inicio
-Promise.all([loadConfig(), loadMochisConfig()]).then(() => {
+Promise.all([loadConfig(), loadMochisConfig(), loadCombosConfig()]).then(() => {
   applyServerConfig();
   renderPromosBar();          // 2026-10-14 — promos activas (top of page)
   renderCategoryChips();      // 2026-10-14 — chips por categoría (admin lo controla)

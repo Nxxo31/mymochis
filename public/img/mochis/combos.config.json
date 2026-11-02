@@ -1,0 +1,38 @@
+{
+  "_comment": "Presentacion visual de los COMBOS, el equivalente de mochis.config.json para los sabores. Se indexa por el slug del NOMBRE del combo (el id de la DB es autoincrement y cambia entre bases). La fuente canonica del combo es el panel admin (tabla combos): nombre, descripcion, precio y la foto que el operador suba. Este archivo solo aporta la presentacion que el admin no da (foto de referencia, acento de color, etiqueta/ribbon) y la foto que se sube SIEMPRE gana sobre photo. Hasta que haya fotos propias, la referencia es una foto de producto real (las mismas del catalogo de sabores, con su acento). Slug: minusculas, sin acentos, guiones.",
+  "combo-4": {
+    "photo": "img/instagram/mochi-13.jpg",
+    "accent": "#F9D85E",
+    "ribbon": "Para probar",
+    "tag": "4 unidades",
+    "description_short": "Cuatro mochis surtidos para probar todos los sabores"
+  },
+  "combo-6": {
+    "photo": "img/instagram/mochi-10.jpg",
+    "accent": "#7B4B26",
+    "ribbon": "Familiar",
+    "tag": "6 unidades",
+    "description_short": "Medio kilo de mochis variados"
+  },
+  "combo-6-unidades": {
+    "photo": "img/instagram/mochi-11.jpg",
+    "accent": "#E94560",
+    "ribbon": "Familiar",
+    "tag": "6 unidades",
+    "description_short": "Mezcla los sabores que quieras"
+  },
+  "combo-12-unidades": {
+    "photo": "img/instagram/mochi-12.jpg",
+    "accent": "#A78BD9",
+    "ribbon": "Para compartir",
+    "tag": "12 unidades",
+    "description_short": "Para compartir en familia"
+  },
+  "caja-sorpresa-12": {
+    "photo": "img/instagram/mochi-08.jpg",
+    "accent": "#FFE8A8",
+    "ribbon": "Sorpresa",
+    "tag": "12 unidades",
+    "description_short": "Docena seleccionada por el chef, opcion sorpresa"
+  }
+}
