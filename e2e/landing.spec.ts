@@ -193,9 +193,23 @@ test.describe('landing', () => {
     await page.goto('/');
     await page.locator('#flavors').scrollIntoViewIfNeeded();
     await page.waitForTimeout(1200);
-    const cards = page.locator('#flavor-cards-grid .product-card[data-flavor-id]');
-    await expect(cards.first()).toBeVisible({ timeout: 8000 });
-    expect(await cards.count()).toBeGreaterThan(0);
+    // 2026-11-02: los sabores ya no se pintan como tarjetas en un grid; los
+    // muestra la cinta transportadora (isla MochiBelt): un boton por plato.
+    await expect(page.locator('.belt-stage')).toBeVisible({ timeout: 8000 });
+    const plates = page.locator('.belt-stage [data-dish]');
+    // El catalogo lo publica la landing (window.__mymochisCatalog) y la cinta lo
+    // consume sin pedir otra vez a /api/public: los platos son sus filas.
+    const flavors = await page.evaluate(() => {
+      const w = window as unknown as { __mymochisCatalog?: { flavors?: { name: string }[] } };
+      return w.__mymochisCatalog?.flavors ?? [];
+    });
+    expect(flavors.length).toBeGreaterThan(0);
+    expect(await plates.count()).toBe(flavors.length);
+    // Y cada plato es un sabor real (nombre y precio del admin), no un placeholder.
+    const labels = await plates.evaluateAll((nodes) => nodes.map((n) => n.getAttribute('aria-label') || ''));
+    for (const flavor of flavors) {
+      expect(labels.some((label) => label.includes(flavor.name))).toBe(true);
+    }
   });
 
   test('el boton de WhatsApp abre el chat con el numero del negocio', async ({ page }) => {
