@@ -1225,12 +1225,17 @@ footer .privacy-note {
     <div class="section-head">
       <span class="section-eyebrow">Sabores de la semana</span>
       <h2 class="section-title" id="sabores-title">Sabores para tentar</h2>
-      <p class="section-sub">Cada mochi se prepara el mismo día. Toca uno para sumarlo a tu pedido.</p>
+      <p class="section-sub">Cada mochi se prepara el mismo día. Toca un sabor para pedirlo.</p>
     </div>
     <div class="flavor-filters" id="flavor-filters">
       <!-- 2026-10-14: renderizado dinámico desde data.categories (admin lo controla) -->
     </div>
-    <div class="flavor-grid" id="flavor-cards-grid"></div>
+    <!-- 2026-11-02: los sabores se muestran en la cinta transportadora (isla
+         React MochiBelt, /build/landing.js). Reemplaza al grid de tarjetas:
+         cada plato es un sabor real (foto, precio y acento del admin) y el
+         dialogo abre el pedido. El filtro de categorias llega por evento
+         (mymochis:filter) y la cinta filtra sus platos. -->
+    <div class="belt-host" data-island="belt" data-props='{"autoplay":true}'></div>
   </div>
 </section>
 
@@ -1545,38 +1550,32 @@ function renderSaboresTitle() {
 }
 
 function renderFlavorCards() {
-  const grid = document.getElementById('flavor-cards-grid');
   const section = document.getElementById('flavors');
-  if (!grid) return;
   if (!FLAVORS.length) { if (section) section.style.display = 'none'; return; }
   if (section) section.style.display = '';
-  grid.innerHTML = FLAVORS.map(f => {
-    const cfg = MOCHIS_CONFIG[f.id] || {};
-    // La foto que subio el admin gana; si no hay, la del config; y si el sabor
-    // es nuevo y no esta en el config, la ilustracion de marca (mochi-08) en
-    // vez de una foto de vida que no representa el producto.
-    const photo = (f.image_url && String(f.image_url).trim()) || cfg.photo || 'img/instagram/mochi-08.jpg';
-    const accent = cfg.accent || getCssVar('--accent-ink');
-    const onAccent = readableOnAccent(accent);
-    const ribbon = cfg.ribbon;
-    const ribbonHtml = ribbon ? `<div class="ribbon">${escapeHtml(ribbon)}</div>` : '';
-    return `
-      <article class="product-card" data-flavor-id="${f.id}" style="--flavor-accent: ${accent}; --flavor-on-accent: ${onAccent}">
-        ${ribbonHtml}
-        <div class="photo"><img src="${escapeAttr(photo)}" alt="${escapeAttr(f.name)}" loading="lazy"></div>
-        <div class="body">
-          <div class="name">${escapeHtml(f.name)}</div>
-          <p class="desc">${escapeHtml(f.description || '')}</p>
-          <div class="price-row">
-            <span class="price">$${f.price.toLocaleString('es-CO')}</span>
-            <span class="unit">por unidad</span>
-          </div>
-          <button class="add-btn" type="button" data-flavor-add="${escapeAttr(f.id)}">+ Añadir al carrito</button>
-        </div>
-      </article>
-    `;
-  }).join('');
-  applyFlavorFilter();
+  // 2026-11-02: los sabores ya no se pintan como tarjetas; los muestra la
+  // cinta transportadora (isla MochiBelt). Aqui solo se le pasa el catalogo
+  // ya cargado (sin otra peticion a /api/public) y se avisa a la isla.
+  publishBeltCatalog();
+}
+
+// El catalogo que consume la cinta. La isla lee window.__mymochisCatalog y
+// escucha el evento 'mymochis:catalog' (por si el evento llego antes de que
+// montara). Sin una segunda peticion a /api/public.
+function publishBeltCatalog() {
+  window.__mymochisCatalog = {
+    flavors: FLAVORS.map((f) => ({
+      id: f.id,
+      name: f.name,
+      description: f.description || '',
+      price: f.price,
+      image_url: f.image_url || '',
+      category_slug: f.category_slug || '',
+      category_name: f.category_name || '',
+      config: MOCHIS_CONFIG[f.id] || {}
+    }))
+  };
+  window.dispatchEvent(new CustomEvent('mymochis:catalog'));
 }
 
 const FLAVOR_TAGS = {
@@ -1597,6 +1596,9 @@ function applyFlavorFilter() {
     const show = filter === 'all' || slug === filter;
     card.style.display = show ? '' : 'none';
   });
+  // 2026-11-02: los productos viven en la cinta (isla), asi que el filtro se
+  // le avisa por evento; la cinta muestra solo los platos de esa categoria.
+  window.dispatchEvent(new CustomEvent('mymochis:filter', { detail: { slug: filter } }));
 }
 
 function renderCategoryChips() {
