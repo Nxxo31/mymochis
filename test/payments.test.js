@@ -294,3 +294,57 @@ test('GET /api/payments — admin lista payments', async () => {
   assert.ok(Array.isArray(r.json.payments));
   assert.ok(r.json.payments.length > 0, 'debe haber al menos 1 payment de los tests anteriores');
 });
+
+// =============================================================================
+// §24 — el intent de pago lo crea el servidor al crear el pedido
+// =============================================================================
+
+// El storefront (tienda y landing) es anonimo: POST /api/payments exige un JWT
+// y su llamada devolvia 401, asi que el link "Pagar ahora" nunca aparecia. El
+// intent se crea ahora en el servidor, con el total autoritativo del pedido y
+// la idempotencia atada al id del pedido.
+async function createOrderWithMethod(code, label) {
+  const pm = await api('POST', '/api/payment-methods', {
+    token: adminToken,
+    body: { code, label, instructions: 'Paga con el metodo de prueba', sort_order: 90 },
+  });
+  assert.ok(pm.status === 201 || pm.status === 200, `payment method create: ${JSON.stringify(pm.json)}`);
+  const orderId = 'MYM-INT-' + Math.random().toString(36).slice(2, 9).toUpperCase();
+  const r = await api('POST', '/api/orders', {
+    token: adminToken,
+    body: {
+      id: orderId,
+      customer_name: 'Test Intent',
+      customer_phone: '573213050426',
+      pickup_day: '2026-12-01',
+      items: { 'test-pay-fresa': 1 },
+      combos: [],
+      total: 8000,
+      source: 'test',
+      payment_method_id: pm.json.id,
+    },
+  });
+  assert.equal(r.status, 201, JSON.stringify(r.json));
+  return { orderId, body: r.json };
+}
+
+test('POST /api/orders con metodo de pasarela devuelve el intent ya creado', async () => {
+  const { orderId, body } = await createOrderWithMethod('mock', 'Mock gateway');
+  assert.ok(body.payment?.payment_id?.startsWith('pay_'), 'el pedido debe traer el intent del servidor');
+  assert.equal(body.payment.order_id, orderId);
+  assert.ok(body.payment.whatsapp?.deep_link, 'el intent debe traer el link de pago por WhatsApp');
+  // El monto del intent es el total autoritativo del pedido, no el que mando el cliente.
+  const one = await api('GET', `/api/payments/${body.payment.payment_id}`, { token: adminToken });
+  assert.equal(one.status, 200);
+  assert.equal(Number(one.json.payment.amount_minor), Number(body.pricing.total));
+  // Y el pedido queda atado al pago.
+  const list = await api('GET', `/api/payments?order_id=${encodeURIComponent(orderId)}`, { token: adminToken });
+  assert.equal(list.json.count, 1, 'el pedido debe tener exactamente un intent');
+});
+
+test('POST /api/orders sin metodo de pasarela no crea intent (pago manual)', async () => {
+  const { body } = await createOrderWithMethod('efectivo-test', 'Efectivo de prueba');
+  assert.equal(body.payment, undefined, 'un metodo sin adapter no debe crear intent');
+  assert.ok(body.id, 'el pedido se crea igual: el operador lo confirma a mano');
+});
+

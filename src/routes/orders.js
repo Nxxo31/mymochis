@@ -3,7 +3,8 @@ import { Router } from 'express';
 // El `total` que manda el cliente se usa solo como drifted de comparacion.
 import { db } from '../db.js';
 import { priceOrder } from '../lib/pricing.js';
-import { rememberOrderTotal } from '../lib/payments/index.js';
+import { rememberOrderTotal, createPaymentIntent } from '../lib/payments/index.js';
+import { listAdapters, getAdapter } from '../lib/payments/adapter.js';
 import { confirmManualPayment, ManualPaymentError } from '../lib/payments/manual.js';
 import { authMiddleware, requireRole } from '../auth.js';
 import { geocode } from '../lib/geocode.js';
@@ -19,6 +20,27 @@ const VALID_STATUS = ['pending', 'confirmed', 'ready', 'delivered', 'cancelled']
 const VALID_PAYMENT_STATUS = ['pending', 'paid'];
 const VALID_DELIVERY_MODE = ['scheduled', 'immediate'];
 const VALID_DELIVERY_PROVIDER = ['own', 'rappi', 'pickapp', 'ivoy'];
+
+// Un metodo de pago tiene pasarela si su codigo tiene un adapter registrado:
+// nequi (siempre) y mock (dev y tests). Los demas metodos —daviplata,
+// bancolombia, mercadopago, efectivo— son pago manual: el cliente transfiere
+// y el operador confirma con el boton Cobrar.
+function gatewayFor(methodId) {
+  if (!methodId) return null;
+  const m = db.prepare('SELECT id, code, label FROM payment_methods WHERE id = ?').get(Number(methodId));
+  if (!m) return null;
+  if (!listAdapters().includes(String(m.code))) return null;
+  // Una pasarela sin credenciales no es una pasarela: Nequi sin NEQUI_API_KEY
+  // falla cerrado y dejaria un pago FAILED por cada pedido. Sin pasarela viva
+  // el pedido sigue su curso manual, que es lo que de verdad pasa.
+  try {
+    const adapter = getAdapter(String(m.code));
+    if (adapter.real === false) return null;
+  } catch {
+    return null;
+  }
+  return m;
+}
 
 function rowToOrder(r) {
   if (!r) return null;
@@ -455,6 +477,37 @@ router.post('/', async (req, res) => {
     const full = rowToOrder(db.prepare('SELECT * FROM orders WHERE id = ?').get(id));
     full.pricing = { lines: priced.lines, total: authoritativeTotal };
     if (totalDrift) full.pricing.client_drift = totalDrift;
+
+    // ---- Intent de pago (2026-11-04) ----
+    // El intent lo crea el SERVIDOR, no el navegador. POST /api/payments exige
+    // un JWT y el cliente anonimo de la tienda o de la landing no tiene ninguno:
+    // su llamada devolvia 401, el link "Pagar ahora" nunca aparecia y la
+    // brecha #330 del cuaderno seguia abierta en la UI. Aqui el monto es el
+    // total autoritativo del pedido y la idempotencia va atada al id del
+    // pedido, asi que un reintento devuelve el MISMO intent en vez de cobrar
+    // dos veces. Si el metodo no tiene pasarela (efectivo, daviplata,
+    // bancolombia) o la pasarela esta caida, el pedido sigue su curso manual y
+    // el operador lo confirma con el boton Cobrar.
+    const gateway = gatewayFor(payment_method_id);
+    if (gateway) {
+      try {
+        const intent = await createPaymentIntent({
+          idempotencyKey: `pay-${id}`,
+          request: {
+            order_id: id,
+            amount_minor: authoritativeTotal,
+            currency: 'COP',
+            provider: gateway.code,
+            customer_phone: full.customer_phone,
+          },
+        });
+        if (intent.status === 201 || intent.status === 200 || intent.status === 202) {
+          full.payment = { ...intent.body, order_id: id };
+        }
+      } catch (e) {
+        console.error('[orders] no se pudo crear el intent de pago', id, e?.message || e);
+      }
+    }
 
     // ---- Dispatch WhatsApp multi-destinatario (2026-10-17) ----
     const flavorList = db.prepare('SELECT id, name, price FROM flavors').all();
