@@ -313,7 +313,7 @@ section { padding: 80px 24px; position: relative; }
 .section-sub { color: var(--clay-ink-soft); font-size: 15px; max-width: 540px; margin: 0 auto; }
 
 /* ============ HORARIOS · pickup schedule ============ */
-.horarios { padding: 56px 20px; background: color-mix(in srgb, var(--clay-canvas-2) 46%, transparent); border-radius: 48px; margin: 0 16px; }
+.horarios { padding: 56px 20px; background: color-mix(in srgb, var(--clay-canvas-2) 46%, transparent); border-radius: 48px; margin: 0 16px 26px; }
 .horarios-grid { display: grid; grid-template-columns: repeat(3, 1fr); gap: 14px; max-width: 1100px; margin: 0 auto; }
 @media (max-width: 920px) { .horarios-grid { grid-template-columns: repeat(2, 1fr); } }
 @media (max-width: 620px) { .horarios-grid { grid-template-columns: 1fr; } }
@@ -394,7 +394,7 @@ section { padding: 80px 24px; position: relative; }
 .category-chips { display: flex; flex-wrap: wrap; gap: 8px; justify-content: center; margin: 16px auto 24px; max-width: 720px; }
 
 /* ============ COMBOS = FLAVOR CARDS (mismo estilo) ============ */
-.combos { background: color-mix(in srgb, var(--canvas) 42%, transparent); border-radius: 48px; margin: 0 16px; }
+.combos { background: color-mix(in srgb, var(--canvas) 42%, transparent); border-radius: 48px; margin: 0 16px 26px; }
 .combos-grid {
   display: grid;
   grid-template-columns: repeat(3, 1fr);
@@ -428,13 +428,33 @@ section { padding: 80px 24px; position: relative; }
 
 
 /* ============ WHY ============ */
-.why { background: color-mix(in srgb, var(--clay-canvas) 44%, transparent); border-radius: 48px; margin: 0 16px; }
+/* Ritmo vertical (2026-11-02): las secciones-glass son tarjetas separadas.
+   Antes el gap entre bloques era 0 y todo se leia como un solo muro pegado.
+   Se separa con margin-bottom, no con padding, para que el fondo (el shader)
+   respire entre bloques. */
+.why { background: color-mix(in srgb, var(--clay-canvas) 44%, transparent); border-radius: 48px; margin: 0 16px 26px; padding: 72px 24px; }
 .why-grid {
   display: grid; grid-template-columns: repeat(3, 1fr);
-  gap: 32px; max-width: 1080px; margin: 0 auto;
+  gap: 40px; max-width: 1080px; margin: 0 auto;
 }
-@media (max-width: 720px) { .why-grid { grid-template-columns: 1fr; } }
-.why-item { text-align: center; padding: 28px 16px; }
+@media (max-width: 720px) { .why-grid { grid-template-columns: 1fr; gap: 22px; } }
+/* Tarjeta de vidrio igual que los pasos de "Pide en 3 pasos": mismo lenguaje
+   visual, asi las tres razones no flotan sueltas sobre el fondo. */
+.why-item {
+  text-align: center;
+  padding: 30px 24px 32px;
+  border-radius: 26px;
+  background: color-mix(in srgb, var(--surface) 76%, transparent);
+  border: 1px solid rgba(255,255,255,0.72);
+  box-shadow: 0 16px 38px rgba(32,48,74,0.10), inset 0 1px 0 rgba(255,255,255,0.85);
+  backdrop-filter: blur(10px) saturate(1.15);
+  -webkit-backdrop-filter: blur(10px) saturate(1.15);
+  transition: transform 0.28s cubic-bezier(.34,1.56,.64,1), box-shadow 0.28s;
+}
+.why-item:hover {
+  transform: translateY(-5px);
+  box-shadow: 0 24px 48px rgba(32,48,74,0.14), inset 0 1px 0 rgba(255,255,255,0.85);
+}
 .why-icon {
   width: 84px; height: 84px; margin: 0 auto 22px;
   border-radius: 50%;
@@ -448,10 +468,10 @@ section { padding: 80px 24px; position: relative; }
 .why-item:nth-child(3) .why-icon { background: var(--ube-vivo); }
 .why-icon svg { width: 32px; height: 32px; }
 .why-item h3 { font-family: 'Baloo 2', serif; font-size: 22px; font-weight: 700; margin-bottom: 8px; }
-.why-item p { font-size: 14px; color: var(--clay-ink-soft); line-height: 1.6; }
+.why-item p { font-size: 14px; color: var(--clay-ink-soft); line-height: 1.6; max-width: 30ch; margin: 0 auto; }
 
 /* ============ GALLERY · Instagram ============ */
-.gallery { background: color-mix(in srgb, var(--clay-canvas-2) 46%, transparent); border-radius: 48px; margin: 0 16px; }
+.gallery { background: color-mix(in srgb, var(--clay-canvas-2) 46%, transparent); border-radius: 48px; margin: 0 16px 26px; }
 .ig-layout {
   display: grid;
   grid-template-columns: minmax(250px, 300px) 1fr;
@@ -660,7 +680,7 @@ section { padding: 80px 24px; position: relative; }
 }
 
 /* ============ FLAVOR CARDS · clay puffs compactas ============ */
-.flavors { background: color-mix(in srgb, var(--canvas) 42%, transparent); border-radius: 48px; margin: 0 16px; }
+.flavors { background: color-mix(in srgb, var(--canvas) 42%, transparent); border-radius: 48px; margin: 0 16px 26px; }
 /* Grid: 4 cols desktop, 3 tablet, 2 móvil grande, 1 móvil */
 .flavor-grid {
   display: grid;
@@ -682,7 +702,7 @@ section { padding: 80px 24px; position: relative; }
    cualquier grid y no significaba nada para el lector de pantalla).
    Ahora: <ol>/<li> con tarjetas de cristal y numero 01/02/03. El conector
    no existe: la jerarquia la dan el numero y el aire entre tarjetas. */
-.how-it-works { background: color-mix(in srgb, var(--clay-canvas-2) 46%, transparent); border-radius: 48px; margin: 0 16px; padding: 80px 24px; }
+.how-it-works { background: color-mix(in srgb, var(--clay-canvas-2) 46%, transparent); border-radius: 48px; margin: 0 16px 26px; padding: 80px 24px; }
 .how-it-works .container,
 .releases .container,
 .social-strip .container { max-width: 1100px; margin: 0 auto; }
@@ -736,7 +756,7 @@ section { padding: 80px 24px; position: relative; }
 /* ============ RELEASES ============ */
 .releases {
   background: linear-gradient(135deg, color-mix(in srgb, var(--cian-vivo) 30%, transparent) 0%, color-mix(in srgb, var(--durazno-vivo) 26%, transparent) 100%);
-  border-radius: 48px; margin: 0 16px; padding: 80px 24px;
+  border-radius: 48px; margin: 0 16px 26px; padding: 80px 24px;
   box-shadow: 0 20px 48px rgba(32,48,74,0.09), inset 0 1px 0 rgba(255,255,255,0.75);
 }
 .releases-grid {
