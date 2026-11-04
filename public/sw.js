@@ -2,7 +2,8 @@
 // Politica: red-primero para lo que puede quedar desfasado (HTML, JS, CSS)
 // y stale-while-revalidate para lo que no cambia (imagenes, fuentes, iconos).
 // Asi un HTML nuevo nunca se sirve junto a un JS/CSS viejo.
-const VERSION = 'v12'; // v12 2026-11-02: precache de combos.config.json (etiquetas de los combos)
+const VERSION = 'v13'; // v13 2026-11-02: shader Silk liquido con oscilacion de tonos reemplaza al aurora
+// v12 2026-11-02: precache de combos.config.json (etiquetas de los combos)
 // v10 2026-10-25: precache de las fotos que usa el catalogo (hero, sabores, galeria) + config de sabores
 const CACHE = `mochis-land-${VERSION}`;
 const OFFLINE_DOC = 'index.html';

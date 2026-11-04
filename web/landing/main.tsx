@@ -5,13 +5,14 @@ import { createRoot } from 'react-dom/client';
 import '../styles/tokens.css';
 import '../styles/islands.css';
 
-const HeroBackground = lazy(() => import('./HeroBackground').then(m => ({ default: m.HeroBackground })));
+const ShaderBackground = lazy(() => import('./ShaderBackground').then(m => ({ default: m.ShaderBackground })));
 const ScrollReveal = lazy(() => import('./ScrollReveal').then(m => ({ default: m.ScrollReveal })));
 
 interface HeroBgProps {
   colorA?: string;
   colorB?: string;
   colorC?: string;
+  toneShift?: number;
   intensity?: number;
 }
 
@@ -19,17 +20,16 @@ function IslandBg(props: HeroBgProps) {
   return (
     <StrictMode>
       <Suspense fallback={null}>
-        <HeroBackground {...props} />
+        <ShaderBackground {...props} />
       </Suspense>
     </StrictMode>
   );
 }
 
 if (typeof document !== 'undefined') {
-  // Variante solo-fondo: el shader de aurora como ambiente de TODA la pagina,
-  // detras del contenido (position: fixed via .page-shader en islands.css).
-  // Es el reemplazo del hero-island de contenido que se montaba al final del
-  // body y aparecia como un segundo footer con shaders.
+  // Variante solo-fondo: el shader Silk (liquido, interactivo, con oscilacion
+  // de tonos) como ambiente de TODA la pagina, detras del contenido
+  // (position: fixed via .page-shader en islands.css).
   document.querySelectorAll<HTMLElement>('[data-island="hero-bg"]').forEach((el) => {
     try {
       const props: HeroBgProps = JSON.parse(el.dataset.props || '{}');
