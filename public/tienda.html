@@ -1743,24 +1743,15 @@ footer {
         return;
       }
       // Success.
-      // Si el método elegido es de pasarela electrónica, creamos el intent de
-      // pago: el pedido queda listo para que el webhook lo verifique SOLO
+      // El intent de pago lo crea el SERVIDOR al crear el pedido (2026-11-04):
+      // el storefront es anonimo y POST /api/payments exige un JWT, asi que la
+      // llamada del navegador devolvia 401 y el link "Pagar ahora" nunca
+      // aparecia. El pedido queda listo para que el webhook lo verifique SOLO
       // (regla del negocio: pagado y verificado por API). Sin pasarela viva
       // (Nequi sin credenciales), el pago manual con la cuenta del negocio
       // sigue su curso — el negocio confirma con el botón Cobrar.
       const selMethod = payment_method_id ? PAYMENT_METHODS.find(m => String(m.id) === String(payment_method_id)) : null;
-      const payInfo = { method: selMethod || null, payment: null };
-      if (selMethod && ['nequi', 'mercadopago'].includes(selMethod.code)) {
-        try {
-          const pr = await fetch('/api/payments', {
-            method: 'POST',
-            headers: { 'Content-Type': 'application/json', 'Idempotency-Key': 'pay-' + data.id },
-            body: JSON.stringify({ order_id: data.id, amount_minor: data.total, currency: 'COP', provider: selMethod.code, customer_phone: phone })
-          });
-          const pj = await pr.json().catch(() => ({}));
-          if (pr.ok && pj.payment_id) payInfo.payment = pj;
-        } catch (e) { /* sin pasarela electrónica viva, el flujo manual sigue */ }
-      }
+      const payInfo = { method: selMethod || null, payment: data.payment || null };
       cart = { items: {}, combos: [] };
       saveCart();
       showSuccess(data, payInfo);
