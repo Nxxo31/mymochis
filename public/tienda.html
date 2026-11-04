@@ -836,6 +836,14 @@ footer {
   .product-card .photo { aspect-ratio: 1/1; }
 }
 
+/* 2026-11-02 (auditoria responsive): a 320px la pastilla del carrito se
+   salia 4px del viewport (scroll horizontal). El padding y el gap bajan
+   justo en pantallas estrechas; el icono y el contador se mantienen. */
+@media (max-width: 360px) {
+  .cart-pill { padding: 10px 14px; gap: 6px; }
+  .cart-pill svg { width: 16px; height: 16px; }
+}
+
 @media (prefers-reduced-motion: reduce) {
   * { transition: none !important; animation: none !important; }
 }
