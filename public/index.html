@@ -1911,7 +1911,7 @@ function closeOrderModal() {
   orderModalState = {
     step: 1, productId: null, quantity: 1, name: '', phone: '',
     deliveryType: 'pickup', address: '', neighborhood: '', notes: '',
-    pickupDay: '', paymentMethod: 'cash', deliveryFee: 0
+    pickupDay: '', paymentMethod: 'cash', deliveryFee: 0, payment: null
   };
 }
 
@@ -2091,12 +2091,23 @@ function renderOrderModal() {
       <button type="button" class="btn btn-primary" data-submit-order style="width:100%; margin-top:0.5rem;">Confirmar pedido</button>
     `;
   } else if (orderModalState.step === 4) {
+    // El intent de pago lo crea el servidor al crear el pedido (2026-11-04):
+    // si el metodo tiene pasarela, el pedido vuelve con el link de pago. Sin
+    // pasarela (o caida) el pedido sigue manual y el operador lo confirma.
+    const pay = orderModalState.payment;
+    const payLink = pay?.whatsapp?.deep_link
+      ? `<a class="btn btn-primary" href="${escapeHtml(pay.whatsapp.deep_link)}" target="_blank" rel="noopener" style="display:inline-block; margin-bottom:1rem;">Pagar ahora →</a>`
+      : '';
+    const payHint = pay?.instructions
+      ? `<p style="color:var(--ink-soft); font-size:0.85rem; margin-bottom:1.5rem;">${escapeHtml(pay.instructions)}</p>`
+      : '';
     html = `
       <div style="text-align:center; padding:2rem 1rem;">
         <div style="font-size:4rem; margin-bottom:1rem;">✅</div>
         <h3 class="serif" style="margin-bottom:1rem;">¡Pedido confirmado!</h3>
         <p style="color:var(--ink-soft); margin-bottom:1.5rem;">Te llegará confirmación por WhatsApp al <strong>${escapeHtml(orderModalState.phone)}</strong></p>
         <p style="color:var(--ink-soft); font-size:0.9rem; margin-bottom:2rem;">Tu pedido quedó registrado en nuestro sistema. Te avisaremos cuando esté listo para recoger/entregar.</p>
+        ${payLink}${payHint}
         <button class="btn btn-primary" data-close-order style="width:100%; max-width:300px;">Cerrar</button>
       </div>
     `;
@@ -2187,6 +2198,9 @@ async function submitOrder() {
 
     if (res.ok) {
       const data = await res.json();
+      // El servidor crea el intent de pago cuando el metodo tiene pasarela
+      // (2026-11-04): se guarda para ofrecer el link en el paso 4.
+      orderModalState.payment = data.payment || null;
       orderModalState.step = 4;
       renderOrderModal();
 
