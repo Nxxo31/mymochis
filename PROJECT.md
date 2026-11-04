@@ -573,6 +573,7 @@ Fecha: 2026-10-19. Estado: **implementado (2026-10-23) â€” ver Â§25**: bu
 isla React con shader aurora WebGL nativo (sin three/R3F: el chunk pesaba 817 kB
 para un plano de 40 lÃ­neas; el contexto WebGL directo lo hace en <6 kB) y motion
 para la entrada del contenido. R3F quedÃ³ descartado por peso. Refs: context7 motion@^12.
+**2026-11-02**: el shader aurora fue reemplazado por el shader Silk liquido (`<ShaderBackground>`, ver 21.7) con oscilacion de tonos e interaccion de cursor.
 
 ### 21.1 Contexto y decisiones arquitectÃ³nicas
 
@@ -827,7 +828,22 @@ export function AnimatedHero({ title, subtitle, cta }: HeroProps) {
 }
 ```
 
-### 21.7 Shader system (R3F island, hero background)
+### 21.7 Shader system (isla de fondo, landing)
+
+> **Estado actual (2026-11-02):** el fondo de la landing es `<ShaderBackground>`
+> (`web/landing/ShaderBackground.tsx`) — shader "Silk" liquido en WebGL1 nativo
+> (cero dependencias, chunk de 5.9 kB gzip), montado en `[data-island="hero-bg"]`
+> dentro de `.page-shader` (fixed, z-index 0). Paleta de marca (fresa/durazno/
+> ube/matcha/cyan) con mezcla en OKLab y **oscilacion de tonos**: `u_hue` oscila
+> con periodo ~45 s (`toneShift=0.45 rad`), asi el fondo viaja entre los tonos
+> de la paleta sin cortes. Interactivo: el cursor deforma el campo con un
+> vortice suave (effect 2, strength 0.55). Conserva el hardening del shader
+> anterior: prefers-reduced-motion (frame estatico), pausa fuera de viewport
+> (IntersectionObserver), pausa en background (visibilitychange), cap DPR 2 /
+> 2 Mpx. Reemplaza al `<HeroBackground>` aurora (eliminado), que a su vez
+> reemplazo al R3F descrito abajo (817 kB de three por 40 lineas de shader).
+
+**Histórico — versión R3F original (reemplazada por aurora WebGL y luego por Silk):**
 
 **Componente `<HeroBackground>` (R3F shader plane):**
 ```tsx
