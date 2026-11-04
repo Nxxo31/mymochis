@@ -2950,3 +2950,49 @@ MM-36 al cierre.
   (c) exista un e2e del ciclo **admin → landing → pedido → panel → WSP**;
   (d) el panel y el server muestren el mismo precio para el mismo pedido
   (prueba de paridad, no deSnapshot).
+
+### 33.17 La IA del panel: 5 módulos y el ciclo operativo (2026-11-02, orden del operador)
+
+El operador define la corrección: **la arquitectura gira en torno a lo que el
+admin publica y desea hacer desde el dashboard**. El panel actual (12
+secciones ordenadas por historia, no por operación) se reorganiza en **5
+módulos** que siguen el ciclo real del negocio:
+
+```
+CONFIGURAR ─► PRODUCIR ─► PUBLICAR ─► VENDER ─► ANALIZAR ─┐
+     ▲                                                    │
+     └──────────────── (qué producir mañana) ◄────────────┘
+```
+
+| Módulo | Propósito | Absorbe (secciones actuales) | Falta por construir |
+|---|---|---|---|
+| **1. Producción** | Evaluar y compilar la producción de todo el producto: insumos, recetas, costeo, y **cuánto vale hacer un día de pedidos** | Producción | Inventario de insumos, recetas por producto, costo por día de servicio, lotes → stock, merma, export Excel |
+| **2. Pedidos y Domicilios** | La cola de pedidos de los clientes junto al domicilio: confirmar, cobrar, despachar, asignar domiciliario | Pedidos + Cobros (huérfana) + estado operativo de horarios/ventanas | Estados de entrega, domiciliarios, cotización en vivo, vista del día por franja |
+| **3. Tienda y Landing** | Gestionar los productos y subirlos al landing con sus promociones: catálogo, anuncios, promos y todo el contenido publicado | Productos, Combos, Promos, social (huérfana), Horarios, Ventanas | Catálogo unificado, editor de secciones, calendario publicado (semanas/días/cupos/eventos), anuncios/banners |
+| **4. Estadísticas** | Análisis de mercado: qué se vende, qué se gasta, qué se gana | Panel (KPIs), Análisis | Márgenes por producto, gasto por insumo, top mochis, referencia de mercado, utilidad del día |
+| **5. Configuración** | Información del usuario/negocio, medios de pago y las APIs que se vayan configurando | Configuración, Usuarios, Credenciales, Números de pedido, Inmediato (zona/tarifa), Métodos de pago | `settlement` por método (prepaid/on_delivery), zonas/tarifas como entidad, readiness de APIs |
+
+**Decisiones de ubicación (propuesta alineada con lo que dijo el operador):**
+
+- El **calendario** (semanas, días, cupos, eventos) se **edita en Tienda y
+  Landing** — es contenido publicado, y el operador ya dijo que el cronograma
+  se maneja "del lado del landing". Su **estado operativo** (cupos restantes,
+  pedidos por franja) se consulta en Pedidos y Domicilios.
+- Las reglas comerciales de envío ("días gratis") son **ofertas** → Tienda y
+  Landing; su efecto operativo se ve en Pedidos.
+- Al abrir el panel se aterriza en **"Hoy"** (dentro de Pedidos): pedidos del
+  día por franja, alertas de stock y ventanas por cerrar. El KPI general vive
+  en Estadísticas.
+
+**La métrica nueva que pide el operador — "Cuánto vale hacer un día de
+pedidos":** para cada `service_instance` (día), Producción compila
+`Σ (costo de receta × unidades planificadas/vendidas de cada producto) +
+empaques + tarifas de domicilio propias` contra `ingreso del día` →
+**margen del día**. Es el puente Producción ↔ Calendario ↔ Pedidos: el mismo
+dato alimenta el plan de compra, el precio y la estadística. Requiere las
+recetas por producto (MM-43) y el calendario unificado (MM-40).
+
+**Impacto en el plan:** la IA la implementa el **shell de MM-37** (spec 49,
+t6: sidebar con los 5 módulos y ruteo), el catálogo/editor de MM-38 y MM-41
+llenan el módulo 3, MM-40/42 llenan el 2, MM-43 llena el 1 y la parte de
+gasto del 4, MM-44 agrega audit/RBAC al 5. No cambia el orden de ejecución.
