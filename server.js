@@ -127,9 +127,14 @@ app.use((req, res, next) => {
   next();
 });
 
+// En modo test (el server del E2E) los limites se apagan: los tres
+// proyectos de Playwright golpean el mismo server en rafaga y el rate limit
+// hace fallar los specs por motivos que no son del producto.
+const IS_TEST = process.env.NODE_ENV === 'test';
+
 const generalLimiter = rateLimit({
   windowMs: 60 * 1000,
-  max: 120,
+  max: IS_TEST ? 100000 : 120,
   standardHeaders: true,
   legacyHeaders: false,
   message: { error: 'rate_limited', message: 'Demasiadas solicitudes, intenta en un minuto' },
@@ -137,7 +142,7 @@ const generalLimiter = rateLimit({
 
 const authLimiter = rateLimit({
   windowMs: 15 * 60 * 1000,
-  max: 20,
+  max: IS_TEST ? 100000 : 20,
   standardHeaders: true,
   legacyHeaders: false,
   skipSuccessfulRequests: true,
