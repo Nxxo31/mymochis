@@ -273,7 +273,7 @@ CREATE TABLE IF NOT EXISTS payments (
   amount_minor      INTEGER NOT NULL,
   currency          TEXT NOT NULL DEFAULT 'COP',
   state             TEXT NOT NULL DEFAULT 'INITIATED'
-                       CHECK(state IN ('INITIATED','PROCESSING','SUCCEEDED','FAILED','REQUIRES_ACTION','UNRESOLVED','EXPIRED')),
+                       CHECK(state IN ('INITIATED','PROCESSING','SUCCEEDED','FAILED','REQUIRES_ACTION','REQUIRES_PAYMENT_METHOD','REFUNDED','UNRESOLVED','EXPIRED')),
   state_version     INTEGER NOT NULL DEFAULT 0,
   provider          TEXT,
   customer_phone    TEXT,
@@ -287,6 +287,61 @@ CREATE TABLE IF NOT EXISTS payments (
 );
 CREATE INDEX IF NOT EXISTS idx_payments_order ON payments(order_id);
 CREATE INDEX IF NOT EXISTS idx_payments_state ON payments(state, created_at);
+
+-- Reembolsos (spec 58, p8). Cada reembolso es una fila con su propia
+-- idempotencia: repetir la misma peticion NO devuelve el dinero dos veces.
+CREATE TABLE IF NOT EXISTS refunds (
+  refund_id               TEXT PRIMARY KEY,
+  payment_id              TEXT NOT NULL REFERENCES payments(payment_id),
+  order_id                TEXT,
+  provider                TEXT,
+  provider_reference      TEXT,
+  provider_refund_reference TEXT,
+  amount_minor            INTEGER NOT NULL,
+  currency                TEXT NOT NULL DEFAULT 'COP',
+  reason                  TEXT NOT NULL,
+  state                   TEXT NOT NULL DEFAULT 'REQUESTED'
+                            CHECK(state IN ('REQUESTED','PROCESSING','SUCCEEDED','FAILED')),
+  idempotency_key         TEXT UNIQUE,
+  requested_by            TEXT,
+  created_at              TEXT NOT NULL DEFAULT (datetime('now')),
+  completed_at            TEXT,
+  details_json            TEXT
+);
+CREATE INDEX IF NOT EXISTS idx_refunds_payment ON refunds(payment_id);
+CREATE INDEX IF NOT EXISTS idx_refunds_created ON refunds(created_at);
+
+-- Auditoria de acciones del admin (spec 58, p10): quien, cuando, desde donde
+-- y que. No guarda secretos: solo la accion y el id del objetivo.
+CREATE TABLE IF NOT EXISTS audit_log (
+  audit_id     INTEGER PRIMARY KEY AUTOINCREMENT,
+  actor        TEXT,
+  action       TEXT NOT NULL,
+  target_type  TEXT,
+  target_id    TEXT,
+  ip           TEXT,
+  user_agent   TEXT,
+  details_json TEXT,
+  created_at   TEXT NOT NULL DEFAULT (datetime('now'))
+);
+CREATE INDEX IF NOT EXISTS idx_audit_created ON audit_log(created_at);
+CREATE INDEX IF NOT EXISTS idx_audit_action ON audit_log(action, created_at);
+
+-- Verificacion de telefono por OTP (spec 58, p5): sin esto, POST /api/orders
+-- (publico) puede disparar un push de pago a cualquier telefono.
+CREATE TABLE IF NOT EXISTS phone_verifications (
+  verification_id TEXT PRIMARY KEY,
+  phone           TEXT NOT NULL,
+  purpose         TEXT NOT NULL DEFAULT 'order',
+  code_hash       TEXT NOT NULL,
+  attempts        INTEGER NOT NULL DEFAULT 0,
+  max_attempts    INTEGER NOT NULL DEFAULT 5,
+  expires_at      TEXT NOT NULL,
+  verified_at     TEXT,
+  order_id        TEXT,
+  created_at      TEXT NOT NULL DEFAULT (datetime('now'))
+);
+CREATE INDEX IF NOT EXISTS idx_phone_verifications_phone ON phone_verifications(phone, created_at);
 
 CREATE TABLE IF NOT EXISTS idempotency_records (
   merchant_id         TEXT NOT NULL,
@@ -491,11 +546,12 @@ const SEED_CATEGORIES = [
 ];
 
 const SEED_PAYMENT_METHODS = [
-  { code: 'nequi',       label: 'Nequi',                  instructions: 'Transfiere al número y envía el comprobante por WhatsApp.', sort_order: 0 },
-  { code: 'daviplata',   label: 'Daviplata',              instructions: 'Transfiere al número y envía el comprobante por WhatsApp.', sort_order: 1 },
-  { code: 'bancolombia', label: 'Bancolombia · Ahorros',  instructions: 'Consigna a la cuenta de ahorros y envía el comprobante.',   sort_order: 2 },
-  { code: 'mercadopago', label: 'MercadoPago · link',     instructions: 'Te enviamos un link de pago por WhatsApp para confirmar.',  sort_order: 3 },
-  { code: 'efectivo',    label: 'Efectivo al recibir',    instructions: 'Pagás cuando recogés o te entregamos el pedido.',           sort_order: 4 }
+  { code: 'wompi',       label: 'Wompi (PSE, Nequi, Daviplata, tarjeta)', instructions: 'Paga por Wompi: PSE, Nequi, Daviplata, Bancolombia o tarjeta.', sort_order: 0, provider: 'wompi',       settlement: 'prepaid' },
+  { code: 'nequi',       label: 'Nequi',                  instructions: 'Transfiere al numero y envia el comprobante por WhatsApp.', sort_order: 1, provider: 'nequi',       settlement: 'prepaid' },
+  { code: 'daviplata',   label: 'Daviplata',              instructions: 'Transfiere al numero y envia el comprobante por WhatsApp.', sort_order: 2, provider: 'daviplata',   settlement: 'prepaid' },
+  { code: 'bancolombia', label: 'Bancolombia - Ahorros',  instructions: 'Consigna a la cuenta de ahorros y envia el comprobante.',   sort_order: 3, provider: 'bancolombia', settlement: 'prepaid' },
+  { code: 'mercadopago', label: 'MercadoPago - link',     instructions: 'Te enviamos un link de pago por WhatsApp para confirmar.',  sort_order: 4, provider: 'mercadopago', settlement: 'prepaid' },
+  { code: 'efectivo',    label: 'Efectivo al recibir',    instructions: 'Pagas cuando recoges o te entregamos el pedido.',           sort_order: 5, provider: 'efectivo',    settlement: 'cash_on_delivery' }
 ];
 
 const SEED_DELIVERY_SCHEDULE = [
@@ -612,6 +668,49 @@ ${original.slice(cierre)}`;
   }
 }
 
+/**
+ * Anade los estados REQUIRES_PAYMENT_METHOD y REFUNDED al CHECK de
+ * payments.state (spec 58, p3 y p8). SQLite no permite alterar un CHECK:
+ * hay que reconstruir la tabla, igual que con orders.release_window_id.
+ * Es idempotente.
+ */
+function ensurePaymentsStateRequiresPaymentMethod() {
+  const current = db.prepare("SELECT sql FROM sqlite_master WHERE type='table' AND name='payments'").get();
+  if (!current) return;
+  if (/REQUIRES_PAYMENT_METHOD/.test(current.sql) && /REFUNDED/.test(current.sql)) return;
+
+  const original = current.sql.trim();
+  const match = original.match(/CHECK\(state IN \(([^)]*)\)\)/);
+  if (!match) return;
+
+  const ORDEN = [
+    'INITIATED', 'PROCESSING', 'SUCCEEDED', 'FAILED',
+    'REQUIRES_ACTION', 'REQUIRES_PAYMENT_METHOD', 'REFUNDED', 'UNRESOLVED', 'EXPIRED',
+  ];
+  const actuales = match[1].split(',').map((s) => s.trim().replace(/^'|'$/g, '')).filter(Boolean);
+  const lista = ORDEN.filter((e) => actuales.includes(e));
+  const nuevo = original.replace(match[1], lista.map((e) => `'${e}'`).join(','));
+  if (nuevo === original) return;
+
+  console.log('[db] anadiendo los estados REQUIRES_PAYMENT_METHOD y REFUNDED a payments (una vez)');
+  db.exec('PRAGMA foreign_keys = OFF');
+  try {
+    db.exec(`
+      CREATE TABLE payments__migrate ${nuevo.slice(nuevo.indexOf('('))};
+      INSERT INTO payments__migrate SELECT * FROM payments;
+      DROP TABLE payments;
+      ALTER TABLE payments__migrate RENAME TO payments;
+      CREATE INDEX IF NOT EXISTS idx_payments_order ON payments(order_id);
+      CREATE INDEX IF NOT EXISTS idx_payments_state ON payments(state, created_at);
+    `);
+  } catch (e) {
+    console.error('[db] no se pudo migrar payments:', e.message);
+    try { db.exec('DROP TABLE IF EXISTS payments__migrate'); } catch {}
+  } finally {
+    db.exec('PRAGMA foreign_keys = ON');
+  }
+}
+
 export function init() {
   db.exec(SCHEMA);
 
@@ -620,6 +719,8 @@ export function init() {
   // columnas nuevas requieren ALTER explicito.
   ensureColumn('combos', 'units_available', 'INTEGER NOT NULL DEFAULT -1');
   ensureColumn('combos', 'units_sold', 'INTEGER NOT NULL DEFAULT 0');
+
+  ensurePaymentsStateRequiresPaymentMethod();
 
   db.prepare('INSERT OR IGNORE INTO config (id) VALUES (1)').run();
 
@@ -713,9 +814,22 @@ export function init() {
   // 2026-10-19: backend de pagos v1 (Spec §22.5) — extender payment_methods y orders
   ensureColumn('payment_methods', 'provider',   'TEXT');
   ensureColumn('payment_methods', 'enabled',    'INTEGER NOT NULL DEFAULT 1');
+  ensureColumn('payment_methods', 'settlement', "TEXT NOT NULL DEFAULT 'prepaid'");
   ensureColumn('payment_methods', 'credentials_ref', 'TEXT');
   ensureColumn('orders', 'payment_id',    'TEXT REFERENCES payments(payment_id)');
   ensureColumn('orders', 'payment_state', 'TEXT');
+  // Pago contra entrega como estado de dominio (spec 58, p6): el pedido sabe
+  // si el efectivo ya se cobro, quien lo cobro y cuando.
+  ensureColumn('orders', 'cod_state', "TEXT NOT NULL DEFAULT 'pending'");
+  ensureColumn('orders', 'cod_collected_by', 'TEXT');
+  ensureColumn('orders', 'cod_collected_at', 'TEXT');
+  ensureColumn('orders', 'cod_method', 'TEXT');
+  // Los eventos del provider guardan a que pago pertenecen: asi el listado
+  // de eventos de un pago es un JOIN indexado y no un LIKE sobre el JSON
+  // (spec 58, p5).
+  ensureColumn('provider_events', 'payment_id', 'TEXT');
+  ensureColumn('provider_events', 'last_error',  'TEXT');
+  ensureColumn('provider_events', 'processed_at', 'TEXT');
 
   // El telefono del cliente es la llave con la que se filtra SU propio pedido:
   // `GET /api/orders` solo le muestra lo suyo, no el libro completo. Sin esta
@@ -785,8 +899,20 @@ export function init() {
 
   const pmCount = db.prepare('SELECT COUNT(*) as n FROM payment_methods').get().n;
   if (pmCount === 0) {
-    const stmt = db.prepare('INSERT INTO payment_methods (code, label, instructions, sort_order) VALUES (?, ?, ?, ?)');
-    for (const p of SEED_PAYMENT_METHODS) stmt.run(p.code, p.label, p.instructions, p.sort_order);
+    const stmt = db.prepare(
+      'INSERT INTO payment_methods (code, label, instructions, sort_order, provider, settlement, enabled, active) VALUES (?, ?, ?, ?, ?, ?, 1, 1)'
+    );
+    for (const p of SEED_PAYMENT_METHODS) {
+      stmt.run(p.code, p.label, p.instructions, p.sort_order, p.provider, p.settlement);
+    }
+  } else {
+    // La tabla ya existia (instalacion previa): el provider y el settlement se
+    // rellenan para que gatewayFor pueda resolver la pasarela. Sin esto, la
+    // columna provider queda muerta y todo metodo cae a pago manual.
+    const upd = db.prepare(
+      'UPDATE payment_methods SET provider = COALESCE(provider, ?), settlement = COALESCE(settlement, ?) WHERE code = ?'
+    );
+    for (const p of SEED_PAYMENT_METHODS) upd.run(p.provider, p.settlement, p.code);
   }
 
   const dsCount = db.prepare('SELECT COUNT(*) as n FROM delivery_schedule').get().n;
