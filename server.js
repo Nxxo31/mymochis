@@ -115,7 +115,10 @@ app.use(helmet({
 }));
 
 app.use((req, res, next) => {
-  res.setHeader('Permissions-Policy', 'geolocation=(), microphone=(), camera=(), payment=(), usb=(), magnetometer=(), gyroscope=(), accelerometer=()');
+  // geolocation=(self): el portal del domicillero reporta su posicion con
+  // esa API, y de ella dependen la asignacion por distancia y el precio de
+  // recogida. Con geolocation=() el boton "Enviar ubicacion" no podia funcionar.
+  res.setHeader('Permissions-Policy', 'geolocation=(self), microphone=(), camera=(), payment=(), usb=(), magnetometer=(), gyroscope=(), accelerometer=()');
   res.setHeader('Access-Control-Allow-Origin', CORS_ORIGIN);
   res.setHeader('Access-Control-Allow-Methods', 'GET, POST, PUT, PATCH, DELETE, OPTIONS');
   res.setHeader('Access-Control-Allow-Headers', 'Content-Type, Authorization');
