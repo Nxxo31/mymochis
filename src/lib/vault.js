@@ -37,6 +37,13 @@ const TAG_BYTES = 16;
 
 /** Metadata de los proveedores soportados. Guía al admin: esto es lo que existe. */
 export const PROVIDERS = {
+  wompi: {
+    label: 'Wompi (PSE, Nequi, Daviplata, Bancolombia, tarjetas)',
+    hint: 'Llaves publica y secreta del comercio Wompi (empiezan por pub_ y sec_) + la llave de firma de los eventos.',
+    fields: ['public_key', 'secret_key', 'webhook_secret'],
+    optional: ['webhook_secret'],
+    docs: 'https://docs.wompi.co',
+  },
   bancolombia: {
     label: 'Bancolombia API Market',
     hint: 'Client Id + Client Secret de https://api-portal-external.apps.bancolombia.com (QR y Botón de pago).',

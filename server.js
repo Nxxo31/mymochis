@@ -9,6 +9,7 @@ import { registerPaymentConsumers } from './src/lib/payments/consumers.js';
 import { indexOrderTotals } from './src/lib/payments/index.js';
 import { MockAdapter } from './src/lib/payments/adapters/mock.js';
 import { NequiAdapter } from './src/lib/payments/adapters/nequi.js';
+import { WompiAdapter } from './src/lib/payments/adapters/wompi.js';
 import authRoutes from './src/routes/auth.js';
 import meRoutes from './src/routes/me.js';
 import configRoutes from './src/routes/config.js';
@@ -72,6 +73,7 @@ if (ALLOW_MOCK_PAYMENTS) {
   process.exit(1);
 }
 registerAdapter(new NequiAdapter());
+registerAdapter(new WompiAdapter());
 
 // Registrar consumers del outbox (Spec §22.7). Sin esto el relay marcaba cada
 // evento como publicado sin ejecutar nada — bug #4 de la auditoría 2026-10-20.
