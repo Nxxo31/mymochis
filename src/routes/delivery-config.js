@@ -19,6 +19,10 @@ const VALID_FIELDS = [
   'delivery_zone_address',
   'delivery_zone_place_id',
   'delivery_default_cutoff_hours',
+  // Piso de margen del reparto (spec 57, r4/r10): el % sobre el costo y el
+  // minimo por pedido que el domicillero gana de Mas.
+  'courier_margin_pct',
+  'courier_min_margin_cents',
 ];
 
 function nullableText(value, maxLength) {

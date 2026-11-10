@@ -190,6 +190,28 @@ before(async () => {
     },
   });
   assert.equal(config.status, 200, JSON.stringify(config.json));
+
+  // El domicilio consume stock desde una ventana abierta y necesita horario
+  // de reparto (P0 2026-11-05). Sin estos fixtures el pedido inmediato se
+  // rechaza por no_release_window antes de llegar a la regla de entrega.
+  const hoy = businessClock().business_date;
+  const ventana = await api('POST', '/api/release-windows', {
+    accessToken: token,
+    body: {
+      release_date: hoy, cutoff_at: `${hoy}T23:59:00`, status: 'open',
+      items: [{ flavor_id: FLAVOR_ID, units_available: 50 }],
+    },
+  });
+  assert.ok(ventana.status >= 200 && ventana.status < 300, JSON.stringify(ventana.json));
+  const reparto = await api('POST', '/api/delivery-schedule', {
+    accessToken: token,
+    body: {
+      day_of_week: businessClock().day_of_week, mode: 'both',
+      start_time: '08:00', end_time: '20:00', cutoff_offset_hours: 0, active: 1,
+    },
+  });
+  assert.ok(reparto.status >= 200 && reparto.status < 300, JSON.stringify(reparto.json));
+
   const rule = await api('POST', '/api/delivery-rules', {
     accessToken: token,
     body: {

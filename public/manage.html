@@ -808,6 +808,9 @@ a:hover { text-decoration: underline; }
   position: fixed; inset: 0; z-index: 0;
   overflow: hidden; pointer-events: none;
 }
+/* Los mochis flotantes son del login. Con la app abierta se colaban en los
+   margenes del panel (parecian manchas sueltas) y tapaban el area de trabajo. */
+body.app-on .bg-mochis { display: none; }
 .orbit {
   position: absolute; pointer-events: none;
   transition: transform 0.6s cubic-bezier(0.22, 1, 0.36, 1);
@@ -861,28 +864,32 @@ a:hover { text-decoration: underline; }
 /* ============ UPLOAD · drop-zone ============ */
 .drop-zone {
   border: 0;
-  border-radius: 22px;
-  padding: 32px 24px;
-  text-align: center;
-  background: var(--mochi-cyan);
+  border-radius: 18px;
+  padding: 16px 18px;
+  text-align: left;
+  background: var(--clay-canvas-2);
   cursor: pointer;
   transition: all 0.2s;
-  margin-bottom: 20px;
-  box-shadow: var(--clay-shadow-md), inset 3px -3px 6px rgba(255,255,255,0.85);
+  margin-bottom: 16px;
+  box-shadow: inset 0 0 0 1px var(--line);
+  display: flex;
+  align-items: center;
+  gap: 14px;
 }
 .drop-zone:hover {
-  background: var(--mochi-crema);
+  background: var(--clay-canvas-3);
   transform: translateY(-1px);
-  box-shadow: var(--clay-shadow-hover);
+  box-shadow: inset 0 0 0 1px var(--line-strong), var(--clay-shadow-sm);
 }
 .drop-zone.dragover {
   background: var(--mochi-matcha);
   transform: scale(1.01);
 }
-.drop-zone .icon { font-size: 38px; line-height: 1; margin-bottom: 8px; }
-.drop-zone .icon svg { width: 36px; height: 36px; display: block; margin: 0 auto; }
-.drop-zone .label { font-weight: 700; color: var(--navy); }
-.drop-zone .hint { font-size: 12px; color: var(--clay-ink-soft); margin-top: 4px; }
+.drop-zone .icon { font-size: 24px; line-height: 1; margin-bottom: 0; }
+.drop-zone .icon svg { width: 26px; height: 26px; display: block; }
+.drop-zone .label { font-weight: 700; color: var(--ink); }
+.drop-zone .hint { font-size: 12px; color: var(--clay-ink-soft); margin-top: 2px; }
+.drop-zone .dz-text { flex: 1; min-width: 0; }
 .drop-zone .progress {
   margin-top: 12px;
   height: 8px;
@@ -899,6 +906,88 @@ a:hover { text-decoration: underline; }
   width: 0%;
   transition: width 0.2s;
   border-radius: 999px;
+}
+
+/* ============ CATALOGO · layout de la sección Productos ============ */
+.cat-layout {
+  display: grid;
+  grid-template-columns: minmax(0, 1fr) 320px;
+  gap: 20px;
+  align-items: start;
+  margin-bottom: 26px;
+}
+.cat-main { display: grid; gap: 20px; min-width: 0; }
+.cat-side { display: grid; gap: 20px; min-width: 0; }
+.card-head {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 12px;
+  flex-wrap: wrap;
+  margin-bottom: 14px;
+}
+.card-head h3 { margin-bottom: 0; }
+.cat-block { border-top: 1px solid var(--line); padding-top: 14px; margin-top: 14px; }
+.cat-block:first-child { border-top: 0; padding-top: 0; margin-top: 0; }
+.cat-block > h4 {
+  font-family: var(--font-display);
+  font-size: 15px;
+  margin-bottom: 4px;
+}
+.cat-block > .sub { margin-bottom: 10px; }
+.cat-toolbar {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 14px;
+  flex-wrap: wrap;
+  margin-bottom: 16px;
+}
+.cat-toolbar h3 { margin: 0; }
+.cat-filters { display: flex; align-items: center; gap: 10px; flex-wrap: wrap; }
+.cat-filters input {
+  border: 1px solid var(--line);
+  background: var(--clay-surface);
+  border-radius: 999px;
+  padding: 9px 14px;
+  font: inherit;
+  font-size: 14px;
+  color: var(--ink);
+  min-width: 220px;
+}
+.cat-filters input:focus { outline: 2px solid var(--focus); outline-offset: 1px; }
+.mini-stats { display: grid; gap: 10px; }
+.mini-stat {
+  display: flex;
+  align-items: baseline;
+  justify-content: space-between;
+  gap: 10px;
+  padding-bottom: 10px;
+  border-bottom: 1px solid var(--line);
+}
+.mini-stat:last-child { border-bottom: 0; padding-bottom: 0; }
+.mini-stat b { font-family: var(--font-display); font-size: 20px; }
+.mini-stat span { color: var(--clay-ink-soft); font-size: 13px; }
+.tips { margin: 0; padding-left: 18px; display: grid; gap: 8px; color: var(--clay-ink-soft); font-size: 13px; }
+.tips strong { color: var(--ink); }
+.cat-help summary {
+  font-family: var(--font-display);
+  font-size: 20px;
+  font-weight: 700;
+  cursor: pointer;
+  list-style: none;
+}
+.cat-help summary::-webkit-details-marker { display: none; }
+.cat-help summary::after { content: " ▾"; color: var(--clay-ink-soft); font-size: 14px; }
+.cat-help[open] summary::after { content: " ▴"; }
+.cat-help[open] summary { margin-bottom: 12px; }
+.galeria-grid .empty-hint { grid-column: 1 / -1; }
+/* El texto de estado vacio vive dentro de un grid: sin esto queda encerrado
+   en la primera columna (150px) y se ve como un bloque roto. */
+.upload-gallery .empty-hint,
+.upload-gallery .sub { grid-column: 1 / -1; }
+@media (max-width: 1100px) {
+  .cat-layout { grid-template-columns: 1fr; }
 }
 
 .upload-gallery {
@@ -1337,35 +1426,79 @@ a:hover { text-decoration: underline; }
           <h1>Productos</h1>
           <div class="sub">Catálogo del marketplace: mochis, malteadas y lo que quieras vender</div>
         </div>
-        <div class="actions"><button class="btn btn-primary" onclick="openFlavorModal()">+ Nuevo producto</button></div>
-      </div>
-
-      <div class="upload-section-head">
-        <h3>📤 Imágenes</h3>
-        <div class="category-pick" id="flavor-upload-cats">
-          <button class="chip active" data-cat="flavor">Producto</button>
-          <button class="chip" data-cat="combo">Combo</button>
-          <button class="chip" data-cat="social">Redes</button>
-          <button class="chip" data-cat="hero">Portada</button>
-          <button class="chip" data-cat="general">Otros</button>
+        <div class="actions">
+          <button class="btn btn-secondary" onclick="document.getElementById('flavor-file').click()">Subir imágenes</button>
+          <button class="btn btn-primary" onclick="openFlavorModal()">+ Nuevo producto</button>
         </div>
       </div>
-      <div class="drop-zone" id="flavor-drop">
-        <div class="icon"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.6" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M3 7.5A1.5 1.5 0 0 1 4.5 6h4l2 2.5h7A1.5 1.5 0 0 1 19 10v7a1.5 1.5 0 0 1-1.5 1.5h-13A1.5 1.5 0 0 1 3 17z"/></svg></div>
-        <div class="label">Arrastra imágenes aquí</div>
-        <div class="hint">o haz clic · JPG, PNG, WebP, GIF, AVIF · MP4, WebM, MOV · PDF · máx 25MB c/u · 8 archivos</div>
-        <div class="progress"><div class="bar"></div></div>
-        <input type="file" id="flavor-file" accept="image/jpeg,image/png,image/webp,image/gif,image/avif,video/mp4,video/webm,video/quicktime,application/pdf" multiple hidden>
-      </div>
-      <div class="upload-gallery" id="flavor-gallery"></div>
 
-      <div class="card" style="margin-top:16px">
-        <h3>🖼 Portada de la página</h3>
-        <div class="sub" style="margin-bottom:8px">Subí imágenes con la categoría <strong>Portada</strong> en la zona de arriba y elegí cuál se muestra en el primer bloque de la landing.</div>
-        <div class="galeria-grid" id="galeria-grid" style="display:grid;grid-template-columns:repeat(auto-fill,minmax(150px,1fr));gap:12px"></div>
-        <div id="galeria-hint" class="sub" style="margin-top:8px"></div>
+      <div class="cat-layout">
+        <div class="cat-main">
+          <div class="card">
+            <div class="card-head">
+              <h3>📤 Imágenes</h3>
+              <div class="category-pick" id="flavor-upload-cats">
+                <button class="chip active" data-cat="flavor">Producto</button>
+                <button class="chip" data-cat="combo">Combo</button>
+                <button class="chip" data-cat="social">Redes</button>
+                <button class="chip" data-cat="hero">Portada</button>
+                <button class="chip" data-cat="general">Otros</button>
+              </div>
+            </div>
+
+            <div class="cat-block">
+              <div class="drop-zone" id="flavor-drop">
+                <div class="icon"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.6" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M3 7.5A1.5 1.5 0 0 1 4.5 6h4l2 2.5h7A1.5 1.5 0 0 1 19 10v7a1.5 1.5 0 0 1-1.5 1.5h-13A1.5 1.5 0 0 1 3 17z"/></svg></div>
+                <div class="dz-text">
+                  <div class="label">Arrastra imágenes aquí o hacé clic</div>
+                  <div class="hint">La categoría de arriba decide a qué van · JPG, PNG, WebP, GIF, AVIF · MP4, WebM, MOV · PDF · máx 25MB c/u · 8 archivos</div>
+                </div>
+                <div class="progress"><div class="bar"></div></div>
+                <input type="file" id="flavor-file" accept="image/jpeg,image/png,image/webp,image/gif,image/avif,video/mp4,video/webm,video/quicktime,application/pdf" multiple hidden>
+              </div>
+              <div class="upload-gallery" id="flavor-gallery"></div>
+            </div>
+
+            <div class="cat-block">
+              <h4>🖼 Portada de la página</h4>
+              <div class="sub">Subí imágenes con la categoría <strong>Portada</strong> y elegí cuál se muestra en el primer bloque de la landing.</div>
+              <div class="galeria-grid" id="galeria-grid" style="display:grid;grid-template-columns:repeat(auto-fill,minmax(150px,1fr));gap:12px"></div>
+              <div id="galeria-hint" class="sub" style="margin-top:8px"></div>
+            </div>
+          </div>
+        </div>
+
+        <aside class="cat-side">
+          <div class="card">
+            <h3>Resumen</h3>
+            <div class="mini-stats" id="cat-stats"></div>
+          </div>
+          <div class="card">
+            <details class="cat-help">
+              <summary>Cómo se usa</summary>
+              <ul class="tips">
+                <li><strong>Primero las fotos</strong>, después el producto: cada imagen con categoría <strong>Producto</strong> entra a la galería de arriba.</li>
+                <li>Un producto sin foto igual se muestra, pero con el punto de color.</li>
+                <li>La <strong>Portada</strong> es la primera imagen que ve el cliente en la landing.</li>
+                <li>Los <strong>combos</strong> se arman en su propia pestaña y heredan la foto del sabor que los compone.</li>
+              </ul>
+            </details>
+          </div>
+        </aside>
       </div>
 
+      <div class="cat-toolbar">
+        <h3>Catálogo</h3>
+        <div class="cat-filters">
+          <input id="flavor-search" type="search" placeholder="Buscar producto…" autocomplete="off">
+          <div class="category-pick" id="flavor-filter">
+            <button class="chip active" data-f="all">Todos</button>
+            <button class="chip" data-f="available">Disponibles</button>
+            <button class="chip" data-f="unavailable">No disponibles</button>
+          </div>
+          <span class="sub" id="flavor-count"></span>
+        </div>
+      </div>
       <div class="grid grid-3" id="flavors-grid"></div>
     </section>
 
@@ -1427,6 +1560,7 @@ a:hover { text-decoration: underline; }
         <button class="pill" data-sub="horarios">Horarios</button>
         <button class="pill" data-sub="ventanas">Ventanas</button>
         <button class="pill" data-sub="pagos">Métodos de pago</button>
+        <button class="pill" data-sub="domiciliarios">Domiciliarios</button>
       </div>
 
       <div id="entregas-inmediato" class="subtab-panel active"></div>
@@ -1434,6 +1568,7 @@ a:hover { text-decoration: underline; }
       <div id="entregas-horarios" class="subtab-panel"></div>
       <div id="entregas-ventanas" class="subtab-panel"></div>
       <div id="entregas-pagos" class="subtab-panel"></div>
+      <div id="entregas-domiciliarios" class="subtab-panel"></div>
     </section>
 
     <!-- ============== PAGOS ============== -->
@@ -1827,19 +1962,54 @@ document.getElementById('login-form').addEventListener('submit', async (e) => {
 });
 
 document.getElementById('tour-btn').onclick = () => startTour();
+
+// ============ EVENTOS EN VIVO (SSE, spec 57 r11) ============
+// El server empuja "hay novedad" de reparto y el panel se actualiza solo.
+// La conexion es de solo lectura: si se cae, el EventSource reconecta solo.
+let _liveEvents = null;
+
+function connectLiveEvents() {
+  if (_liveEvents || typeof EventSource === 'undefined' || !_token) return;
+  try {
+    _liveEvents = new EventSource(API + '/events?token=' + encodeURIComponent(_token));
+  } catch (e) {
+    _liveEvents = null;
+    return;
+  }
+  ['dispatch.assigned', 'dispatch.status', 'dispatch.cod'].forEach((tipo) => {
+    _liveEvents.addEventListener(tipo, () => refrescarEquipoReparto());
+  });
+  _liveEvents.onerror = () => {
+    // readyState 2 = cerrado: se deja que el propio EventSource reintente.
+    if (_liveEvents && _liveEvents.readyState === 2) _liveEvents = null;
+  };
+}
+
+function refrescarEquipoReparto() {
+  const pill = document.querySelector('#entregas-tabs .pill.active');
+  if (!pill || pill.dataset.sub !== 'domiciliarios') return;
+  const panel = document.getElementById('entregas-domiciliarios');
+  if (!panel || panel.contains(document.activeElement)) return;   // esta escribiendo: no se pisa
+  render.entregasDomiciliarios();
+}
+
 document.getElementById('logout-btn').onclick = () => {
+  if (_liveEvents) { try { _liveEvents.close(); } catch (e) {} _liveEvents = null; }
   _token = null; _user = null;
   localStorage.removeItem(TOKEN_KEY);
   document.getElementById('app').classList.remove('visible');
+  document.body.classList.remove('app-on');
   document.getElementById('login-screen').style.display = '';
 };
 
 async function enterApp() {
   document.getElementById('login-screen').style.display = 'none';
   document.getElementById('app').classList.add('visible');
+  document.body.classList.add('app-on');
   document.getElementById('user-email').textContent = _user.email;
   initUploadZone();
   await loadAll();
+  connectLiveEvents();
   showSection('dashboard');
   if (!localStorage.getItem('mymochis_tour_done')) {
     setTimeout(() => startTour(), 700);
@@ -2129,17 +2299,63 @@ const render = {
 
   flavors() {
     const grid = document.getElementById('flavors-grid');
-    if (!_flavors.length) { grid.innerHTML = '<div class="empty">Todavía no hay productos. Creá el primero con el botón de arriba.</div>'; return; }
-    grid.innerHTML = _flavors.map(f => `
+    if (!window._catFiltrosListos) {
+      window._catFiltrosListos = true;
+      window._flavorFilter = 'all';
+      const input = document.getElementById('flavor-search');
+      if (input) input.addEventListener('input', () => render.flavors());
+      document.querySelectorAll('#flavor-filter .chip').forEach(chip => {
+        chip.addEventListener('click', () => {
+          document.querySelectorAll('#flavor-filter .chip').forEach(c => c.classList.remove('active'));
+          chip.classList.add('active');
+          window._flavorFilter = chip.dataset.f || 'all';
+          render.flavors();
+        });
+      });
+    }
+    const q = (document.getElementById('flavor-search')?.value || '').trim().toLowerCase();
+    const filtro = window._flavorFilter || 'all';
+
+    const lista = _flavors.filter(f => {
+      if (filtro === 'available' && !f.available) return false;
+      if (filtro === 'unavailable' && f.available) return false;
+      if (q && !(`${f.name} ${f.description || ''}`.toLowerCase().includes(q))) return false;
+      return true;
+    });
+
+    const count = document.getElementById('flavor-count');
+    if (count) count.textContent = lista.length === _flavors.length
+      ? `${lista.length} producto(s)`
+      : `${lista.length} de ${_flavors.length} producto(s)`;
+
+    const stats = document.getElementById('cat-stats');
+    if (stats) {
+      const disponibles = _flavors.filter(f => f.available).length;
+      const conFoto = _flavors.filter(f => f.image_url).length;
+      stats.innerHTML = `
+        <div class="mini-stat"><span>Productos</span><b>${_flavors.length}</b></div>
+        <div class="mini-stat"><span>Disponibles</span><b>${disponibles}</b></div>
+        <div class="mini-stat"><span>Con foto</span><b>${conFoto}</b></div>
+        <div class="mini-stat"><span>Combos</span><b>${_combos.length}</b></div>
+        <div class="mini-stat"><span>Promociones</span><b>${_promos.length}</b></div>`;
+    }
+
+    if (!lista.length) {
+      grid.innerHTML = `<div class="empty">${_flavors.length ? 'Ningún producto coincide con el filtro.' : 'Todavía no hay productos. Creá el primero con el botón de arriba.'}</div>`;
+      return;
+    }
+    grid.innerHTML = lista.map(f => `
       <div class="item-card">
+        ${f.image_url ? `<div class="item-thumb"><img src="${escapeHtml(f.image_url)}" alt="${escapeHtml(f.name)}" loading="lazy" style="width:100%;height:100%;object-fit:cover"></div>` : ''}
         <div style="display:flex;align-items:center;gap:10px">
-          <div style="width:32px;height:32px;border-radius:50%;background:${f.color || FLAVOR_PALETTE[f.id] || '#e88a9e'};box-shadow:inset -3px -2px 6px rgba(0,0,0,0.15)"></div>
+          <div style="width:32px;height:32px;border-radius:50%;flex:0 0 auto;background:${f.color || FLAVOR_PALETTE[f.id] || '#e88a9e'};box-shadow:inset -3px -2px 6px rgba(0,0,0,0.15)"></div>
           <div class="item-name">${escapeHtml(f.name)}</div>
         </div>
         <div class="item-desc">${escapeHtml(f.description || '')}</div>
         <div class="item-meta">
           <span><strong>${fmt(f.price)}</strong></span>
           <span class="tag ${f.available ? 'paid' : 'cancelled'}">${f.available ? 'disponible' : 'no disponible'}</span>
+          ${f.image_url ? '' : '<span class="tag">sin foto</span>'}
         </div>
         <div class="item-actions">
           <button class="btn btn-sm btn-ghost" data-action="openFlavorModal" data-payload='${esc(JSON.stringify(f))}'>Editar</button>
@@ -2757,12 +2973,130 @@ render.entregas = function() {
   render.entregasSub(active ? active.dataset.sub : 'inmediato');
 };
 
+window.toggleCourier = async function(payload) {
+  if (!payload) return;
+  try {
+    await api('/couriers/' + payload.id, {
+      method: 'PATCH',
+      body: JSON.stringify({ active: !payload.active }),
+    });
+    toast(payload.active ? 'Domiciliario desactivado' : 'Domiciliario activado', 'success');
+    render.entregasDomiciliarios();
+  } catch (e) {
+    toast('Error: ' + (e.message || 'no se pudo actualizar'), 'error');
+  }
+};
+
+window.deleteCourier = async function(id) {
+  if (!confirm('¿Eliminar este domiciliario? Si ya tiene repartos no se puede borrar: desactívalo.')) return;
+  try {
+    await api('/couriers/' + id, { method: 'DELETE' });
+    toast('Domiciliario eliminado', 'success');
+    render.entregasDomiciliarios();
+  } catch (e) {
+    toast('Error: ' + (e.message || 'no se pudo eliminar'), 'error');
+  }
+};
+
 render.entregasSub = function(sub) {
   if (sub === 'inmediato') render.entregasInmediato();
   else if (sub === 'dias-gratis') render.entregasDiasGratis();
   else if (sub === 'horarios') render.entregasHorarios();
   else if (sub === 'ventanas') render.entregasVentanas();
   else if (sub === 'pagos') render.entregasPagos();
+  else if (sub === 'domiciliarios') render.entregasDomiciliarios();
+};
+
+// ============ DOMICILIARIOS ============
+// El admin crea aqui el usuario del domiciliario: nombre, whatsapp, email y
+// clave. Con eso el domiciliario entra a SU portal (/domiciliario.html) y ve
+// solo su cola. La tarifa (base + por km) es la que gana por ir a buscar el
+// pedido (D17) y el radio maximo es hasta donde esta dispuesto a llegar.
+render.entregasDomiciliarios = async function() {
+  const el = document.getElementById('entregas-domiciliarios');
+  let data;
+  try {
+    data = await api('/couriers');
+  } catch (e) {
+    el.innerHTML = `<div class="card">Error: ${escapeHtml(e.message)}</div>`;
+    return;
+  }
+  const couriers = data.couriers || [];
+  const portalUrl = location.origin + '/domiciliario.html';
+
+  const rows = couriers.map(c => `
+    <tr>
+      <td><strong>${escapeHtml(c.name)}</strong><div class="sub">${escapeHtml(c.email || 'sin email')}</div></td>
+      <td>${escapeHtml(c.phone_display || c.phone || '')}</td>
+      <td>${c.has_account ? '<span class="tag paid">con acceso</span>' : '<span class="tag cancelled">sin acceso</span>'}</td>
+      <td>${fmt(c.base_fare_cents || 0)} + ${fmt(c.price_per_km_cents || 0)}/km</td>
+      <td>${c.max_radius_km ? c.max_radius_km + ' km' : '—'}</td>
+      <td>${c.active_load || 0} activo(s) · ${c.delivered_count || 0} entregado(s)</td>
+      <td>${c.active ? '<span class="tag paid">activo</span>' : '<span class="tag cancelled">inactivo</span>'}</td>
+      <td>
+        <button class="btn btn-sm btn-ghost" data-action="toggleCourier" data-payload='${esc(JSON.stringify({ id: c.id, active: c.active }))}'>${c.active ? 'Desactivar' : 'Activar'}</button>
+        <button class="btn btn-sm btn-danger" data-action="deleteCourier" data-payload='${c.id}'>Eliminar</button>
+      </td>
+    </tr>`).join('');
+
+  el.innerHTML = `
+    <div class="card">
+      <div class="page-head" style="margin-bottom:18px">
+        <div>
+          <h3 style="margin-bottom:4px">Domiciliarios</h3>
+          <div class="sub">Creás el usuario del domiciliario y le das acceso a su portal: <strong>${escapeHtml(portalUrl)}</strong></div>
+        </div>
+      </div>
+      <form id="courier-form">
+        <div class="form-row">
+          <div class="form-group"><label>Nombre</label><input id="cf-name" required placeholder="Nombre y apellido"></div>
+          <div class="form-group"><label>WhatsApp</label><input id="cf-phone" required placeholder="573001234567"></div>
+        </div>
+        <div class="form-row">
+          <div class="form-group"><label>Email (acceso al portal)</label><input id="cf-email" type="email" required placeholder="domiciliario@correo.com"></div>
+          <div class="form-group"><label>Clave del portal</label><input id="cf-password" type="password" required placeholder="mínimo 8 caracteres"></div>
+        </div>
+        <div class="form-row">
+          <div class="form-group"><label>Tarifa base por recoger (COP)</label><input id="cf-base" type="number" min="0" step="500" value="3500"></div>
+          <div class="form-group"><label>Precio por km (COP)</label><input id="cf-perkm" type="number" min="0" step="100" value="1600"></div>
+          <div class="form-group"><label>Radio máximo (km)</label><input id="cf-radius" type="number" min="0" step="1" value="15"></div>
+        </div>
+        <button type="submit" class="btn btn-primary">Crear domiciliario</button>
+        <div class="hint">La ubicación la reporta el domiciliario desde su portal (botón “Enviar ubicación”).</div>
+      </form>
+    </div>
+
+    <div class="card" style="margin-top:16px">
+      <h3>Equipo de reparto</h3>
+      ${couriers.length ? `
+      <div class="table-wrap">
+        <table>
+          <thead><tr><th>Domiciliario</th><th>WhatsApp</th><th>Portal</th><th>Tarifa</th><th>Radio</th><th>Carga</th><th>Estado</th><th></th></tr></thead>
+          <tbody>${rows}</tbody>
+        </table>
+      </div>` : '<div class="empty">Todavía no hay domicILIarios. Creá el primero con el formulario de arriba.</div>'}
+    </div>`;
+
+  const form = document.getElementById('courier-form');
+  if (form) form.addEventListener('submit', async (e) => {
+    e.preventDefault();
+    const body = {
+      name: document.getElementById('cf-name').value.trim(),
+      phone: document.getElementById('cf-phone').value.trim(),
+      email: document.getElementById('cf-email').value.trim(),
+      password: document.getElementById('cf-password').value,
+      base_fare_cents: Number(document.getElementById('cf-base').value || 0),
+      price_per_km_cents: Number(document.getElementById('cf-perkm').value || 0),
+      max_radius_km: Number(document.getElementById('cf-radius').value || 0) || null,
+    };
+    try {
+      await api('/couriers', { method: 'POST', body: JSON.stringify(body) });
+      toast('Domiciliario creado — ya puede entrar a su portal', 'success');
+      render.entregasDomiciliarios();
+    } catch (e) {
+      toast('Error: ' + (e.message || 'no se pudo crear'), 'error');
+    }
+  });
 };
 
 let _mapsPicker = null;
@@ -2810,6 +3144,14 @@ render.entregasInmediato = async function() {
             <div class="form-group"><label>Radio (km)</label><input type="number" id="dc-radius" value="${cfg.delivery_immediate_radius_km || 5}" step="0.5" min="0"></div>
             <div class="form-group"><label>ETA (minutos)</label><input type="number" id="dc-eta" value="${cfg.delivery_immediate_eta_minutes || 45}" min="0"></div>
           </div>
+        </div>
+        <div class="cfg-group">
+          <h3>Margen del reparto</h3>
+          <div class="modal-row">
+            <div class="form-group"><label>Margen sobre el costo (%)</label><input type="number" id="dc-margin-pct" value="${cfg.courier_margin_pct || 0}" min="0" max="500" step="1"><div class="hint">Ej: 20 = el domiciliario gana 20% sobre lo que el domicilio le cuesta al negocio.</div></div>
+            <div class="form-group"><label>Mínimo por pedido (COP)</label><input type="number" id="dc-margin-min" value="${cfg.courier_min_margin_cents || 0}" min="0" step="500"><div class="hint">Piso absoluto: manda sobre el % cuando es mayor.</div></div>
+          </div>
+          <div class="hint" style="margin-bottom:6px">El precio de recogida se congela al asignarle el reparto: es su tarifa (base + por km) sobre la distancia al negocio, y nunca baja del costo del domicilio más este margen.</div>
         </div>
         <div class="cfg-group">
           <h3>Centro de la zona</h3>
@@ -2932,7 +3274,9 @@ render.entregasInmediato = async function() {
       delivery_zone_center_lat: latRaw,
       delivery_zone_center_lng: lngRaw,
       delivery_zone_address: addressInput.value.trim(),
-      delivery_default_cutoff_hours: Number(document.getElementById('dc-cutoff').value)
+      delivery_default_cutoff_hours: Number(document.getElementById('dc-cutoff').value),
+      courier_margin_pct: Number(document.getElementById('dc-margin-pct').value),
+      courier_min_margin_cents: Number(document.getElementById('dc-margin-min').value)
     };
     try {
       await api('/delivery-config', { method: 'PUT', body: JSON.stringify(body) });
@@ -4540,7 +4884,7 @@ render.galeria = async function () {
     const data = await res.json();
     const files = data.files || [];
     if (!files.length) {
-      grid.innerHTML = '<div class="sub">Todavía no hay fotos de portada. Subilas en la zona de imágenes de arriba con el chip Portada.</div>';
+      grid.innerHTML = '<div class="empty-hint sub">Todavía no hay fotos de portada. Subilas en la zona de imágenes de arriba con el chip Portada.</div>';
       hint.textContent = '';
       return;
     }

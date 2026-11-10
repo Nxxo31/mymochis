@@ -415,6 +415,72 @@ CREATE TABLE IF NOT EXISTS reconciliation_runs (
   mismatches        INTEGER NOT NULL DEFAULT 0,
   details_json      TEXT
 );
+
+CREATE TABLE IF NOT EXISTS couriers (
+  id                INTEGER PRIMARY KEY AUTOINCREMENT,
+  name              TEXT NOT NULL,
+  phone             TEXT NOT NULL,
+  email             TEXT,
+  user_id           INTEGER REFERENCES users(id),
+  base_fare_cents   INTEGER NOT NULL DEFAULT 0,
+  price_per_km_cents INTEGER NOT NULL DEFAULT 0,
+  lat               REAL,
+  lng               REAL,
+  address           TEXT,
+  vehicle           TEXT,
+  max_radius_km     REAL,
+  active            INTEGER NOT NULL DEFAULT 1,
+  notes             TEXT,
+  created_at        TEXT NOT NULL DEFAULT (datetime('now')),
+  updated_at        TEXT NOT NULL DEFAULT (datetime('now'))
+);
+CREATE UNIQUE INDEX IF NOT EXISTS idx_couriers_user ON couriers(user_id) WHERE user_id IS NOT NULL;
+
+CREATE TABLE IF NOT EXISTS dispatches (
+  id                INTEGER PRIMARY KEY AUTOINCREMENT,
+  order_id          TEXT NOT NULL REFERENCES orders(id),
+  courier_id        INTEGER NOT NULL REFERENCES couriers(id),
+  status            TEXT NOT NULL DEFAULT 'assigned'
+                      CHECK(status IN ('assigned','picked_up','on_way','delivered','failed','cancelled')),
+  assigned_by       TEXT NOT NULL DEFAULT 'auto'
+                      CHECK(assigned_by IN ('auto','manual')),
+  assigned_at       TEXT NOT NULL DEFAULT (datetime('now')),
+  picked_up_at      TEXT,
+  on_way_at         TEXT,
+  delivered_at      TEXT,
+  failed_at         TEXT,
+  distance_km       REAL,
+  fee_cents         INTEGER NOT NULL DEFAULT 0,
+  cod_collected     INTEGER NOT NULL DEFAULT 0,
+  cod_collected_at  TEXT,
+  failure_reason    TEXT,
+  notes             TEXT,
+  created_at        TEXT NOT NULL DEFAULT (datetime('now')),
+  updated_at        TEXT NOT NULL DEFAULT (datetime('now'))
+);
+CREATE INDEX IF NOT EXISTS idx_dispatches_order ON dispatches(order_id);
+CREATE INDEX IF NOT EXISTS idx_dispatches_courier ON dispatches(courier_id, status);
+
+CREATE TABLE IF NOT EXISTS dispatch_log (
+  id                INTEGER PRIMARY KEY AUTOINCREMENT,
+  dispatch_id       INTEGER NOT NULL REFERENCES dispatches(id),
+  from_status       TEXT,
+  to_status         TEXT NOT NULL,
+  actor             TEXT NOT NULL,
+  note              TEXT,
+  created_at        TEXT NOT NULL DEFAULT (datetime('now'))
+);
+CREATE INDEX IF NOT EXISTS idx_dispatch_log_dispatch ON dispatch_log(dispatch_id, created_at);
+
+CREATE TABLE IF NOT EXISTS courier_locations (
+  id                INTEGER PRIMARY KEY AUTOINCREMENT,
+  courier_id        INTEGER NOT NULL REFERENCES couriers(id),
+  lat               REAL NOT NULL,
+  lng               REAL NOT NULL,
+  accuracy          REAL,
+  recorded_at       TEXT NOT NULL DEFAULT (datetime('now'))
+);
+CREATE INDEX IF NOT EXISTS idx_courier_locations_courier ON courier_locations(courier_id, recorded_at);
 `;
 
 const SEED_CATEGORIES = [
@@ -620,6 +686,12 @@ export function init() {
   ensureColumn('config',  'delivery_zone_address',             'TEXT');
   ensureColumn('config',  'delivery_zone_place_id',            'TEXT');
   ensureColumn('config',  'delivery_default_cutoff_hours',     'INTEGER NOT NULL DEFAULT 8');
+  // Piso de margen del reparto (spec 57, r4/r10): el domiciliario nunca gana
+  // menos de lo que el domicilio le cuesta al negocio (delivery_fee_cents)
+  // MAS un margen minimo. El margen es el mayor entre un % sobre el costo y un
+  // minimo fijo por pedido. Defaults en 0 = sin margen extra (piso = costo).
+  ensureColumn('config',  'courier_margin_pct',               'INTEGER NOT NULL DEFAULT 0');
+  ensureColumn('config',  'courier_min_margin_cents',        'INTEGER NOT NULL DEFAULT 0');
   ensureColumn('config',  'production_units_per_batch',        'INTEGER NOT NULL DEFAULT 50');
   ensureColumn('config',  'production_target_margin_pct',       'INTEGER NOT NULL DEFAULT 70');
   ensureColumn('config',  'production_market_reference_cents',  'INTEGER NOT NULL DEFAULT 0');
@@ -663,6 +735,26 @@ export function init() {
   ensureColumn('orders', 'release_window_id', 'INTEGER');
   ensureBackfillOrderWindows();
   ensureOrdersWindowForeignKey();
+
+  // === Motor de reparto (spec 57, r1) ===
+  //
+  // El pedido recuerda QUIEN lo lleva y QUE reparto es. Sin esto el domiciliario
+  // solo tiene un listado de pedidos sueltos y el admin no puede ver la cola.
+  // La FK a couriers no se puede agregar con ALTER TABLE (SQLite solo permite
+  // columnas), asi que se deja la FK logica en la capa de aplicacion: el motor
+  // de reparto (src/lib/dispatch.js) es el unico que escribe estas dos columnas
+  // y siempre con un courier_id que existe.
+  ensureColumn('orders', 'courier_id', 'INTEGER');
+  ensureColumn('orders', 'dispatch_id', 'INTEGER');
+
+  // Snapshot del precio de recogida (spec 57, r4/r10): el numero que ve y cobra
+  // el domiciliario queda CONGELADO en el pedido y en el reparto. El snapshot
+  // json guarda ademas las reglas con las que se calculo (tarifa propia,
+  // distancia, piso, margen), para poder auditar por que quedo asi.
+  ensureColumn('orders', 'pickup_cost_cents', 'INTEGER');
+  ensureColumn('dispatches', 'pickup_cost_cents', 'INTEGER');
+  ensureColumn('dispatches', 'pickup_distance_km', 'REAL');
+  ensureColumn('dispatches', 'pickup_snapshot_json', 'TEXT');
 
   // === Tres pools de stock (disponible / reservado / vendido) ===
   //

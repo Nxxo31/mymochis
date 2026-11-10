@@ -1,0 +1,635 @@
+<!DOCTYPE html>
+<html lang="es">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width,initial-scale=1,viewport-fit=cover">
+<link rel="stylesheet" href="/theme.css">
+<link rel="stylesheet" href="/ui.css">
+<meta name="theme-color" content="#62D3EC">
+<title>Portal del domiciliario · Mochi's Land</title>
+<meta name="robots" content="noindex">
+<link rel="icon" type="image/svg+xml" href="favicon.svg">
+<link rel="apple-touch-icon" href="logo-mochis-land.svg">
+<link rel="manifest" href="manifest.json">
+
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+<link href="https://fonts.googleapis.com/css2?family=Baloo+2:wght@400;600;700;800&family=Quicksand:wght@400;500;600;700&display=swap" rel="stylesheet">
+
+<style>
+/* ============================================================================
+   MyMochis · PORTAL DEL DOMICILIARIO (spec 57, r9)
+   ----------------------------------------------------------------------------
+   Pagina MOVIL: la usa el domiciliario en la calle, con una mano y con datos.
+   Tokens en theme.css, componentes compartidos en ui.css. Aqui solo lo propio.
+   ========================================================================== */
+
+* { box-sizing: border-box; margin: 0; padding: 0; }
+[hidden] { display: none !important; }
+body {
+  font-family: var(--font-body);
+  color: var(--ink);
+  background-color: var(--canvas);
+  background-image: radial-gradient(120% 60% at 50% -10%, var(--canvas-2), transparent 70%);
+  min-height: 100vh;
+  line-height: 1.55;
+  -webkit-font-smoothing: antialiased;
+  padding-bottom: env(safe-area-inset-bottom);
+}
+h1, h2, h3 { font-family: var(--font-display); line-height: 1.15; }
+a { color: var(--sky-ink); }
+
+/* ---------- LOGIN ---------- */
+.login-wrap {
+  min-height: 100vh;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  padding: 24px 18px;
+}
+.login-card {
+  width: 100%;
+  max-width: 420px;
+  background: var(--surface);
+  border: 1px solid var(--line);
+  border-radius: 24px;
+  padding: 28px 24px;
+  box-shadow: 0 18px 40px -28px rgba(32, 48, 74, .45);
+}
+.brand { display: flex; align-items: center; gap: 10px; font-family: var(--font-display); font-weight: 800; }
+.brand-mark { border-radius: 12px; }
+.login-card h2 { margin-top: 18px; font-size: 1.5rem; }
+.login-card p { color: var(--ink-soft); font-size: .95rem; margin-bottom: 16px; }
+.login-error {
+  display: none;
+  background: var(--surface-2);
+  border: 1px solid var(--btn-danger-fg);
+  color: var(--btn-danger-fg);
+  border-radius: 14px;
+  padding: 10px 12px;
+  font-size: .9rem;
+  margin-bottom: 12px;
+}
+.login-error.on { display: block; }
+.login-hint { margin-top: 16px; }
+
+/* ---------- APP ---------- */
+.app { max-width: 780px; margin: 0 auto; padding: 0 14px 40px; }
+.topbar {
+  position: sticky;
+  top: 0;
+  z-index: 5;
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 10px;
+  padding: 14px 4px 12px;
+  background: linear-gradient(to bottom, var(--canvas) 72%, transparent);
+}
+.topbar .who { display: flex; flex-direction: column; }
+.topbar .who b { font-family: var(--font-display); font-size: 1.05rem; }
+.stats { display: flex; gap: 8px; }
+.stat {
+  background: var(--surface);
+  border: 1px solid var(--line);
+  border-radius: 14px;
+  padding: 6px 10px;
+  text-align: center;
+  min-width: 58px;
+}
+.stat b { display: block; font-family: var(--font-display); font-size: 1.05rem; line-height: 1.1; }
+.stat span { font-size: .7rem; color: var(--ink-soft); text-transform: uppercase; letter-spacing: .04em; }
+
+.toolbar { display: flex; flex-wrap: wrap; gap: 8px; margin-bottom: 14px; }
+
+.card-dispatch {
+  background: var(--surface);
+  border: 1px solid var(--line);
+  border-radius: 20px;
+  padding: 16px;
+  margin-bottom: 14px;
+  box-shadow: 0 12px 28px -24px rgba(32, 48, 74, .5);
+}
+.card-dispatch.done { opacity: .78; }
+.d-head { display: flex; align-items: center; justify-content: space-between; gap: 10px; }
+.d-id { font-family: var(--font-mono); font-size: .85rem; color: var(--ink-soft); }
+.d-total { font-family: var(--font-display); font-weight: 800; font-size: 1.15rem; }
+.d-customer { margin-top: 6px; font-weight: 700; }
+.d-addr { color: var(--ink-soft); font-size: .92rem; margin-top: 2px; }
+.d-lines { margin-top: 10px; display: grid; gap: 3px; font-size: .92rem; }
+.d-lines span::before { content: "· "; color: var(--ink-soft); }
+.d-lines b { font-weight: 700; }
+.d-cost {
+  margin-top: 12px;
+  border-top: 1px dashed var(--line);
+  padding-top: 10px;
+  display: grid;
+  gap: 5px;
+  font-size: .92rem;
+}
+.d-cost .row { display: flex; justify-content: space-between; gap: 12px; align-items: baseline; }
+.d-cost .row span:first-child { color: var(--ink-soft); }
+.d-cost .row.total { font-family: var(--font-display); font-weight: 800; font-size: 1.1rem; }
+.d-cost .row.total span:first-child { color: var(--ink); }
+.d-cost .row.pay span:first-child { color: var(--sakura-ink); }
+.d-tags { display: flex; flex-wrap: wrap; gap: 6px; margin-top: 10px; }
+.d-note { margin-top: 8px; font-size: .85rem; color: var(--sakura-ink); }
+.d-actions { display: flex; flex-wrap: wrap; gap: 8px; margin-top: 14px; }
+.d-actions .btn { flex: 1 1 auto; min-width: 128px; }
+.incident-box { margin-top: 12px; display: none; }
+.incident-box.on { display: block; }
+.incident-box textarea {
+  width: 100%;
+  min-height: 74px;
+  border-radius: 14px;
+  border: 1px solid var(--line);
+  background: var(--canvas);
+  color: var(--ink);
+  padding: 10px 12px;
+  font: inherit;
+  resize: vertical;
+}
+.empty {
+  text-align: center;
+  padding: 48px 18px;
+  color: var(--ink-soft);
+}
+.empty b { display: block; font-family: var(--font-display); font-size: 1.1rem; color: var(--ink); margin-bottom: 6px; }
+.toast {
+  position: fixed;
+  left: 50%;
+  bottom: 22px;
+  transform: translateX(-50%);
+  background: var(--ink);
+  color: var(--surface);
+  padding: 10px 16px;
+  border-radius: 999px;
+  font-size: .9rem;
+  opacity: 0;
+  pointer-events: none;
+  transition: opacity .2s ease;
+  z-index: 20;
+  max-width: 90vw;
+  text-align: center;
+}
+.toast.on { opacity: .96; }
+</style>
+</head>
+<body>
+
+<!-- ================== LOGIN ================== -->
+<div class="login-wrap" id="loginView">
+  <div class="login-card">
+    <div class="brand">
+      <img src="logo-mochis-land.svg" alt="" class="brand-mark" width="40" height="40">
+      <span>Mochi's Land</span>
+    </div>
+    <h2>Portal del domiciliario</h2>
+    <p>Entra con el email y la clave que te creó el administrador.</p>
+    <div id="login-error" class="login-error"></div>
+    <form id="login-form">
+      <div class="form-group">
+        <label>Email</label>
+        <input type="email" id="email" required placeholder="tu@email.com" autocomplete="email" autocapitalize="none">
+      </div>
+      <div class="form-group">
+        <label>Clave</label>
+        <input type="password" id="password" required placeholder="••••••••" autocomplete="current-password">
+      </div>
+      <button type="submit" class="btn btn-primary btn-block">Entrar</button>
+    </form>
+    <div class="hint login-hint">Tu cuenta es solo para el reparto. No sirve para el panel del negocio.</div>
+  </div>
+</div>
+
+<!-- ================== APP ================== -->
+<div class="app" id="appView" hidden>
+  <header class="topbar">
+    <div class="who">
+      <div class="brand">
+        <img src="logo-mochis-land.svg" alt="" class="brand-mark" width="32" height="32">
+        <span>Mochi's Land</span>
+      </div>
+      <b id="courierName">Domiciliario</b>
+    </div>
+    <div class="stats">
+      <div class="stat"><b id="statActive">0</b><span>activos</span></div>
+      <div class="stat"><b id="statDone">0</b><span>entregados</span></div>
+    </div>
+  </header>
+
+  <div class="toolbar">
+    <button class="btn btn-secondary btn-sm" id="btnLocate">Enviar ubicación</button>
+    <button class="btn btn-secondary btn-sm" id="btnRefresh">Refrescar</button>
+    <button class="btn btn-ghost btn-sm" id="btnLogout">Salir</button>
+  </div>
+
+  <div id="queue"></div>
+</div>
+
+<div class="toast" id="toast"></div>
+
+<script>
+(function () {
+  'use strict';
+
+  var TOKEN_KEY = 'mymochis_courier_token';
+  var COURIER_KEY = 'mymochis_courier';
+
+  var $ = function (id) { return document.getElementById(id); };
+  var token = localStorage.getItem(TOKEN_KEY) || null;
+
+  var STATUS_LABEL = {
+    assigned: 'Asignado',
+    picked_up: 'Recogido',
+    on_way: 'En camino',
+    delivered: 'Entregado',
+    failed: 'Fallido',
+    cancelled: 'Cancelado'
+  };
+
+  function fmtCOP(n) {
+    var v = Number(n || 0);
+    return '$ ' + v.toString().replace(/\B(?=(\d{3})+(?!\d))/g, '.');
+  }
+
+  function toast(msg) {
+    var t = $('toast');
+    t.textContent = msg;
+    t.classList.add('on');
+    clearTimeout(toast._t);
+    toast._t = setTimeout(function () { t.classList.remove('on'); }, 2600);
+  }
+
+  function loginError(msg) {
+    var e = $('login-error');
+    e.textContent = msg;
+    e.classList.add('on');
+  }
+
+  function api(path, opts) {
+    opts = opts || {};
+    var headers = { 'Content-Type': 'application/json' };
+    if (token) headers['Authorization'] = 'Bearer ' + token;
+    return fetch(path, {
+      method: opts.method || 'GET',
+      headers: headers,
+      body: opts.body !== undefined ? JSON.stringify(opts.body) : undefined
+    }).then(function (res) {
+      return res.json().catch(function () { return {}; }).then(function (json) {
+        return { status: res.status, json: json };
+      });
+    });
+  }
+
+  function showApp(courier) {
+    $('loginView').hidden = true;
+    $('appView').hidden = false;
+    if (courier) {
+      $('courierName').textContent = courier.name || 'Domiciliario';
+      localStorage.setItem(COURIER_KEY, JSON.stringify(courier));
+    }
+  }
+
+  function showLogin() {
+    $('appView').hidden = true;
+    $('loginView').hidden = false;
+  }
+
+  // ---------- LOGIN ----------
+  $('login-form').addEventListener('submit', function (e) {
+    e.preventDefault();
+    $('login-error').classList.remove('on');
+    var email = $('email').value.trim();
+    var password = $('password').value;
+    api('/api/courier/login', { method: 'POST', body: { email: email, password: password } })
+      .then(function (r) {
+        if (r.status !== 200) {
+          loginError(r.json.message || 'No se pudo iniciar sesión');
+          return;
+        }
+        token = r.json.token;
+        localStorage.setItem(TOKEN_KEY, token);
+        showApp(r.json.courier);
+        connectEvents();
+        loadQueue();
+      })
+      .catch(function () { loginError('Sin conexión con el servidor'); });
+  });
+
+  $('btnLogout').addEventListener('click', function () {
+    closeEvents();
+    token = null;
+    localStorage.removeItem(TOKEN_KEY);
+    localStorage.removeItem(COURIER_KEY);
+    showLogin();
+  });
+
+  // ---------- EVENTOS EN VIVO (SSE, spec 57 r11) ----------
+  //
+  // El server empuja "hay novedad" y el portal repinta la cola. El evento es
+  // la senal, no el dato: los detalles se piden por la API. Si la conexion se
+  // cae, el EventSource reconecta solo (retry: 3000).
+  var eventSource = null;
+  function connectEvents() {
+    if (!token || eventSource || typeof EventSource === 'undefined') return;
+    try {
+      eventSource = new EventSource('/api/events?token=' + encodeURIComponent(token));
+    } catch (e) {
+      eventSource = null;
+      return;
+    }
+    ['dispatch.assigned', 'dispatch.status', 'dispatch.cod'].forEach(function (tipo) {
+      eventSource.addEventListener(tipo, function () { loadQueue(); });
+    });
+    eventSource.onerror = function () {
+      // readyState 2 = cerrado: si el token vencio, el server respondio 401.
+      if (eventSource && eventSource.readyState === 2) {
+        closeEvents();
+        token = null;
+        localStorage.removeItem(TOKEN_KEY);
+        showLogin();
+      }
+    };
+  }
+
+  function closeEvents() {
+    if (eventSource) {
+      try { eventSource.close(); } catch (e) {}
+      eventSource = null;
+    }
+  }
+
+  // ---------- COLA ----------
+  function lineText(d) {
+    var lines = [];
+    (d.items || []).forEach(function (i) {
+      var price = i.unit_price_cents != null ? ' · ' + fmtCOP(i.unit_price_cents) : '';
+      lines.push('<b>' + i.qty + ' ×</b> ' + esc(i.name || i.flavor_id) + price);
+    });
+    (d.combos || []).forEach(function (c) {
+      var price = c.unit_price_cents != null ? ' · ' + fmtCOP(c.unit_price_cents) : '';
+      lines.push('<b>' + c.qty + ' ×</b> ' + esc(c.name || c.id) + price);
+    });
+    return lines;
+  }
+
+  function costHtml(d) {
+    var c = d.cost || {};
+    var pickup = c.courier_pickup || {};
+    var rows = [];
+
+    rows.push('<div class="row"><span>Productos</span><span>' + fmtCOP(c.subtotal_cents) + '</span></div>');
+    if (c.free_delivery) {
+      rows.push('<div class="row"><span>Domicilio</span><span>gratis</span></div>');
+    } else {
+      rows.push('<div class="row"><span>Domicilio' +
+        (c.distance_km != null ? ' · ' + Number(c.distance_km).toFixed(1) + ' km' : '') +
+        '</span><span>' + fmtCOP(c.delivery_fee_cents) + '</span></div>');
+    }
+    rows.push('<div class="row total"><span>Total a cobrar</span><span>' + fmtCOP(c.total_cents) + '</span></div>');
+
+    if (pickup.cents != null) {
+      rows.push('<div class="row pay"><span>Tu recogida (negocio → vos) · ' +
+        Number(pickup.distance_km || 0).toFixed(1) + ' km</span><span>' + fmtCOP(pickup.cents) + '</span></div>');
+      var notas = [];
+      if (pickup.margin_cents > 0) notas.push('incluye margen ' + fmtCOP(pickup.margin_cents));
+      if (pickup.frozen) notas.push('precio fijado al asignarte');
+      if (notas.length) rows.push('<div class="row muted"><span>' + notas.join(' · ') + '</span><span></span></div>');
+    } else if (pickup.reason === 'negocio_sin_ubicacion') {
+      rows.push('<div class="row muted"><span>Tu recogida</span><span>falta ubicar el negocio</span></div>');
+    } else {
+      rows.push('<div class="row muted"><span>Tu recogida</span><span>falta tu ubicación</span></div>');
+    }
+
+    return '<div class="d-cost">' + rows.join('') + '</div>';
+  }
+
+  function tagsHtml(d) {
+    var tags = [];
+    var w = d.window || {};
+    if (w.day) {
+      tags.push('<span class="chip">' + esc(w.day) + (w.start ? ' · ' + esc(w.start) + '-' + esc(w.end) : '') + '</span>');
+    }
+    if (d.payment) {
+      if (d.payment.method) tags.push('<span class="chip">' + esc(d.payment.method) + '</span>');
+      tags.push('<span class="chip">' + (d.payment.status === 'paid' ? 'pagado' : 'pendiente de pago') + '</span>');
+    }
+    return tags.length ? '<div class="d-tags">' + tags.join('') + '</div>' : '';
+  }
+
+  function mapsUrl(d) {
+    if (d.delivery_lat && d.delivery_lng) {
+      return 'https://www.google.com/maps/dir/?api=1&destination=' + d.delivery_lat + ',' + d.delivery_lng;
+    }
+    return 'https://www.google.com/maps/search/?api=1&query=' + encodeURIComponent(d.delivery_address || '');
+  }
+
+  function cardHtml(d) {
+    var lines = lineText(d);
+    var wa = 'https://wa.me/' + String(d.customer_phone || '').replace(/\D/g, '');
+    var done = d.status === 'delivered' || d.status === 'cancelled' || d.status === 'failed';
+    var actions = [];
+
+    if (d.status === 'assigned') {
+      actions.push('<button class="btn btn-primary" data-act="status" data-to="picked_up" data-id="' + d.id + '">Marcar recogido</button>');
+    }
+    if (d.status === 'picked_up') {
+      actions.push('<button class="btn btn-primary" data-act="status" data-to="on_way" data-id="' + d.id + '">Salí en camino</button>');
+    }
+    if (d.status === 'on_way') {
+      actions.push('<button class="btn btn-primary" data-act="status" data-to="delivered" data-id="' + d.id + '">Entregado</button>');
+    }
+    // El cobro se ofrece mientras el reparto no este ANULADO: la API acepta
+    // cobrar en picked_up, on_way y delivered. Antes se ocultaba en "delivered"
+    // (done) y el domicillero no podia cobrar en el flujo natural (recoger ->
+    // camino -> entregado -> cobrar).
+    var closed = d.status === 'cancelled' || d.status === 'failed';
+    if (!closed && !d.cod_collected) {
+      actions.push('<button class="btn btn-secondary" data-act="cash" data-id="' + d.id + '">Cobrar ' + fmtCOP((d.cost || {}).total_cents || d.total) + '</button>');
+    }
+    if (!done) {
+      actions.push('<button class="btn btn-ghost" data-act="incident" data-id="' + d.id + '">Incidencia</button>');
+    }
+    if (done && d.cod_collected) {
+      actions.push('<span class="chip">Cobro confirmado</span>');
+    }
+
+    return '' +
+      '<article class="card-dispatch' + (done ? ' done' : '') + '" data-id="' + d.id + '">' +
+        '<div class="d-head">' +
+          '<span class="d-id">' + d.order_id + '</span>' +
+          '<span class="d-total">' + fmtCOP((d.cost || {}).total_cents || d.total) + '</span>' +
+        '</div>' +
+        '<div class="d-customer">' + esc(d.customer_name || 'Cliente') +
+          ' · <a href="' + wa + '" target="_blank" rel="noopener">WhatsApp</a>' +
+          ' · <a href="tel:' + String(d.customer_phone || '').replace(/\D/g, '') + '">Llamar</a>' +
+        '</div>' +
+        '<div class="d-addr">' + esc(d.delivery_address || 'Sin dirección') + '</div>' +
+        '<div class="d-addr">' +
+          '<a href="' + mapsUrl(d) + '" target="_blank" rel="noopener">Abrir ruta</a>' +
+          (d.delivery_distance_km ? ' · ' + Number(d.delivery_distance_km).toFixed(1) + ' km' : '') +
+        '</div>' +
+        '<div class="d-lines">' + lines.map(function (l) { return '<span>' + l + '</span>'; }).join('') + '</div>' +
+        tagsHtml(d) +
+        costHtml(d) +
+        (d.notes ? '<div class="d-note">Nota del pedido: ' + esc(d.notes) + '</div>' : '') +
+        '<div class="d-note">' + esc(STATUS_LABEL[d.status] || d.status) +
+          (d.cod_collected ? ' · pago contra entrega confirmado' : '') +
+          (d.failure_reason ? ' · ' + esc(d.failure_reason) : '') +
+        '</div>' +
+        '<div class="d-actions">' + actions.join('') + '</div>' +
+        '<div class="incident-box" data-box="' + d.id + '">' +
+          '<textarea placeholder="¿Qué pasó? (ej: el cliente no estaba)" data-note="' + d.id + '"></textarea>' +
+          '<div class="d-actions">' +
+            '<button class="btn btn-secondary btn-sm" data-act="note" data-id="' + d.id + '">Guardar nota</button>' +
+            '<button class="btn btn-danger btn-sm" data-act="fail" data-id="' + d.id + '">Marcar fallido</button>' +
+          '</div>' +
+        '</div>' +
+      '</article>';
+  }
+
+  function esc(s) {
+    return String(s === null || s === undefined ? '' : s)
+      .replace(/&/g, '&amp;').replace(/</g, '&lt;').replace(/>/g, '&gt;')
+      .replace(/"/g, '&quot;').replace(/'/g, '&#39;');
+  }
+
+  function render(dispatches) {
+    var active = dispatches.filter(function (d) {
+      return d.status === 'assigned' || d.status === 'picked_up' || d.status === 'on_way';
+    });
+    var done = dispatches.filter(function (d) { return d.status === 'delivered'; });
+    $('statActive').textContent = active.length;
+    $('statDone').textContent = done.length;
+
+    var box = $('queue');
+    if (!dispatches.length) {
+      box.innerHTML = '<div class="empty"><b>No hay repartos</b>Cuando el administrador asigne un pedido de domicilio te aparece aquí.</div>';
+      return;
+    }
+    box.innerHTML = dispatches.map(cardHtml).join('');
+  }
+
+  function loadQueue() {
+    return api('/api/courier/queue').then(function (r) {
+      if (r.status === 401 || r.status === 403) {
+        token = null;
+        localStorage.removeItem(TOKEN_KEY);
+        showLogin();
+        return;
+      }
+      if (r.status !== 200) {
+        toast(r.json.message || 'No se pudo cargar la cola');
+        return;
+      }
+      render(r.json.dispatches || []);
+      var c = r.json.courier;
+      if (c) {
+        $('courierName').textContent = c.name || 'Domiciliario';
+        localStorage.setItem(COURIER_KEY, JSON.stringify(c));
+      }
+    }).catch(function () { toast('Sin conexión con el servidor'); });
+  }
+
+  $('btnRefresh').addEventListener('click', function () { loadQueue(); });
+
+  // ---------- ACCIONES ----------
+  document.addEventListener('click', function (e) {
+    var btn = e.target.closest('button[data-act]');
+    if (!btn) return;
+    var act = btn.getAttribute('data-act');
+    var id = btn.getAttribute('data-id');
+
+    if (act === 'incident') {
+      var box = document.querySelector('[data-box="' + id + '"]');
+      if (box) box.classList.toggle('on');
+      return;
+    }
+
+    if (act === 'status') {
+      var to = btn.getAttribute('data-to');
+      btn.disabled = true;
+      api('/api/courier/dispatch/' + id + '/status', { method: 'POST', body: { status: to } })
+        .then(function (r) {
+          if (r.status !== 200) { toast(r.json.message || 'No se pudo actualizar'); return; }
+          toast(STATUS_LABEL[to] || 'Listo');
+          loadQueue();
+        })
+        .catch(function () { toast('Sin conexión'); });
+      return;
+    }
+
+    if (act === 'cash') {
+      btn.disabled = true;
+      api('/api/courier/dispatch/' + id + '/collect-cash', { method: 'POST', body: {} })
+        .then(function (r) {
+          if (r.status !== 200) { toast(r.json.message || 'No se pudo cobrar'); return; }
+          toast(r.json.already ? 'Ese cobro ya estaba hecho' : 'Cobro confirmado');
+          loadQueue();
+        })
+        .catch(function () { toast('Sin conexión'); });
+      return;
+    }
+
+    if (act === 'note' || act === 'fail') {
+      var ta = document.querySelector('[data-note="' + id + '"]');
+      var note = ta ? ta.value.trim() : '';
+      if (!note) { toast('Escribe la incidencia'); return; }
+      btn.disabled = true;
+      api('/api/courier/dispatch/' + id + '/incident', {
+        method: 'POST',
+        body: { note: note, status: act === 'fail' ? 'failed' : undefined }
+      })
+        .then(function (r) {
+          if (r.status !== 200) { toast(r.json.message || 'No se pudo guardar'); return; }
+          toast(act === 'fail' ? 'Reparto marcado como fallido' : 'Nota guardada');
+          loadQueue();
+        })
+        .catch(function () { toast('Sin conexión'); });
+    }
+  });
+
+  // ---------- UBICACION ----------
+  function sendLocation(silent) {
+    if (!navigator.geolocation) {
+      if (!silent) toast('Este dispositivo no reporta ubicación');
+      return;
+    }
+    navigator.geolocation.getCurrentPosition(function (pos) {
+      api('/api/courier/location', {
+        method: 'POST',
+        body: { lat: pos.coords.latitude, lng: pos.coords.longitude, accuracy: pos.coords.accuracy }
+      })
+        .then(function (r) {
+          if (r.status === 200 && !silent) toast('Ubicación enviada');
+        })
+        .catch(function () {});
+    }, function () {
+      if (!silent) toast('No se pudo obtener la ubicación');
+    }, { enableHighAccuracy: true, timeout: 12000, maximumAge: 30000 });
+  }
+
+  $('btnLocate').addEventListener('click', function () { sendLocation(false); });
+
+  // ---------- ARRANQUE ----------
+  (function init() {
+    var saved = localStorage.getItem(COURIER_KEY);
+    if (token) {
+      if (saved) {
+        try { showApp(JSON.parse(saved)); } catch (e) { showApp(null); }
+      } else {
+        showApp(null);
+      }
+      loadQueue();
+      connectEvents();
+    } else {
+      showLogin();
+    }
+    setInterval(loadQueue, 20000);
+    setInterval(function () { if (token) sendLocation(true); }, 90000);
+  })();
+})();
+</script>
+</body>
+</html>

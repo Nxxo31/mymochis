@@ -10,9 +10,10 @@ import { authMiddleware, requireRole } from '../auth.js';
 import { geocode } from '../lib/geocode.js';
 import { BUSINESS_TZ_OFFSET_MINUTES, weekdayForDate } from '../lib/business-time.js';
 import { deliveryZoneRequirement, evaluateDelivery } from '../lib/delivery-rules.js';
-import { buildDispatch } from '../lib/whatsapp.js';
+import { buildDispatch, buildCourierDispatch } from '../lib/whatsapp.js';
 import { commitReservedStock, releaseReservedStock } from '../lib/stock.js';
 import { notifyOrderConfirmed } from '../lib/payments/order-notify.js';
+import { assignCourier, logWspOutcome } from '../lib/dispatch.js';
 
 const router = Router();
 
@@ -126,27 +127,11 @@ export function pickupCutoffFor(pickup_day, schedule, nowMs = Date.now()) {
   };
 }
 
-function validateScheduled(opts) {
-  const { pickup_day, items, combos, nowMs, schedule, config } = opts;
-  const dow = weekdayForDate(pickup_day);
-
-  const matchingSchedule = schedule.filter(s =>
-    s.day_of_week === dow && (s.mode === 'pickup' || s.mode === 'both') && s.active === 1
-  );
-  if (matchingSchedule.length === 0) {
-    return { ok: false, code: 'no_pickup_schedule', message: `No hay horario de pickup para ${pickup_day}` };
-  }
-
-  const orderEntry = matchingSchedule[0];
-  // Misma regla que /api/public/ publica como `orderable` (una sola copia).
-  const cutoff = pickupCutoffFor(pickup_day, schedule, nowMs);
-  if (!cutoff.orderable) {
-    return {
-      ok: false, code: 'past_cutoff',
-      message: `Cutoff ya pasó: el pedido debe hacerse antes de ${orderEntry.start_time} - ${orderEntry.cutoff_offset_hours}h`
-    };
-  }
-
+// Ventana abierta + items pedidos + saldo disponible. Es la MISMA regla para
+// recogida y para domicilio: antes solo la recogida validaba ventana y saldo,
+// asi que una entrega inmediata vendia mochis que no habian (PROJECT.md 33.14)
+// y el pedido no dejaba constancia de que ventana consumio.
+function resolveWindowStock(pickup_day, items, combos) {
   const windows = db.prepare(`
     SELECT rw.id, rw.release_date, rw.status, rw.cutoff_at,
            ri.id AS item_id, ri.flavor_id, ri.units_sold, ri.units_available, ri.units_reserved
@@ -195,7 +180,41 @@ function validateScheduled(opts) {
     }
   }
 
-  return { ok: true, pickup_day, window_id: openWindow.id, requestedFlavors, requestedCombos, itemsByFlavor: Object.fromEntries(itemsByFlavor) };
+  return { ok: true, window_id: openWindow.id, requestedFlavors, requestedCombos, itemsByFlavor };
+}
+
+function validateScheduled(opts) {
+  const { pickup_day, items, combos, nowMs, schedule, config } = opts;
+  const dow = weekdayForDate(pickup_day);
+
+  const matchingSchedule = schedule.filter(s =>
+    s.day_of_week === dow && (s.mode === 'pickup' || s.mode === 'both') && s.active === 1
+  );
+  if (matchingSchedule.length === 0) {
+    return { ok: false, code: 'no_pickup_schedule', message: `No hay horario de pickup para ${pickup_day}` };
+  }
+
+  const orderEntry = matchingSchedule[0];
+  // Misma regla que /api/public/ publica como `orderable` (una sola copia).
+  const cutoff = pickupCutoffFor(pickup_day, schedule, nowMs);
+  if (!cutoff.orderable) {
+    return {
+      ok: false, code: 'past_cutoff',
+      message: `Cutoff ya pasó: el pedido debe hacerse antes de ${orderEntry.start_time} - ${orderEntry.cutoff_offset_hours}h`
+    };
+  }
+
+  const stock = resolveWindowStock(pickup_day, items, combos);
+  if (!stock.ok) return stock;
+
+  return {
+    ok: true,
+    pickup_day,
+    window_id: stock.window_id,
+    requestedFlavors: stock.requestedFlavors,
+    requestedCombos: stock.requestedCombos,
+    itemsByFlavor: Object.fromEntries(stock.itemsByFlavor),
+  };
 }
 
 function validateImmediate(opts) {
@@ -374,7 +393,28 @@ router.post('/', async (req, res) => {
     authoritativeTotal = authoritativeSubtotal + Number(evaluation.fee_cents || 0);
     const r = validateImmediate({ total: authoritativeTotal, evaluation, config });
     if (!r.ok) return res.status(400).json({ error: r.code, message: r.message });
-    validated = r;
+
+    // El domicilio tambien come stock y tiene horario propio. Antes solo la
+    // recogida validaba ventana y saldo, asi que una entrega inmediata vendia
+    // mochis que no habian (PROJECT.md 33.14).
+    const deliveryEntries = schedule.filter(s =>
+      s.day_of_week === weekdayForDate(pickup_day)
+      && (s.mode === 'delivery' || s.mode === 'both') && s.active === 1
+    );
+    if (deliveryEntries.length === 0) {
+      return res.status(400).json({ error: 'no_delivery_schedule', message: `No hay horario de domicilio para ${pickup_day}` });
+    }
+    const stock = resolveWindowStock(pickup_day, items, combos);
+    if (!stock.ok) {
+      const status = stock.code === 'insufficient_stock' || stock.code === 'flavor_not_in_window' ? 409 : 400;
+      return res.status(status).json({ error: stock.code, message: stock.message });
+    }
+    validated = {
+      ...r,
+      window_id: stock.window_id,
+      requestedFlavors: stock.requestedFlavors,
+      requestedCombos: stock.requestedCombos,
+    };
     computedDeliveryFee = Number(evaluation.fee_cents || 0);
     computedDistanceKm = evaluation.distance_km;
     finalLat = geo.lat;
@@ -437,7 +477,9 @@ router.post('/', async (req, res) => {
       validated.window_id ?? null
     );
 
-    if (delivery_mode === 'scheduled' && validated.requestedFlavors) {
+    // La reserva aplica a TODOS los modos: si no, el domicilio vendia stock
+    // que ya estaba comprometido por otro pedido (PROJECT.md 33.14).
+    if (validated.requestedFlavors) {
       for (const req of validated.requestedFlavors) {
         const res = resvItemStmt.run(req.qty, validated.window_id, req.flavor_id, req.qty);
         if (res.changes !== 1) {
@@ -457,7 +499,7 @@ router.post('/', async (req, res) => {
 
     // Stock de combos (auditoria 2026-10-20, bug #6). `available` es un
     // contador, no un booleano: se descuenta y si no alcanza se revierte todo.
-    if (delivery_mode === 'scheduled' && validated.requestedCombos) {
+    if (validated.requestedCombos) {
       for (const req of validated.requestedCombos) {
         const r = resvComboStmt.run(req.qty, Number(req.id), req.qty);
         if (r.changes !== 1) {
@@ -477,6 +519,27 @@ router.post('/', async (req, res) => {
     const full = rowToOrder(db.prepare('SELECT * FROM orders WHERE id = ?').get(id));
     full.pricing = { lines: priced.lines, total: authoritativeTotal };
     if (totalDrift) full.pricing.client_drift = totalDrift;
+
+    // === Asignacion automatica de domiciliario (spec 57, r3 / D16) ===
+    //
+    // Solo los pedidos de domicilio (immediate) se reparten: la recogida la
+    // hace el cliente en la cocina. Si no hay ningun domiciliario elegible NO
+    // se asigna a nadie (fail-closed): el pedido queda sin reparto y el admin lo
+    // ve en la cola para asignarlo a mano. Nunca falla el pedido del cliente
+    // por falta de repartidores.
+    if (delivery_mode === 'immediate') {
+      try {
+        full.dispatch = assignCourier({
+          orderId: id,
+          lat: finalLat,
+          lng: finalLng,
+          actor: 'system:auto-assign',
+        });
+      } catch (e) {
+        console.error('[orders] no se pudo asignar domiciliario', id, e?.message || e);
+        full.dispatch = { assigned: false, reason: 'error', message: String(e?.message || e) };
+      }
+    }
 
     // ---- Intent de pago (2026-11-04) ----
     // El intent lo crea el SERVIDOR, no el navegador. POST /api/payments exige
@@ -548,6 +611,36 @@ router.post('/', async (req, res) => {
       pickup_window_start: sched?.start_time || null,
       pickup_window_end: sched?.end_time || null
     }).catch((e) => ({ deep_link: null, cloud_status: 'failed', cloud_error: String(e?.message || e).slice(0, 200) }));
+
+    // ---- WSP al domiciliario (spec 57, r6) ----
+    // Segunda plantilla (new_delivery_courier): el reparto recién asignado
+    // también llega al WhatsApp del repartidor con la dirección, lo que debe
+    // cobrar y su deep link. Nunca rompe el pedido del cliente.
+    if (full.dispatch?.assigned && full.dispatch.courier_id) {
+      try {
+        const courier = db.prepare('SELECT id, name, phone FROM couriers WHERE id = ?').get(full.dispatch.courier_id);
+        if (courier) {
+          const dsched = db.prepare(
+            "SELECT start_time, end_time FROM delivery_schedule WHERE day_of_week = ? AND active = 1 AND mode IN ('delivery','both') ORDER BY id LIMIT 1"
+          ).get(pickupDow);
+          full.dispatch.whatsapp = await buildCourierDispatch(full, courier, {
+            flavors: flavorList,
+            combos: comboList,
+            pickup_window_start: dsched?.start_time || null,
+            pickup_window_end: dsched?.end_time || null
+          });
+          logWspOutcome({
+            dispatchId: full.dispatch.dispatch.id,
+            status: full.dispatch.whatsapp.cloud_status,
+            error: full.dispatch.whatsapp.cloud_error,
+            template: full.dispatch.whatsapp.template,
+          });
+        }
+      } catch (e) {
+        console.error('[orders] wsp courier failed', id, e?.message || e);
+      }
+    }
+
     res.status(201).json({ ...full, whatsapp: wsp });
   } catch (e) {
     db.exec('ROLLBACK');
@@ -555,6 +648,9 @@ router.post('/', async (req, res) => {
     if (msg.includes('UNIQUE')) return res.status(409).json({ error: 'duplicate', message: 'Ya existe un pedido con ese id' });
     if (e.code === 'combo_out_of_stock') {
       return res.status(409).json({ error: 'combo_out_of_stock', message: msg });
+    }
+    if (e.code === 'flavor_out_of_stock') {
+      return res.status(409).json({ error: 'flavor_out_of_stock', message: msg });
     }
     throw e;
   }

@@ -13,6 +13,7 @@
 //   WHATSAPP_CLOUD_TOKEN         – Meta WhatsApp Business API token
 //   WHATSAPP_CLOUD_PHONE_ID      – sender phone id (numeric)
 //   WHATSAPP_CLOUD_TEMPLATE      – approved template name (default: 'new_order_admin')
+//   WHATSAPP_CLOUD_TEMPLATE_COURIER – plantilla para el domiciliario (default: 'new_delivery_courier')
 //   WHATSAPP_CLOUD_LANG          – template language code (default: 'es_CO')
 
 const CLOUD_BASE = 'https://graph.facebook.com/v20.0';
@@ -121,10 +122,10 @@ export function buildDeepLink(phone, message) {
   return `https://api.whatsapp.com/send/?phone=${digits}&text=${encodeURIComponent(message)}`;
 }
 
-async function cloudSendOne(meta, recipientPhone) {
+async function cloudSendOne(meta, recipientPhone, opts = {}) {
   const token = process.env.WHATSAPP_CLOUD_TOKEN;
   const phoneId = process.env.WHATSAPP_CLOUD_PHONE_ID;
-  const templateName = process.env.WHATSAPP_CLOUD_TEMPLATE || 'new_order_admin';
+  const templateName = opts.template || process.env.WHATSAPP_CLOUD_TEMPLATE || 'new_order_admin';
   const lang = process.env.WHATSAPP_CLOUD_LANG || 'es_CO';
   if (!token || !phoneId) {
     return { status: 'skipped', error: null };
@@ -219,6 +220,71 @@ export async function buildDispatch(order, ctx = {}) {
     cloud_status,
     cloud_error: firstError,
     cloud_results: cloudResults
+  };
+}
+
+// ---------------------------------------------------------------------------
+// MENSAJE AL DOMICILIARIO (spec 57, r6 — 2026-11-05)
+// Segunda plantilla WSP: cuando se asigna un reparto (automático o manual),
+// el pedido llega al WhatsApp del domiciliario con la dirección, lo que debe
+// cobrar y el deep link de respaldo a api.whatsapp.com. En la nube se envía
+// con la plantilla new_delivery_courier (env WHATSAPP_CLOUD_TEMPLATE_COURIER).
+// ---------------------------------------------------------------------------
+export function buildCourierMessage(order, ctx = {}) {
+  const lines = [];
+
+  lines.push(`🛵 ¡Hola, ${customerName(ctx.courier_name)}! Te asignamos un domicilio`);
+  lines.push('');
+  lines.push(`🧾 Pedido *#${order.id || ''}*`);
+  lines.push(`👤 Cliente: *${customerName(order.customer_name)}*`);
+  const phone = customerPhone(order.customer_phone);
+  if (phone) lines.push(`📞 WhatsApp del cliente: ${phone}`);
+  const address = String(order.delivery_address || order.address || '').trim();
+  if (address) lines.push(`📍 Dirección: ${address.slice(0, 200)}`);
+  const window = fmtWindow(ctx.pickup_window_start, ctx.pickup_window_end);
+  lines.push(`📅 Entrega: *${fmtDay(order.pickup_day)}*${window ? ` (${window})` : ''}`);
+  lines.push('');
+
+  const itemsMd = itemsList(order.items, ctx.flavors);
+  if (itemsMd) { lines.push('🍦 Productos:'); lines.push(itemsMd); }
+  const combosMd = combosList(order.combos, ctx.combos);
+  if (combosMd) { lines.push('🍱 Combos:'); lines.push(combosMd); }
+
+  lines.push('');
+  if (String(order.payment_status) === 'paid') {
+    lines.push('✅ El pedido ya está pagado. No cobres nada al entregar.');
+  } else {
+    lines.push(`💵 *Total a cobrar al entregar: ${fmtMoney(order.total)} COP*`);
+  }
+  if (order.notes) { lines.push(`📝 Notas: ${order.notes.toString().slice(0, 200)}`); }
+  lines.push('');
+  lines.push('_Gestiona el reparto desde tu portal MyMochis 🛵_');
+  return lines.join('\n');
+}
+
+// ctx: flavors, combos, pickup_window_start, pickup_window_end
+// (mismo formato que buildDispatch). courier: { id, name, phone }.
+export async function buildCourierDispatch(order, courier, ctx = {}) {
+  const courierPhone = String(courier?.phone || '').replace(/\D/g, '');
+  const templateName = process.env.WHATSAPP_CLOUD_TEMPLATE_COURIER || 'new_delivery_courier';
+  const message = buildCourierMessage(order, { ...ctx, courier_name: courier?.name });
+  const deepLink = courierPhone ? buildDeepLink(courierPhone, message) : null;
+  const shortMessage = `Domicilio #${order.id} · ${customerName(order.customer_name)} · ${fmtMoney(order.total)}`;
+
+  let cloud = { status: 'skipped', error: null };
+  if (courierPhone) {
+    cloud = await cloudSendOne({ short_message: shortMessage, full_message: message }, courierPhone, {
+      template: templateName,
+    });
+  }
+
+  return {
+    deep_link: deepLink,
+    courier_phone: courierPhone || null,
+    template: templateName,
+    cloud_status: cloud.status,
+    cloud_error: cloud.error,
+    message
   };
 }
 
