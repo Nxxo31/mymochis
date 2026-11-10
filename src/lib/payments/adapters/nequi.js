@@ -50,6 +50,9 @@ export class NequiAdapter {
   providerId = 'nequi';
   webhookEventIdHeader = 'x-nequi-event-id';
   webhookSignatureHeader = 'x-nequi-signature';
+  // Nequi empuja el pago AL TELEFONO del cliente: por eso el pedido publico
+  // exige verificar el telefono antes de generar el intent (spec 58, p5).
+  pushesToPhone = true;
 
   /**
    * Sin credenciales, el adapter NO puede fallsilencioso a un mock.

@@ -72,11 +72,28 @@ export function verifyJwt(token) {
 
 export function authMiddleware(req, res, next) {
   const auth = req.headers.authorization || '';
-  const token = auth.startsWith('Bearer ') ? auth.slice(7) : null;
+  let token = auth.startsWith('Bearer ') ? auth.slice(7) : null;
+  if (!token) {
+    // Cookie httpOnly (spec 58, p10): el navegador la manda sola y el JS no
+    // puede leerla, asi el panel deja de depender de localStorage.
+    token = cookieToken(req);
+  }
   const payload = verifyJwt(token);
   if (!payload) return res.status(401).json({ error: 'unauthorized', message: 'Token inválido o expirado' });
   req.user = payload;
   next();
+}
+
+/** Lee el token de la cookie de sesion (sin dependencias: parseo manual). */
+function cookieToken(req) {
+  const raw = String(req.headers?.cookie || '');
+  for (const part of raw.split(';')) {
+    const [k, ...rest] = part.trim().split('=');
+    if (k === 'mymochis_session') {
+      try { return decodeURIComponent(rest.join('=')); } catch { return rest.join('='); }
+    }
+  }
+  return null;
 }
 
 export function requireRole(...allowed) {

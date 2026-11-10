@@ -116,6 +116,17 @@ router.post('/login', (req, res) => {
 
   clearFails(ip);
   const token = signJwt({ sub: user.id, email: user.email, role: user.role, phone: user.phone || null });
+  // Cookie httpOnly: el token tambien viaja en la cookie, asi el panel no
+  // depende de localStorage (que el XSS puede leer). El navegador la manda
+  // sola y el JS no puede tocarla. SameSite=Lax evita que viaje en POSTs de
+  // otros sitios (spec 58, p10).
+  res.cookie?.('mymochis_session', token, {
+    httpOnly: true,
+    sameSite: 'lax',
+    secure: process.env.NODE_ENV === 'production',
+    maxAge: 12 * 60 * 60 * 1000,
+    path: '/',
+  });
   res.json({ token, user: { id: user.id, email: user.email, name: user.name, role: user.role, phone: user.phone || null } });
 });
 

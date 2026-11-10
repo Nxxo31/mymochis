@@ -10,6 +10,8 @@ import { indexOrderTotals } from './src/lib/payments/index.js';
 import { MockAdapter } from './src/lib/payments/adapters/mock.js';
 import { NequiAdapter } from './src/lib/payments/adapters/nequi.js';
 import { WompiAdapter } from './src/lib/payments/adapters/wompi.js';
+import phoneVerificationsRoutes from './src/routes/phone-verifications.js';
+import auditRoutes from './src/routes/audit.js';
 import authRoutes from './src/routes/auth.js';
 import meRoutes from './src/routes/me.js';
 import configRoutes from './src/routes/config.js';
@@ -201,6 +203,8 @@ app.use('/api/public', publicRoutes);
 app.use('/api/uploads', uploadsRoutes);
 app.use('/api/users', usersRoutes);
 app.use('/api/payments', paymentsRoutes);
+app.use('/api/phone-verifications', phoneVerificationsRoutes);
+app.use('/api/audit', auditRoutes);
 app.use('/api/credentials', credentialsRoutes);
 
 app.use('/uploads', express.static(UPLOAD_DIR, { maxAge: '30d', immutable: true, setHeaders: (res) => {

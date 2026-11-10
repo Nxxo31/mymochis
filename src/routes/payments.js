@@ -19,6 +19,7 @@ import { authMiddleware, requireRole } from '../auth.js';
 import { createPaymentIntent, getPayment, transitionState } from '../lib/payments/index.js';
 import { confirmManualPayment, revertManualPayment, ManualPaymentError } from '../lib/payments/manual.js';
 import { requestRefund, listRefunds, RefundError } from '../lib/payments/refunds.js';
+import { audit } from '../lib/audit.js';
 
 const router = Router();
 
@@ -380,6 +381,11 @@ router.post('/:id/refund', [authMiddleware, requireRole('admin')], async (req, r
       reason,
       actor: req.user?.email || 'admin',
       idempotencyKey: req.headers['idempotency-key'] || null,
+    });
+    audit('payment.refund', req, {
+      target_type: 'payment',
+      target_id: req.params.id,
+      details: { reason, refund_id: out.refund_id, state: out.state, provider: out.provider },
     });
     res.json({ ok: true, ...out });
   } catch (e) {

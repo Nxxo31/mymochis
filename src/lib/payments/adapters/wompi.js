@@ -66,6 +66,9 @@ export class WompiAdapter {
   providerId = 'wompi';
   webhookEventIdHeader = 'x-event-id';
   webhookSignatureHeader = 'x-signature';
+  // Wompi cobra en un checkout hosteado: no empuja nada al telefono del
+  // cliente, asi que el pedido publico no necesita verificarlo (spec 58, p5).
+  pushesToPhone = false;
 
   constructor() {
     this.real = !!(publicKey() && secretKey());

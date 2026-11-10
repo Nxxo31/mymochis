@@ -14,6 +14,7 @@ import { buildDispatch, buildCourierDispatch } from '../lib/whatsapp.js';
 import { commitReservedStock, releaseReservedStock } from '../lib/stock.js';
 import { notifyOrderConfirmed } from '../lib/payments/order-notify.js';
 import { assignCourier, logWspOutcome } from '../lib/dispatch.js';
+import { isPhoneVerified } from '../lib/phone-verification.js';
 
 const router = Router();
 
@@ -329,6 +330,28 @@ router.post('/', async (req, res) => {
     return res.status(400).json({ error: 'bad_request', message: 'pickup_day debe ser YYYY-MM-DD' });
   }
 
+  // P0 (spec 58, p5): este endpoint es PUBLICO. Si la pasarela empuja un
+  // pago al telefono (Nequi), sin verificar que el telefono es del cliente
+  // cualquiera puede disparar un push a un numero ajeno: phishing y quema de
+  // cuota. Con pasarela de checkout hosteado (Wompi) no hay push al
+  // telefono, asi que no hace falta el codigo.
+  const gatewayAntes = gatewayFor(payment_method_id);
+  if (gatewayAntes) {
+    let empujaAlTelefono = false;
+    try {
+      const adapter = getAdapter(String(gatewayAntes.provider || gatewayAntes.code || ''));
+      empujaAlTelefono = adapter.pushesToPhone === true;
+    } catch {
+      empujaAlTelefono = false;
+    }
+    if (empujaAlTelefono && !isPhoneVerified(customer_phone)) {
+      return res.status(428).json({
+        error: 'phone_verification_required',
+        message: 'Verifica tu telefono para continuar con el pago.',
+      });
+    }
+  }
+
   const config = getConfig();
   const schedule = db.prepare(`
     SELECT * FROM delivery_schedule WHERE active = 1 ORDER BY day_of_week, sort_order, start_time
@@ -566,7 +589,7 @@ router.post('/', async (req, res) => {
             order_id: id,
             amount_minor: authoritativeTotal,
             currency: 'COP',
-            provider: gateway.code,
+            provider: gateway.provider || gateway.code,
             customer_phone: full.customer_phone,
           },
         });
