@@ -22,20 +22,26 @@ const VALID_PAYMENT_STATUS = ['pending', 'paid'];
 const VALID_DELIVERY_MODE = ['scheduled', 'immediate'];
 const VALID_DELIVERY_PROVIDER = ['own', 'rappi', 'pickapp', 'ivoy'];
 
-// Un metodo de pago tiene pasarela si su codigo tiene un adapter registrado:
-// nequi (siempre) y mock (dev y tests). Los demas metodos —daviplata,
+// Un metodo de pago tiene pasarela si su PROVIDER tiene un adapter
+// registrado: wompi, nequi y mock. Los demas metodos —daviplata,
 // bancolombia, mercadopago, efectivo— son pago manual: el cliente transfiere
 // y el operador confirma con el boton Cobrar.
+//
+// La columna provider es la que manda: antes se resolvia por `code`, y eso
+// impedia registrar un metodo propio (por ejemplo "Wompi" con code 'wompi_psa')
+// apuntando al adapter 'wompi'. Si no hay provider, se cae al code (datos
+// viejos) para no dejar metodos huerfanos sin pasarela.
 function gatewayFor(methodId) {
   if (!methodId) return null;
-  const m = db.prepare('SELECT id, code, label FROM payment_methods WHERE id = ?').get(Number(methodId));
+  const m = db.prepare('SELECT id, code, label, provider, settlement FROM payment_methods WHERE id = ?').get(Number(methodId));
   if (!m) return null;
-  if (!listAdapters().includes(String(m.code))) return null;
+  const providerId = String(m.provider || m.code || '');
+  if (!listAdapters().includes(providerId)) return null;
   // Una pasarela sin credenciales no es una pasarela: Nequi sin NEQUI_API_KEY
   // falla cerrado y dejaria un pago FAILED por cada pedido. Sin pasarela viva
   // el pedido sigue su curso manual, que es lo que de verdad pasa.
   try {
-    const adapter = getAdapter(String(m.code));
+    const adapter = getAdapter(providerId);
     if (adapter.real === false) return null;
   } catch {
     return null;

@@ -4,6 +4,11 @@ import { authMiddleware, requireRole , verifyJwt } from '../auth.js';
 
 const router = Router();
 
+// Como se liquida el pedido con cada metodo: por adelantado (la pasarela
+// cobra antes de despachar) o contra entrega (el domicillero cobra al
+// entregar). El metodo decide si el pago es electronico o efectivo.
+const VALID_SETTLEMENT = ['prepaid', 'cash_on_delivery', 'transfer'];
+
 function rowToPaymentMethod(r) {
   if (!r) return null;
   const accounts = db.prepare('SELECT * FROM payout_accounts WHERE method_id = ? ORDER BY is_default DESC, id').all(r.id);
@@ -26,9 +31,12 @@ function optionalAuth(req, res, next) {
 
 router.get('/', optionalAuth, (req, res) => {
   const includeInactive = req.query.include_inactive === '1' && req.user;
+  // `enabled` es la bandera nueva (si el metodo se puede usar) y `active` la
+  // vieja (si se muestra). Un metodo desactivado por el admin no debe
+  // ofrecerse en la tienda: por eso el filtro exige las dos.
   const sql = includeInactive
     ? 'SELECT * FROM payment_methods ORDER BY sort_order, label'
-    : 'SELECT * FROM payment_methods WHERE active = 1 ORDER BY sort_order, label';
+    : 'SELECT * FROM payment_methods WHERE active = 1 AND enabled = 1 ORDER BY sort_order, label';
   const rows = db.prepare(sql).all().map(rowToPaymentMethod);
   res.json(rows);
 });
@@ -40,11 +48,21 @@ router.get('/:id', (req, res) => {
 });
 
 router.post('/', [authMiddleware, requireRole('admin')], (req, res) => {
-  const { code, label, instructions, qr_url, sort_order = 0, active = 1 } = req.body || {};
+  const {
+    code, label, instructions, qr_url, sort_order = 0, active = 1,
+    provider = null, enabled = 1, settlement = 'prepaid',
+  } = req.body || {};
   if (!code || !label) return res.status(400).json({ error: 'bad_request', message: 'code y label son obligatorios' });
+  if (!VALID_SETTLEMENT.includes(settlement)) {
+    return res.status(400).json({ error: 'bad_request', message: `settlement debe ser uno de: ${VALID_SETTLEMENT.join(', ')}` });
+  }
   try {
-    const info = db.prepare('INSERT INTO payment_methods (code, label, instructions, qr_url, sort_order, active) VALUES (?, ?, ?, ?, ?, ?)')
-      .run(code, label, instructions || null, qr_url || null, sort_order, active ? 1 : 0);
+    const info = db.prepare(
+      'INSERT INTO payment_methods (code, label, instructions, qr_url, sort_order, active, provider, enabled, settlement) VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?)'
+    ).run(
+      code, label, instructions || null, qr_url || null, sort_order,
+      active ? 1 : 0, provider || null, enabled ? 1 : 0, settlement,
+    );
     res.status(201).json(rowToPaymentMethod(db.prepare('SELECT * FROM payment_methods WHERE id = ?').get(info.lastInsertRowid)));
   } catch (e) {
     if (String(e.message).includes('UNIQUE')) return res.status(409).json({ error: 'duplicate', message: 'code ya existe' });
@@ -55,10 +73,14 @@ router.post('/', [authMiddleware, requireRole('admin')], (req, res) => {
 router.put('/:id', [authMiddleware, requireRole('admin')], (req, res) => {
   const existing = db.prepare('SELECT id FROM payment_methods WHERE id = ?').get(req.params.id);
   if (!existing) return res.status(404).json({ error: 'not_found' });
-  const allowed = ['code', 'label', 'instructions', 'qr_url', 'sort_order', 'active'];
+  const allowed = ['code', 'label', 'instructions', 'qr_url', 'sort_order', 'active', 'provider', 'enabled', 'settlement'];
   const updates = {};
   for (const k of allowed) if (k in req.body) updates[k] = req.body[k];
   if ('active' in updates) updates.active = updates.active ? 1 : 0;
+  if ('enabled' in updates) updates.enabled = updates.enabled ? 1 : 0;
+  if ('settlement' in updates && !VALID_SETTLEMENT.includes(updates.settlement)) {
+    return res.status(400).json({ error: 'bad_request', message: `settlement debe ser uno de: ${VALID_SETTLEMENT.join(', ')}` });
+  }
   if (Object.keys(updates).length === 0) return res.status(400).json({ error: 'no_fields' });
   const setSql = Object.keys(updates).map(k => `${k} = ?`).join(', ');
   db.prepare(`UPDATE payment_methods SET ${setSql} WHERE id = ?`).run(...Object.values(updates), req.params.id);
