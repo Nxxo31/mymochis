@@ -14,26 +14,36 @@
 // dispatch-ea bien pero no se marco como publicado).
 
 import { fetchPendingOutbox, markOutboxPublished, incrementOutboxAttempts, dispatchOutboxEvent } from './outbox.js';
+import { sweepExpiredPayments } from './index.js';
 
 const BATCH = 50;
 const MAX_ATTEMPTS = 5;
 
 let timer = null;
 let running = false;
+let sweepTimer = null;
 
 export function startOutboxRelay({ intervalMs = 30000, runAtBoot = true } = {}) {
   if (timer) return;
   timer = setInterval(() => { runOnce(); }, intervalMs);
   timer.unref?.();
+  // Barrido de pagos vencidos (spec 58, p3): los pagos que se quedan en
+  // REQUIRES_ACTION sin que el cliente pague nunca liberaban la reserva de
+  // stock, y el producto se agotaba solo.
+  sweepTimer = setInterval(() => { sweepExpiredPayments(); }, 5 * 60 * 1000);
+  sweepTimer.unref?.();
   console.log(`[outbox-relay] started, interval=${intervalMs}ms`);
   if (runAtBoot) {
     setImmediate(() => { runOnce(); });
+    setImmediate(() => { sweepExpiredPayments(); });
   }
 }
 
 export function stopOutboxRelay() {
   if (timer) clearInterval(timer);
+  if (sweepTimer) clearInterval(sweepTimer);
   timer = null;
+  sweepTimer = null;
 }
 
 export async function runOnce() {

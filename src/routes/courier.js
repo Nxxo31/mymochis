@@ -414,6 +414,14 @@ router.post('/dispatch/:id/collect-cash', ...courierAuth, (req, res) => {
     now,
     dispatch.id,
   );
+  // El pago contra entrega es estado de dominio del PEDIDO (spec 58, p6): el
+  // pedido sabe si el efectivo ya se cobro, quien lo cobro y cuando. Antes
+  // solo existia el flag del reparto y el pedido no lo sabia.
+  db.prepare(`
+    UPDATE orders
+    SET cod_state = 'collected', cod_collected_by = ?, cod_collected_at = ?, cod_method = 'cash'
+    WHERE id = ?
+  `).run(`courier:${req.courier.id}`, now, dispatch.order_id);
   db.prepare(
     'INSERT INTO dispatch_log (dispatch_id, from_status, to_status, actor, note, created_at) VALUES (?, ?, ?, ?, ?, ?)',
   ).run(
@@ -430,6 +438,12 @@ router.post('/dispatch/:id/collect-cash', ...courierAuth, (req, res) => {
     order_id: dispatch.order_id,
     courier_id: dispatch.courier_id,
     status: dispatch.status,
+  });
+  publish('payment.cod_collected', {
+    dispatch_id: Number(dispatch.id),
+    order_id: dispatch.order_id,
+    courier_id: dispatch.courier_id,
+    collected_at: now,
   });
 
   res.json({

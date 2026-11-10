@@ -19,7 +19,7 @@
 let nextId = 1;
 const clients = new Map();
 
-export const EVENT_TYPES = ['dispatch.assigned', 'dispatch.status', 'dispatch.cod'];
+export const EVENT_TYPES = ['dispatch.assigned', 'dispatch.status', 'dispatch.cod', 'payment.cod_collected'];
 
 /**
  * Conecta un cliente al bus. Devuelve la función para desconectarlo.

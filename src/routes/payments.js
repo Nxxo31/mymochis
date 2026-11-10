@@ -18,6 +18,7 @@ import { db } from '../db.js';
 import { authMiddleware, requireRole } from '../auth.js';
 import { createPaymentIntent, getPayment, transitionState } from '../lib/payments/index.js';
 import { confirmManualPayment, revertManualPayment, ManualPaymentError } from '../lib/payments/manual.js';
+import { requestRefund, listRefunds, RefundError } from '../lib/payments/refunds.js';
 
 const router = Router();
 
@@ -166,6 +167,168 @@ router.get('/reconcile/runs', [authMiddleware, requireRole('admin')], (req, res)
   res.json({ runs });
 });
 
+/** Los reembolsos (admin): con su estado, su motivo y quien los pidio. */
+router.get('/refunds', [authMiddleware, requireRole('admin')], (req, res) => {
+  res.json({ refunds: listRefunds({ limit: req.query.limit }) });
+});
+
+/**
+ * Cierre de caja del dia (spec 58, p6): cuanto efectivo se recogio, por quien
+ * y por que pedido. El efectivo (pago contra entrega) va separado de las
+ * transferencias.
+ */
+router.get('/cash-close', [authMiddleware, requireRole('admin')], (req, res) => {
+  const fecha = /^\d{4}-\d{2}-\d{2}$/.test(String(req.query.date || ''))
+    ? String(req.query.date)
+    : new Date().toISOString().slice(0, 10);
+
+  const filas = db.prepare(`
+    SELECT o.id, o.total, o.cod_collected_by, o.cod_collected_at, o.courier_id, o.payment_method_id,
+           c.name AS courier_name, c.phone AS courier_phone,
+           pm.label AS method_label, pm.settlement
+    FROM orders o
+    LEFT JOIN couriers c ON c.id = o.courier_id
+    LEFT JOIN payment_methods pm ON pm.id = o.payment_method_id
+    WHERE o.cod_state = 'collected' AND date(o.cod_collected_at) = ?
+    ORDER BY o.cod_collected_at ASC
+  `).all(fecha);
+
+  const porDomiciliario = new Map();
+  let totalEfectivo = 0;
+  for (const f of filas) {
+    const key = f.cod_collected_by || `desconocido:${f.courier_id || '-'}`;
+    const prev = porDomiciliario.get(key) || { actor: key, courier_name: f.courier_name, orders: 0, total: 0 };
+    prev.orders += 1;
+    prev.total += Number(f.total || 0);
+    porDomiciliario.set(key, prev);
+    totalEfectivo += Number(f.total || 0);
+  }
+
+  // Las transferencias del dia (lo que entro por pasarela o por cuenta).
+  const electrnico = db.prepare(`
+    SELECT COALESCE(SUM(p.amount_minor), 0) AS total, COUNT(*) AS n
+    FROM payments p JOIN orders o ON o.id = p.order_id
+    LEFT JOIN payment_methods pm ON pm.id = o.payment_method_id
+    WHERE p.state = 'SUCCEEDED' AND date(p.updated_at) = ?
+      AND COALESCE(pm.settlement, 'prepaid') <> 'cash_on_delivery'
+  `).get(fecha);
+
+  res.json({
+    date: fecha,
+    cash: {
+      total: totalEfectivo,
+      orders: filas.length,
+      by_courier: [...porDomicillero.values()].sort((a, b) => b.total - a.total),
+    },
+    electronic: { total: Number(electrónico?.total || 0), payments: Number(electrónico?.n || 0) },
+    movements: filas.map((f) => ({
+      order_id: f.id,
+      total: Number(f.total || 0),
+      collected_at: f.cod_collected_at,
+      collected_by: f.cod_collected_by,
+      courier_name: f.courier_name,
+      method: f.method_label,
+    })),
+  });
+});
+
+/**
+ * Metricas de pagos (spec 58, p9): por metodo, por proveedor y por estado,
+ * cuanto se tarda de la creacion al cobro, cuanto lleva pendiente cada pago
+ * vivo y el mixto efectivo/electronico.
+ */
+router.get('/metrics', [authMiddleware, requireRole('admin')], (req, res) => {
+  const from = /^\d{4}-\d{2}-\d{2}/.test(String(req.query.from || '')) ? String(req.query.from) : null;
+  const to = /^\d{4}-\d{2}-\d{2}/.test(String(req.query.to || '')) ? String(req.query.to) : null;
+  const rango = (col) => {
+    const cond = [];
+    const params = [];
+    if (from) { cond.push(`date(${col}) >= date(?)`); params.push(from); }
+    if (to) { cond.push(`date(${col}) <= date(?)`); params.push(to); }
+    return { where: cond.length ? `AND ${cond.join(' AND ')}` : '', params };
+  };
+
+  const pRango = rango('p.created_at');
+  const byState = db.prepare(`
+    SELECT p.state, COUNT(*) AS n, COALESCE(SUM(p.amount_minor), 0) AS total
+    FROM payments p WHERE 1=1 ${pRango.where}
+    GROUP BY p.state ORDER BY n DESC
+  `).all(...pRango.params);
+
+  const byProvider = db.prepare(`
+    SELECT COALESCE(p.provider, 'sin_proveedor') AS provider, COUNT(*) AS n,
+           COALESCE(SUM(p.amount_minor), 0) AS total,
+           SUM(CASE WHEN p.state = 'SUCCEEDED' THEN 1 ELSE 0 END) AS succeeded
+    FROM payments p WHERE 1=1 ${pRango.where}
+    GROUP BY provider ORDER BY n DESC
+  `).all(...pRango.params);
+
+  const byMethod = db.prepare(`
+    SELECT COALESCE(pm.label, pm.code, 'sin metodo') AS method,
+           COALESCE(pm.settlement, 'prepaid') AS settlement,
+           COUNT(*) AS n, COALESCE(SUM(p.amount_minor), 0) AS total
+    FROM payments p
+    LEFT JOIN orders o ON o.id = p.order_id
+    LEFT JOIN payment_methods pm ON pm.id = o.payment_method_id
+    WHERE 1=1 ${pRango.where}
+    GROUP BY method, settlement ORDER BY n DESC
+  `).all(...pRango.params);
+
+  // Tiempo desde la creacion hasta el cobro (solo los cobrados).
+  const t = db.prepare(`
+    SELECT AVG((julianday(p.updated_at) - julianday(p.created_at)) * 24 * 60) AS avg_minutes,
+           MAX((julianday(p.updated_at) - julianday(p.created_at)) * 24 * 60) AS max_minutes,
+           COUNT(*) AS n
+    FROM payments p WHERE p.state = 'SUCCEEDED' ${pRango.where}
+  `).get(...pRango.params);
+
+  // Aging de lo que sigue pendiente: quantos lleva mas de 1h, 6h y 24h.
+  const aging = db.prepare(`
+    SELECT
+      SUM(CASE WHEN (julianday('now') - julianday(p.created_at)) * 24 < 1 THEN 1 ELSE 0 END) AS under_1h,
+      SUM(CASE WHEN (julianday('now') - julianday(p.created_at)) * 24 >= 1
+                AND (julianday('now') - julianday(p.created_at)) * 24 < 6 THEN 1 ELSE 0 END) AS h1_6,
+      SUM(CASE WHEN (julianday('now') - julianday(p.created_at)) * 24 >= 6
+                AND (julianday('now') - julianday(p.created_at)) * 24 < 24 THEN 1 ELSE 0 END) AS h6_24,
+      SUM(CASE WHEN (julianday('now') - julianday(p.created_at)) * 24 >= 24 THEN 1 ELSE 0 END) AS over_24h
+    FROM payments p
+    WHERE p.state IN ('INITIATED','REQUIRES_ACTION','REQUIRES_PAYMENT_METHOD','PROCESSING')
+  `).get();
+
+  const mix = db.prepare(`
+    SELECT COALESCE(pm.settlement, 'prepaid') AS settlement, COUNT(*) AS n,
+           COALESCE(SUM(p.amount_minor), 0) AS total
+    FROM payments p
+    LEFT JOIN orders o ON o.id = p.order_id
+    LEFT JOIN payment_methods pm ON pm.id = o.payment_method_id
+    WHERE p.state = 'SUCCEEDED' ${pRango.where}
+    GROUP BY settlement
+  `).all(...pRango.params);
+
+  res.json({
+    range: { from, to },
+    by_state: byState,
+    by_provider: byProvider,
+    by_method: byMethod,
+    time_to_success_minutes: {
+      avg: t?.avg_minutes != null ? Math.round(t.avg_minutes * 10) / 10 : null,
+      max: t?.max_minutes != null ? Math.round(t.max_minutes * 10) / 10 : null,
+      payments: Number(t?.n || 0),
+    },
+    pending_aging: {
+      under_1h: Number(aging?.under_1h || 0),
+      h1_6: Number(aging?.h1_6 || 0),
+      h6_24: Number(aging?.h6_24 || 0),
+      over_24h: Number(aging?.over_24h || 0),
+    },
+    mix: mix.map((m) => ({
+      settlement: m.settlement,
+      payments: Number(m.n || 0),
+      total: Number(m.total || 0),
+    })),
+  });
+});
+
 router.get('/:id', authMiddleware, (req, res) => {
   const out = getPayment(req.params.id);
   if (!out) return res.status(404).json({ error: 'not_found' });
@@ -195,19 +358,34 @@ router.post('/:id/cancel', [authMiddleware, requireRole('admin')], (req, res) =>
 });
 
 /**
- * Reversa (spec §22.10 POST /api/payments/:id/refund).
- * Solo pagos manuales se revierten aquí: los de proveedor requieren llamar al
- * API del proveedor, que todavía no está implementado (Nequi no expone refund
- * unificado; ver NequiAdapter.refund).
+ * Reembolso (spec §22.10 POST /api/payments/:id/refund · spec 58, p8).
+ *
+ * Antes solo se aceptaban pagos manuales (provider='manual'); un pago de
+ * proveedor se rechazaba porque "el refund del proveedor no estaba
+ * implementado". Ahora el pago manual sigue por su camino contable y el de
+ * proveedor se devuelve LLAMANDO al adapter: solo se marca REFUNDED si el
+ * proveedor acepto el reembolso.
+ *
+ * Idempotencia: se acepta la cabecera Idempotency-Key. Repetir la misma
+ * peticion devuelve el reembolso ya creado (no devuelve el dinero dos veces).
  */
-router.post('/:id/refund', [authMiddleware, requireRole('admin')], (req, res) => {
+router.post('/:id/refund', [authMiddleware, requireRole('admin')], async (req, res) => {
   const { reason } = req.body || {};
   if (!reason || String(reason).trim().length < 5) {
     return res.status(400).json({ error: 'reason_required', message: 'Explica el motivo de la reversa (mínimo 5 caracteres)' });
   }
   try {
-    res.json(revertManualPayment({ paymentId: req.params.id, actor: req.user?.email || 'admin', reason }));
+    const out = await requestRefund({
+      paymentId: req.params.id,
+      reason,
+      actor: req.user?.email || 'admin',
+      idempotencyKey: req.headers['idempotency-key'] || null,
+    });
+    res.json({ ok: true, ...out });
   } catch (e) {
+    if (e instanceof RefundError) {
+      return res.status(e.status).json({ error: e.code, message: e.message });
+    }
     if (e instanceof ManualPaymentError) {
       const status = e.code === 'payment_not_found' ? 404 : 409;
       return res.status(status).json({ error: e.code, message: e.message, details: e.details });
