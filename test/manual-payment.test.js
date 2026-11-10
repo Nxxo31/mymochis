@@ -11,6 +11,7 @@ import { tmpdir } from 'node:os';
 import { join, dirname } from 'node:path';
 import { fileURLToPath } from 'node:url';
 import { DatabaseSync } from 'node:sqlite';
+import { createHmac } from 'node:crypto';
 
 const __dirname = dirname(fileURLToPath(import.meta.url));
 const ROOT = join(__dirname, '..');
@@ -18,6 +19,7 @@ const PORT = 4183;
 const BASE = `http://localhost:${PORT}`;
 const ADMIN_EMAIL = 'admin@manual.local';
 const ADMIN_PASSWORD = 'ManualTest123!';
+const MOCK_SECRET = 'manual-test-mock-secret';
 const DB_PATH = () => join(tmpDir, 'test.db');
 
 let child, tmpDir, adminToken, customerToken, windowDate, flavorId;
@@ -55,6 +57,20 @@ async function api(method, path, { token, body, headers = {} } = {}) {
   return { status: res.status, json, text: await res.text().catch(() => '') };
 }
 
+// Firma un evento del mock para que el webhook lo acepte (spec 58, p5: el
+// webhook aplica la transicion segun el tipo de evento, no segun el adapter).
+async function webhook(payload, eventId) {
+  const body = JSON.stringify(payload);
+  const sig = createHmac('sha256', MOCK_SECRET).update(body).digest('hex');
+  const res = await fetch(`${BASE}/api/webhooks/mock`, {
+    method: 'POST',
+    headers: { 'Content-Type': 'application/json', 'x-mock-event-id': eventId, 'x-mock-signature': sig },
+    body,
+  });
+  let json = null; try { json = await res.json(); } catch {}
+  return { status: res.status, json };
+}
+
 /** Lee la DB del test mientras el server vive (node:sqlite permite multi-conexión). */
 function withDb(fn) {
   const db = new DatabaseSync(DB_PATH());
@@ -86,6 +102,7 @@ before(async () => {
       NEXOMOCHIS_DB_PATH: DB_PATH(),
       NEXOMOCHIS_UPLOAD_DIR: join(tmpDir, 'uploads'),
       ADMIN_EMAIL, ADMIN_PASSWORD,
+      PAYMENT_MOCK_WEBHOOK_SECRET: MOCK_SECRET,
       MYMOCHIS_NO_WORKERS: '1',   // sin workers: probamos el camino síncrono
     },
     stdio: ['ignore', 'pipe', 'pipe'],
@@ -263,7 +280,7 @@ test('refund — la reversa descuenta el ledger y devuelve el pedido a pendiente
   assert.equal(again.status, 201);
 });
 
-test('refund — un pago que no es manual se rechaza con mensaje claro', async () => {
+test('refund — un pago que no se ha cobrado se rechaza con mensaje claro', async () => {
   const o = await makeOrder();
   const c = await api('POST', '/api/payments', {
     token: adminToken,
@@ -275,7 +292,62 @@ test('refund — un pago que no es manual se rechaza con mensaje claro', async (
     token: adminToken, body: { reason: 'prueba de provider' },
   });
   assert.equal(r.status, 409);
-  assert.equal(r.json.error, 'not_manual');
+  assert.equal(r.json.error, 'not_refundable');
+});
+
+test('refund — un pago de proveedor ya cobrado se devuelve y queda REFUNDED (spec 58, p8)', async () => {
+  const o = await makeOrder();
+  const c = await api('POST', '/api/payments', {
+    token: adminToken,
+    headers: { 'Idempotency-Key': uniq() },
+    body: { order_id: o.id, amount_minor: o.total, provider: 'mock', customer_phone: '573213050426' },
+  });
+  assert.equal(c.status, 201, c.text);
+  const pid = c.json.payment_id;
+
+  // El pago queda cobrado cuando el proveedor lo confirma (webhook).
+  const ev = await webhook({ type: 'succeeded', payment_id: pid, provider_reference: c.json.provider_reference }, `evt-${pid}`);
+  assert.equal(ev.status, 200, JSON.stringify(ev.json));
+
+  const r = await api('POST', `/api/payments/${pid}/refund`, {
+    token: adminToken, body: { reason: 'devolucion de prueba al proveedor' },
+  });
+  assert.equal(r.status, 200, r.text);
+  assert.equal(r.json.state, 'SUCCEEDED');
+
+  const p = await api('GET', `/api/payments/${pid}`, { token: adminToken });
+  assert.equal(p.json.payment.state, 'REFUNDED');
+
+  // Queda registrado en la tabla de reembolsos, con su motivo.
+  const lista = await api('GET', '/api/payments/refunds', { token: adminToken });
+  const mio = (lista.json.refunds || []).find((x) => x.payment_id === pid);
+  assert.ok(mio, 'el reembolso debe quedar registrado');
+  assert.equal(mio.state, 'SUCCEEDED');
+  assert.equal(mio.reason, 'devolucion de prueba al proveedor');
+});
+
+test('refund — la misma idempotency key no devuelve el dinero dos veces (spec 58, p8)', async () => {
+  const o = await makeOrder();
+  const c = await api('POST', '/api/payments', {
+    token: adminToken,
+    headers: { 'Idempotency-Key': uniq() },
+    body: { order_id: o.id, amount_minor: o.total, provider: 'mock', customer_phone: '573213050426' },
+  });
+  const pid = c.json.payment_id;
+  const ev = await webhook({ type: 'succeeded', payment_id: pid, provider_reference: c.json.provider_reference }, `evt-${pid}-idem`);
+  assert.equal(ev.status, 200, JSON.stringify(ev.json));
+
+  const key = uniq();
+  const uno = await api('POST', `/api/payments/${pid}/refund`, {
+    token: adminToken, headers: { 'Idempotency-Key': key }, body: { reason: 'misma llave dos veces' },
+  });
+  assert.equal(uno.status, 200, uno.text);
+
+  const dos = await api('POST', `/api/payments/${pid}/refund`, {
+    token: adminToken, headers: { 'Idempotency-Key': key }, body: { reason: 'misma llave dos veces' },
+  });
+  assert.equal(dos.status, 200, dos.text);
+  assert.equal(dos.json.refund_id, uno.json.refund_id, 'la misma llave devuelve el MISMO reembolso');
 });
 
 // =============================================================================
