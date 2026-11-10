@@ -4,6 +4,7 @@ import { authMiddleware, requireRole, hashPassword } from '../auth.js';
 import { assignCourierManually, DispatchError } from '../lib/dispatch.js';
 import { buildCourierDispatch } from '../lib/whatsapp.js';
 import { weekdayForDate } from '../lib/business-time.js';
+import { audit } from '../lib/audit.js';
 
 const router = Router();
 
@@ -130,6 +131,7 @@ router.post('/', [authMiddleware, requireRole('admin')], (req, res) => {
     );
 
   res.status(201).json(rowOut(db.prepare('SELECT * FROM couriers WHERE id = ?').get(r.lastInsertRowid)));
+  audit('courier.create', req, { target_type: 'courier', target_id: r.lastInsertRowid, details: { name: body.name, phone: body.phone } });
 });
 
 router.patch('/:id', [authMiddleware, requireRole('admin')], (req, res) => {
