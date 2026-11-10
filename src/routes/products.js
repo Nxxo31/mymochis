@@ -4,7 +4,7 @@ import { authMiddleware, requireRole } from '../auth.js';
 
 const router = Router();
 
-const COLS = 'id, name, description, price, available, image_url, color, sort_order, category_id, tags, status, focal_point_x, focal_point_y, created_at';
+const COLS = 'f.id, f.name, description, price, available, image_url, color, f.sort_order, category_id, tags, status, focal_point_x, focal_point_y, f.created_at';
 
 function shape(r) {
   return {
@@ -18,33 +18,37 @@ function shape(r) {
 }
 
 router.get('/', (req, res) => {
-  let sql = `SELECT f.${COLS.replace(/^id, name/, 'f.id, f.name')}, c.name AS category_name, c.slug AS category_slug FROM flavors f LEFT JOIN categories c ON c.id = f.category_id WHERE 1=1`;
-  const params = [];
+  try {
+    let sql = `SELECT ${COLS}, c.name AS category_name, c.slug AS category_slug FROM flavors AS f LEFT JOIN categories c ON c.id = f.category_id WHERE 1=1`;
+    const params = [];
 
-  if (req.query.status) {
-    sql += ` AND f.status = ?`;
-    params.push(req.query.status);
-  }
-  if (req.query.category_id) {
-    sql += ` AND f.category_id = ?`;
-    params.push(req.query.category_id);
-  }
-  if (req.query.tag) {
-    sql += ` AND f.tags LIKE ?`;
-    params.push(`%,${req.query.tag},%`);
-  }
-  if (req.query.q) {
-    sql += ` AND (f.name LIKE ? OR f.description LIKE ?)`;
-    params.push(`%${req.query.q}%`, `%${req.query.q}%`);
-  }
+    if (req.query.status) {
+      sql += ` AND f.status = ?`;
+      params.push(String(req.query.status));
+    }
+    if (req.query.category_id) {
+      sql += ` AND f.category_id = ?`;
+      params.push(req.query.category_id);
+    }
+    if (req.query.tag) {
+      sql += ` AND f.tags IS NOT NULL AND (',' || f.tags || ',') LIKE ?`;
+      params.push(`%,${req.query.tag},%`);
+    }
+    if (req.query.q) {
+      sql += ` AND (f.name LIKE ? OR f.description LIKE ?)`;
+      params.push(`%${req.query.q}%`, `%${req.query.q}%`);
+    }
 
-  sql += ` ORDER BY f.sort_order, f.name`;
-  const rows = db.prepare(sql).all(params);
-  res.json(rows.map(shape));
+    const rows = db.prepare(sql).all(...params);
+    res.json(rows.map(shape));
+  } catch (err) {
+    console.error('GET /api/products error:', err.message);
+    res.status(500).json({ error: 'server_error', message: err.message });
+  }
 });
 
 router.get('/:id', (req, res) => {
-  const row = db.prepare(`SELECT ${COLS} FROM flavors WHERE id = ?`).get(req.params.id);
+  const row = db.prepare(`SELECT ${COLS} FROM flavors AS f WHERE id = ?`).get(req.params.id);
   if (!row) return res.status(404).json({ error: 'not_found' });
   res.json(shape(row));
 });
@@ -61,7 +65,7 @@ router.post('/', [authMiddleware, requireRole('admin')], (req, res) => {
     if (String(e.message).includes('UNIQUE')) return res.status(409).json({ error: 'duplicate', message: 'Ya existe un producto con ese id' });
     throw e;
   }
-  res.status(201).json(shape(db.prepare(`SELECT ${COLS} FROM flavors WHERE id = ?`).get(id)));
+  res.status(201).json(shape(db.prepare(`SELECT ${COLS} FROM flavors AS f WHERE id = ?`).get(id)));
 });
 
 router.put('/:id', [authMiddleware, requireRole('admin')], (req, res) => {
@@ -78,7 +82,7 @@ router.put('/:id', [authMiddleware, requireRole('admin')], (req, res) => {
   if (Object.keys(updates).length === 0) return res.status(400).json({ error: 'no_fields' });
   const setSql = Object.keys(updates).map(k => `${k} = ?`).join(', ');
   db.prepare(`UPDATE flavors SET ${setSql} WHERE id = ?`).run(...Object.values(updates), req.params.id);
-  res.json(shape(db.prepare(`SELECT ${COLS} FROM flavors WHERE id = ?`).get(req.params.id)));
+  res.json(shape(db.prepare(`SELECT ${COLS} FROM flavors AS f WHERE id = ?`).get(req.params.id)));
 });
 
 router.delete('/:id', [authMiddleware, requireRole('admin')], (req, res) => {
@@ -88,7 +92,7 @@ router.delete('/:id', [authMiddleware, requireRole('admin')], (req, res) => {
 });
 
 router.get('/:id/preview', (req, res) => {
-  const row = db.prepare(`SELECT ${COLS} FROM flavors WHERE id = ? AND status = 'draft'`).get(req.params.id);
+  const row = db.prepare(`SELECT ${COLS} FROM flavors AS f WHERE id = ? AND status = 'draft'`).get(req.params.id);
   if (!row) return res.status(404).json({ error: 'not_found_or_not_draft' });
   res.json({ ...shape(row), preview: true });
 });

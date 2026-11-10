@@ -2355,6 +2355,8 @@ const render = {
         <div class="item-meta">
           <span><strong>${fmt(f.price)}</strong></span>
           <span class="tag ${f.available ? 'paid' : 'cancelled'}">${f.available ? 'disponible' : 'no disponible'}</span>
+          <span class="tag ${f.status === 'draft' ? 'warning' : 'info'}">${f.status === 'draft' ? 'borrador' : 'publicado'}</span>
+          ${f.tags?.length ? f.tags.map(t => `<span class="tag">${escapeHtml(t)}</span>`).join('') : ''}
           ${f.image_url ? '' : '<span class="tag">sin foto</span>'}
         </div>
         <div class="item-actions">
@@ -2524,7 +2526,13 @@ function openFlavorModal(flavor) {
         <div class="form-group"><label>Color (hex)</label><input type="text" id="f-color" value="${flavor?.color || '#e88a9e'}"></div>
       </div>
       <div class="form-group"><label>Imagen URL (opcional)</label><div style="display:flex;gap:8px"><input type="text" id="f-image_url" value="${escapeHtml(flavor?.image_url || '')}" placeholder="/uploads/xxx.jpg" style="flex:1"><button type="button" class="btn btn-ghost btn-sm" onclick="pickUploadFor('flavor','f-image_url')">📤 Elegir</button></div>${flavor?.image_url ? `<div id="f-image_preview" style="margin-top:6px"><img src="${escapeHtml(flavor.image_url)}" alt="" style="max-height:80px;border-radius:8px;border:1px solid var(--line)"></div>` : ''}</div>
+      <div class="modal-row">
+        <div class="form-group"><label>Punto focal X (0-100)</label><input type="number" id="f-focal_x" min="0" max="100" value="${flavor?.focal_point_x ?? 50}"></div>
+        <div class="form-group"><label>Punto focal Y (0-100)</label><input type="number" id="f-focal_y" min="0" max="100" value="${flavor?.focal_point_y ?? 50}"></div>
+      </div>
+      <div class="form-group"><label>Etiquetas (separadas por comas)</label><input type="text" id="f-tags" value="${flavor?.tags ? flavor.tags.join(', ') : ''}" placeholder="ej: fresco, sin-lactosa, top-ventas"></div>
       <div class="form-group"><label style="display:flex;align-items:center;gap:8px;text-transform:none;letter-spacing:0;font-size:14px;color:var(--ink)"><input type="checkbox" id="f-available" ${flavor?.available !== false ? 'checked' : ''}><span class="check-text">Disponible (aparece en la tienda)</span></label></div>
+      <div class="form-group"><label>Estado</label><select id="f-status"><option value="published" ${flavor?.status === 'published' || !flavor ? 'selected' : ''}>Publicado</option><option value="draft" ${flavor?.status === 'draft' ? 'selected' : ''}>Borrador</option></select></div>
       <div class="modal-actions">
         <button type="button" class="btn btn-ghost" onclick="closeModal()">Cancelar</button>
         <button type="submit" class="btn btn-primary">Guardar</button>
@@ -2540,7 +2548,11 @@ function openFlavorModal(flavor) {
       price: Number(document.getElementById('f-price').value),
       color: document.getElementById('f-color').value.trim(),
       image_url: document.getElementById('f-image_url').value.trim() || null,
+      focal_point_x: Number(document.getElementById('f-focal_x').value) || null,
+      focal_point_y: Number(document.getElementById('f-focal_y').value) || null,
+      tags: document.getElementById('f-tags').value.trim().split(',').map(t => t.trim()).filter(Boolean),
       available: document.getElementById('f-available').checked,
+      status: document.getElementById('f-status').value,
       sort_order: flavor?.sort_order || 99
     };
     try {
@@ -2803,6 +2815,7 @@ function openComboModal(combo) {
       <div class="form-group"><label>Imagen del combo (se sube desde aquí)</label><div style="display:flex;gap:8px;align-items:center"><input type="file" id="c-image_file" accept="image/*" style="flex:1;font-size:13px"><button type="button" class="btn btn-sm btn-primary" id="c-image_upload_btn" onclick="uploadComboImage()">⬆ Subir</button></div><div style="display:flex;gap:8px;margin-top:6px"><input type="text" id="c-image_url" value="${escapeHtml(combo?.image_url || '')}" placeholder="/uploads/xxx.jpg (se rellena al subir)" style="flex:1"><button type="button" class="btn btn-ghost btn-sm" onclick="pickUploadFor('combo','c-image_url')">🖼 Galería</button></div><div id="c-image_url_preview" style="margin-top:6px">${combo?.image_url ? `<img src="${escapeHtml(combo.image_url)}" alt="" style="max-height:96px;border-radius:12px;border:1px solid var(--line)">` : ''}</div></div>
       <div class="form-group"><label style="display:flex;align-items:center;gap:8px;text-transform:none;letter-spacing:0;font-size:14px;color:var(--ink)"><input type="checkbox" id="c-featured" ${combo?.featured ? 'checked' : ''}><span class="check-text">Destacado (aparece primero)</span></label></div>
       <div class="form-group"><label style="display:flex;align-items:center;gap:8px;text-transform:none;letter-spacing:0;font-size:14px;color:var(--ink)"><input type="checkbox" id="c-available" ${combo?.available !== false ? 'checked' : ''}><span class="check-text">Disponible</span></label></div>
+      <div class="form-group"><label>Productos del combo (composición)</label><div id="c-items-list" style="display:flex;flex-direction:column;gap:6px;margin-top:6px">${(combo?.combo_items || []).map(ci => `<div style="display:flex;align-items:center;gap:8px"><select class="item-flavor">${_flavors.map(f => `<option value="${f.id}" ${ci.flavor_id === f.id ? 'selected' : ''}>${escapeHtml(f.name)}</option>`).join('')}</select><input type="number" class="item-qty" value="${ci.qty || 1}" min="1" style="width:70px"><button type="button" class="btn btn-ghost btn-sm" onclick="this.closest('div').remove()">✕</button></div>`).join('')}<div style="display:flex;gap:6px"><select id="c-new-item-flavor">${_flavors.map(f => `<option value="${f.id}">${escapeHtml(f.name)}</option>`).join('')}</select><input type="number" id="c-new-item-qty" value="1" min="1" style="width:70px"><button type="button" class="btn btn-sm btn-primary" onclick="addComboItem()">+ Añadir producto</button></div></div></div>
       <div class="modal-actions">
         <button type="button" class="btn btn-ghost" onclick="closeModal()">Cancelar</button>
         <button type="submit" class="btn btn-primary">Guardar</button>
@@ -2811,6 +2824,12 @@ function openComboModal(combo) {
   document.getElementById('modal-back').classList.add('visible');
   document.getElementById('entity-form').onsubmit = async (e) => {
     e.preventDefault();
+    const items = [];
+    document.querySelectorAll('#c-items-list > div').forEach(div => {
+      const sel = div.querySelector('.item-flavor');
+      const qty = div.querySelector('.item-qty');
+      if (sel && qty) items.push({ flavor_id: sel.value, qty: Number(qty.value) || 1 });
+    });
     const body = {
       name: document.getElementById('c-name').value.trim(),
       description: document.getElementById('c-description').value.trim(),
@@ -2822,14 +2841,44 @@ function openComboModal(combo) {
       featured: document.getElementById('c-featured').checked,
       available: document.getElementById('c-available').checked
     };
+    let savedComboId = combo ? combo.id : null;
     try {
-      if (combo) await api(`/combos/${combo.id}`, { method: 'PUT', body: JSON.stringify(body) });
-      else await api('/combos', { method: 'POST', body: JSON.stringify(body) });
+      if (combo) {
+        await api(`/combos/${combo.id}`, { method: 'PUT', body: JSON.stringify(body) });
+      } else {
+        const created = await api('/combos', { method: 'POST', body: JSON.stringify(body) });
+        savedComboId = created.json?.id;
+      }
       toast('Combo guardado', 'success');
       closeModal();
       await loadAll(); render.combos();
     } catch (err) { toast('Error: ' + err.message, 'error'); }
   };
+  // Guardar composición del combo (spec 60: combo = composición de productos)
+  try {
+    if (savedComboId) {
+      const currentItems = await api(`/combos/${savedComboId}/items`);
+      for (const it of currentItems.json || []) {
+        await api(`/combos/${savedComboId}/items/${it.id}`, { method: 'DELETE' });
+      }
+      for (const it of items) {
+        await api(`/combos/${savedComboId}/items`, { method: 'POST', body: JSON.stringify(it) });
+      }
+    }
+  } catch (err) { /* no bloquear el guardado del combo si fallan los items */ }
+};
+
+function addComboItem() {
+  const sel = document.getElementById('c-new-item-flavor');
+  const qty = document.getElementById('c-new-item-qty');
+  if (!sel || !qty) return;
+  const list = document.getElementById('c-items-list');
+  const div = document.createElement('div');
+  div.style.cssText = 'display:flex;align-items:center;gap:8px';
+  div.innerHTML = `<select class="item-flavor">${_flavors.map(f => `<option value="${f.id}" ${sel.value === f.id ? 'selected' : ''}>${escapeHtml(f.name)}</option>`).join('')}</select><input type="number" class="item-qty" value="${qty.value || 1}" min="1" style="width:70px"><button type="button" class="btn btn-ghost btn-sm" onclick="this.closest('div').remove()">✕</button>`;
+  list.appendChild(div);
+  sel.value = '';
+  qty.value = '1';
 }
 
 async function deleteCombo(id) {
