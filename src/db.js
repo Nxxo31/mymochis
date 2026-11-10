@@ -635,7 +635,7 @@ function ensureOrderItemsBackfill() {
   const parse = (raw) => {
     try { return JSON.parse(raw || '{}'); } catch { return {}; }
   };
-  const orderIds = db.prepare('SELECT id FROM orders').all().map(r => r.id);
+  const orderIds = db.prepare('SELECT id FROM orders WHERE id IS NOT NULL').all().map(r => r.id);
   const ins = db.prepare(
     'INSERT INTO order_items (order_id, kind, item_id, name, qty, unit_price_cents, total_cents) VALUES (?, ?, ?, ?, ?, ?, ?)'
   );
@@ -647,6 +647,7 @@ function ensureOrderItemsBackfill() {
   const comboPrice = db.prepare('SELECT id, name, price FROM combos WHERE id = ?').get;
   let backfilled = 0;
   for (const { id } of orderIds) {
+    if (id == null) continue;
     const order = db.prepare('SELECT items_json, combos_json FROM orders WHERE id = ?').get(id);
     const items = parse(order.items_json);
     const combos = parse(order.combos_json);
@@ -873,6 +874,25 @@ export function init() {
   ensureColumn('orders',  'payment_method_id',     'INTEGER REFERENCES payment_methods(id)');
 
   ensureColumn('flavors', 'category_id', 'INTEGER REFERENCES categories(id)');
+
+  // Spec 60 · Marketplace UI: etiquetas, estado draft/published y punto focal de imagen
+  ensureColumn('flavors', 'tags', 'TEXT');
+  ensureColumn('flavors', "status", "TEXT NOT NULL DEFAULT 'published' CHECK(status IN ('draft','published'))");
+  ensureColumn('flavors', 'focal_point_x', 'INTEGER');
+  ensureColumn('flavors', 'focal_point_y', 'INTEGER');
+
+  // Spec 60 · combo_items: un combo es una composicion de productos (flavors) con qty
+  db.exec(`
+    CREATE TABLE IF NOT EXISTS combo_items (
+      id INTEGER PRIMARY KEY AUTOINCREMENT,
+      combo_id INTEGER NOT NULL REFERENCES combos(id) ON DELETE CASCADE,
+      flavor_id TEXT NOT NULL REFERENCES flavors(id) ON DELETE CASCADE,
+      qty INTEGER NOT NULL DEFAULT 1,
+      sort_order INTEGER NOT NULL DEFAULT 0,
+      UNIQUE(combo_id, flavor_id)
+    );
+  `);
+  db.exec(`CREATE INDEX IF NOT EXISTS idx_combo_items_combo ON combo_items(combo_id, sort_order);`);
 
   // 2026-10-19: backend de pagos v1 (Spec §22.5) — extender payment_methods y orders
   ensureColumn('payment_methods', 'provider',   'TEXT');
