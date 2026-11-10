@@ -466,6 +466,10 @@ router.post('/', async (req, res) => {
       payment_method_id, release_window_id
     ) VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?)
   `);
+  const insertOrderItemStmt = db.prepare(`
+    INSERT INTO order_items (order_id, kind, item_id, name, qty, unit_price_cents, total_cents)
+    VALUES (?, ?, ?, ?, ?, ?, ?)
+  `);
   // === Reserva (no venta) ===
   //
   // Al crear el pedido se RESERVA, no se vende: la venta ocurre al confirmar el
@@ -539,6 +543,19 @@ router.post('/', async (req, res) => {
           );
         }
       }
+    }
+
+    // d1: normaliza los items del pedido en order_items (consultas por producto
+    // dejan de parsear JSON en memoria).
+    for (const req of validated.requestedFlavors || []) {
+      const f = db.prepare('SELECT price, name FROM flavors WHERE id = ?').get(req.flavor_id);
+      const price = f ? Number(f.price) : 0;
+      insertOrderItemStmt.run(id, 'product', req.flavor_id, f ? f.name : String(req.flavor_id), Number(req.qty), price, price * Number(req.qty));
+    }
+    for (const req of validated.requestedCombos || []) {
+      const cb = db.prepare('SELECT price, name FROM combos WHERE id = ?').get(req.id);
+      const price = cb ? Number(cb.price) : 0;
+      insertOrderItemStmt.run(id, 'combo', req.id, cb ? cb.name : String(req.id), Number(req.qty), price, price * Number(req.qty));
     }
 
     db.exec('COMMIT');

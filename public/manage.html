@@ -4815,58 +4815,50 @@ render.analisis = async function () {
     kpis.innerHTML = `<div class="card">No pudimos cargar el análisis: ${escapeHtml(e.message)}</div>`;
     return;
   }
-  const a = metrics.analysis || {};
+  const t = metrics.totals || {};
   kpis.innerHTML = `
-    <div class="prod-metric"><div class="label">Pedidos activos</div><div class="value">${a.orders || 0}</div><div class="hint">${a.from_date || ''} → ${a.to_date || ''}</div></div>
-    <div class="prod-metric good"><div class="label">Ventas</div><div class="value">${fmt(a.gross || 0)}</div><div class="hint">Sin pedidos cancelados</div></div>
-    <div class="prod-metric"><div class="label">Ticket promedio</div><div class="value">${fmt(a.avg_ticket || 0)}</div><div class="hint">Por pedido activo</div></div>
-    <div class="prod-metric warn"><div class="label">Cancelados</div><div class="value">${a.cancelled_orders || 0}</div><div class="hint">Histórico completo</div></div>
+    <div class="prod-metric"><div class="label">Pedidos</div><div class="value">${t.count || 0}</div><div class="hint">${metrics.range.from || ''} → ${metrics.range.to || ''}</div></div>
+    <div class="prod-metric good"><div class="label">Ventas</div><div class="value">${fmt(t.gross || 0)}</div><div class="hint">Sin pedidos cancelados</div></div>
+    <div class="prod-metric"><div class="label">Ticket promedio</div><div class="value">${fmt(Math.round((t.gross || 0) / Math.max(t.count || 1)))}</div><div class="hint">Por pedido</div></div>
+    <div class="prod-metric warn"><div class="label">Cancelados</div><div class="value">${t.cancelled || 0}</div><div class="hint">Histórico completo</div></div>
   `;
 
-  weekdays.innerHTML = (a.by_weekday || []).map(w => `<div class="mini-row">
-    <span>${escapeHtml(w.weekday)}</span>
-    <strong>${w.orders} · ${fmt(w.gross)}</strong>
+  weekdays.innerHTML = (metrics.by_pickup_day || []).map(w => `<div class="mini-row">
+    <span>${escapeHtml(w.day)}</span>
+    <strong>${w.n} · ${fmt(w.total || 0)}</strong>
   </div>`).join('') || '<div class="sub">Sin datos.</div>';
 
-  products.innerHTML = (a.product_demand || []).map(p => `<tr>
-    <td>${escapeHtml(p.name)}</td>
-    <td>${p.units}</td>
-    <td>${fmt(p.gross || 0)}</td>
-  </tr>`).join('') || '<tr><td colspan="3" style="opacity:.6">Sin pedidos en el periodo.</td></tr>';
+  products.innerHTML = (metrics.by_status || []).map(p => `<tr>
+    <td>${escapeHtml(p.status)}</td>
+    <td>${p.n}</td>
+    <td>${fmt(p.total || 0)}</td>
+  </tr>`).join('') || '<tr><td colspan="3" style="opacity:.6">Sin datos.</td></tr>';
 
-  plan.innerHTML = (a.plan_vs_sold || []).map(p => {
-    const remaining = Math.max(0, Number(p.planned || 0) - Number(p.sold || 0) - Number(p.reserved || 0));
-    return `<tr>
-      <td>${escapeHtml(p.release_date)}</td>
-      <td>${escapeHtml(p.flavor_name)}</td>
-      <td>${p.planned}</td>
-      <td>${p.reserved}</td>
-      <td>${p.sold}</td>
-      <td><span class="tag-mini ${remaining > 0 ? 'warn' : ''}">${remaining}</span></td>
-    </tr>`;
-  }).join('') || '<tr><td colspan="6" style="opacity:.6">No hay ventanas futuras con plan.</td></tr>';
+  plan.innerHTML = (metrics.by_delivery_mode || []).map(p => `<tr>
+    <td>${escapeHtml(p.mode)}</td>
+    <td>${p.n}</td>
+    <td>${fmt(p.total || 0)}</td>
+  </tr>`).join('') || '<tr><td colspan="3" style="opacity:.6">Sin datos.</td></tr>';
 
   if (typeof Chart !== 'undefined') {
     const ctx = document.getElementById('analysis-chart');
     if (ctx) {
       if (_analysisChart) _analysisChart.destroy();
-      const series = a.daily_series || [];
+      const series = metrics.by_pickup_day || [];
       _analysisChart = new Chart(ctx, {
         type: 'bar',
         data: {
-          labels: series.map(d => d.date.slice(5)),
+          labels: series.map(d => d.day.slice(5)),
           datasets: [
-            { label: 'Ventas', data: series.map(d => d.total || 0), backgroundColor: '#F9B8CE', borderRadius: 7, yAxisID: 'y' },
-            { label: 'Unidades', data: series.map(d => d.units || 0), backgroundColor: '#9DDDEC', borderRadius: 7, yAxisID: 'y1' }
+            { label: 'Pedidos', data: series.map(d => d.n || 0), backgroundColor: '#F9B8CE', borderRadius: 7 },
           ]
         },
         options: {
           responsive: true,
           maintainAspectRatio: false,
-          plugins: { legend: { position: 'bottom', labels: { boxWidth: 12 } } },
+          plugins: { legend: { display: false } },
           scales: {
-            y: { position: 'left', beginAtZero: true, grid: { color: 'rgba(120,80,40,0.08)' } },
-            y1: { position: 'right', beginAtZero: true, grid: { display: false } },
+            y: { beginAtZero: true, grid: { color: 'rgba(120,80,40,0.08)' } },
             x: { grid: { display: false } }
           }
         }
@@ -4874,6 +4866,28 @@ render.analisis = async function () {
     }
   }
 };
+
+// d5: panel en vivo por SSE (spec 59, d5). El panel de análisis se refresca solo
+// cuando cambia el stock, la cola de despacho, la ubicación de un courier o el
+// estado de un pago, sin recargar la página.
+(function () {
+  let es = null;
+  function connect() {
+    if (!_token) { es?.close(); es = null; return; }
+    es = new EventSource(API + '/events?token=' + encodeURIComponent(_token));
+    es.onmessage = (ev) => {
+      try {
+        const data = JSON.parse(ev.data || '{}');
+        if (data.dispatch_id || data.order_id || data.courier_id) {
+          const sec = document.getElementById('section-analisis');
+          if (sec && !sec.classList.contains('hidden') && typeof render.analisis === 'function') render.analisis();
+        }
+      } catch {}
+    };
+    es.onerror = () => { es.close(); es = null; setTimeout(connect, 5000); };
+  }
+  connect();
+})();
 
 render.galeria = async function () {
   const grid = document.getElementById('galeria-grid');

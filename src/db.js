@@ -288,6 +288,21 @@ CREATE TABLE IF NOT EXISTS payments (
 CREATE INDEX IF NOT EXISTS idx_payments_order ON payments(order_id);
 CREATE INDEX IF NOT EXISTS idx_payments_state ON payments(state, created_at);
 
+-- Capa de datos (spec 59, d1): los items del pedido normalizados en tabla,
+-- para que toda consulta por producto deje de parsear JSON en memoria.
+CREATE TABLE IF NOT EXISTS order_items (
+  order_id          TEXT NOT NULL REFERENCES orders(id) ON DELETE CASCADE,
+  kind              TEXT NOT NULL CHECK(kind IN ('product','combo')),
+  item_id           TEXT NOT NULL,
+  name              TEXT NOT NULL,
+  qty               INTEGER NOT NULL DEFAULT 1,
+  unit_price_cents  INTEGER NOT NULL DEFAULT 0,
+  total_cents       INTEGER NOT NULL DEFAULT 0,
+  PRIMARY KEY (order_id, kind, item_id)
+);
+CREATE INDEX IF NOT EXISTS idx_order_items_order ON order_items(order_id);
+CREATE INDEX IF NOT EXISTS idx_order_items_kind_item ON order_items(kind, item_id);
+
 -- Reembolsos (spec 58, p8). Cada reembolso es una fila con su propia
 -- idempotencia: repetir la misma peticion NO devuelve el dinero dos veces.
 CREATE TABLE IF NOT EXISTS refunds (
@@ -613,6 +628,53 @@ function ensureBackfillOrderWindows() {
 }
 
 /**
+ * Backfill de order_items para pedidos ya creados (spec 59, d1).
+ * Idempotente: borra y vuelve a escribir los items de cada pedido.
+ */
+function ensureOrderItemsBackfill() {
+  const parse = (raw) => {
+    try { return JSON.parse(raw || '{}'); } catch { return {}; }
+  };
+  const orderIds = db.prepare('SELECT id FROM orders').all().map(r => r.id);
+  const ins = db.prepare(
+    'INSERT INTO order_items (order_id, kind, item_id, name, qty, unit_price_cents, total_cents) VALUES (?, ?, ?, ?, ?, ?, ?)'
+  );
+  const insCombo = db.prepare(
+    'INSERT INTO order_items (order_id, kind, item_id, name, qty, unit_price_cents, total_cents) VALUES (?, ?, ?, ?, ?, ?, ?)'
+  );
+  const del = db.prepare('DELETE FROM order_items WHERE order_id = ?');
+  const flavorPrice = db.prepare('SELECT id, name, price FROM flavors WHERE id = ?').get;
+  const comboPrice = db.prepare('SELECT id, name, price FROM combos WHERE id = ?').get;
+  let backfilled = 0;
+  for (const { id } of orderIds) {
+    const order = db.prepare('SELECT items_json, combos_json FROM orders WHERE id = ?').get(id);
+    const items = parse(order.items_json);
+    const combos = parse(order.combos_json);
+    let touched = false;
+    del.run(id);
+    for (const [itemId, qtyRaw] of Object.entries(items || {})) {
+      const qty = Number(qtyRaw) || 0;
+      if (!(qty > 0)) continue;
+      const f = flavorPrice(itemId);
+      const price = f ? Number(f.price) : 0;
+      ins.run(id, 'product', itemId, f ? f.name : String(itemId), qty, price, price * qty);
+      touched = true;
+    }
+    for (const c of combos || []) {
+      const qty = Number(c?.qty ?? c?.units ?? 1);
+      if (!(qty > 0)) continue;
+      const cid = String(c.id ?? c.combo_id);
+      const cb = comboPrice(cid);
+      const price = cb ? Number(cb.price) : 0;
+      insCombo.run(id, 'combo', cid, cb ? cb.name : cid, qty, price, price * qty);
+      touched = true;
+    }
+    if (touched) backfilled++;
+  }
+  if (backfilled) console.log('[db] backfill order_items: ' + backfilled + ' pedido(s)');
+}
+
+/**
  * Reconstruye `orders` para poder declarar la FK de release_window_id.
  *
  * SQLite no permite anadir una FK con ALTER TABLE ADD COLUMN. El procedimiento
@@ -721,6 +783,7 @@ export function init() {
   ensureColumn('combos', 'units_sold', 'INTEGER NOT NULL DEFAULT 0');
 
   ensurePaymentsStateRequiresPaymentMethod();
+  ensureOrderItemsBackfill();
 
   db.prepare('INSERT OR IGNORE INTO config (id) VALUES (1)').run();
 
