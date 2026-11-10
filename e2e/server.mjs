@@ -1,7 +1,7 @@
 // Servidor para el E2E: DB temporal propia, puerto propio, admin sembrado.
 // Nunca toca data/mymochis.db ni el server de desarrollo.
 import { spawn } from 'node:child_process';
-import { mkdtempSync, rmSync } from 'node:fs';
+import { mkdtempSync, rmSync, writeFileSync, unlinkSync } from 'node:fs';
 import { tmpdir } from 'node:os';
 import { join, dirname } from 'node:path';
 import { fileURLToPath } from 'node:url';
@@ -13,6 +13,11 @@ const PORT = process.env.E2E_PORT || '4210';
 const tmpDir = mkdtempSync(join(tmpdir(), 'mymochis-e2e-'));
 const dbPath = join(tmpDir, 'e2e.db');
 
+// Los specs necesitan tocar la DB temporal (precachear direcciones para no
+// depender de Nominatim) y el server corre en otro proceso: se publica la
+// ruta de la DB en un archivo de estado para que los specs la encuentren.
+const STATE_FILE = join(tmpdir(), 'mymochis-e2e-state.json');
+
 const env = {
   ...process.env,
   PORT,
@@ -23,7 +28,10 @@ const env = {
   ADMIN_EMAIL: 'admin@e2e.test',
   ADMIN_PASSWORD: 'E2eTest123!',
   NEXOMOCHIS_CORS: `http://localhost:${PORT}`,
+  MYMOCHIS_NO_WORKERS: '1',
 };
+
+writeFileSync(STATE_FILE, JSON.stringify({ dbPath, port: PORT, tmpDir }), 'utf8');
 
 /**
  * El E2E necesita un catalogo real: sin sabores la landing oculta las
@@ -60,6 +68,7 @@ child.stderr.on('data', (d) => {
 function cleanup() {
   try { child.kill(); } catch {}
   try { rmSync(tmpDir, { recursive: true, force: true }); } catch {}
+  try { unlinkSync(STATE_FILE); } catch {}
 }
 
 process.on('SIGINT', () => { cleanup(); process.exit(0); });
