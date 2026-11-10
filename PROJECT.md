@@ -3355,3 +3355,12 @@ suite verde antes. Ninguna fase introduce una dependencia con login para el
 admin o el domiciliario; las unicas dependencias con cuenta quedan aisladas
 dentro de un adapter (`src/lib/payments/adapters/*`, `src/lib/whatsapp.js`), que
 es justo lo que ya permite el diseño actual.
+
+---
+
+## 35.8 Estado de ejecución de specs 57-60 (2026-11-10)
+
+- **spec 57 · Motor de reparto · COMPLETA (12/12 tareas r1-r12)** — commits 364277e, 374874f, a5997ad, 31d4a25, 449a3e7. Suite 161/161 unit + 72/72 e2e.
+- **spec 58 · Pasarela de pagos + seguridad P0 · COMPLETA (11/11 tareas p1-p11)** — commits d4fe266, f8fb930, 6e9e3a9, 07ef802, 5fd07c7, ebb5da0, 40d4988, 03408e1, 67389d0. Suite 163/163 verde.
+- **spec 59 · Capa de datos · COMPLETA (d1-d6)** — commit 925b9f0. Suite 165/165 verde.
+- **spec 60 · Marketplace UI · NO INICIADA** — editor único de catálogo (combo como composición), etiquetas en fuente única, imágenes con recorte/focal point, publicación borrador→publicado, stats de catálogo, e2e.
