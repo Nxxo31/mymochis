@@ -2994,5 +2994,364 @@ recetas por producto (MM-43) y el calendario unificado (MM-40).
 
 **Impacto en el plan:** la IA la implementa el **shell de MM-37** (spec 49,
 t6: sidebar con los 5 módulos y ruteo), el catálogo/editor de MM-38 y MM-41
-llenan el módulo 3, MM-40/42 llenan el 2, MM-43 llena el 1 y la parte de
-gasto del 4, MM-44 agrega audit/RBAC al 5. No cambia el orden de ejecución.
+llenan el módulo 3, MM-40/42 llenan el 2, MM-43 llena el 1 y la parte de gasto
+del 4, MM-44 agrega audit/RBAC al 5. No cambia el orden de ejecución.
+
+---
+
+## 34. Plan 2026-11-05: motor de reparto, portal del domiciliario, pasarela de pagos, capa de datos y marketplace
+
+> Pedido del operador (2026-11-05): "quiero añadir un panel para gestionar
+> domiciliarios, es decir que cada que se pague un producto combo domicilio
+> para llevar, si hay un número, automáticamente al igual que al número de
+> pedidos debe llegar el pedido al wsp del domiciliario y del admin; todo pedido
+> debe quedar registrado; para esto quiero crear una solución para extraer datos
+> y poder determinar en tiempo real stock y adquirir estadísticas". Luego:
+> "necesito crear apis de pago funcionales y seguras para crear la pasarela de
+> pago de e-commerce, haz un research de herramientas opensource", "que el
+> domiciliario pueda confirmar pedido desde un usuario solo para ellos en el
+> sistema" y "abarca un plan que contemple todo lo necesario back-end funcional
+> con APIs para todos los servicios, también quiero que mejores el UI del
+> apartado de productos para crear el marketplace".
+
+### 34.1 Decisiones del operador (D16–D21)
+
+| # | Decisión |
+|---|---|
+| **D16** | La asignación del domiciliario es **AUTOMÁTICA**: si hay uno disponible se asigna y el pedido **entra en cola**; el admin puede reasignar a mano. **Supera D7** ("el admin decide a qué domiciliario enviar", manual). |
+| **D17** | Cada domiciliario tiene **su propia tarifa según su ubicación** (base + por km), con la ubicación fijada por el admin en el mapa. Sin domiciliario asignado se usa la tarifa ya especificada: distancia desde la ubicación del admin hasta el cliente. |
+| **D18** | El domiciliario **envía su ubicación** y el precio al cliente se determina desde ella, pero con **piso de margen**: "el costo reduce y se busca la mayor rentabilidad con el modelo de negocio" → el precio nunca baja del costo + margen mínimo. |
+| **D19** | El **pago contra entrega lo confirma el domiciliario** desde un **usuario solo para ellos** (rol propio + portal propio). |
+| **D20** | El plan abarca **todo el back-end funcional con APIs para todos los servicios** + mejora del **UI del apartado de productos** para el marketplace. |
+| **D21** | **Pasarela: Wompi** (una sola API cubre PSE, Nequi, Daviplata, Bancolombia, link de pago por WSP y tarjetas → 1 adapter en vez de 4). **Piso de margen: mínimo por pedido + % sobre el costo.** |
+
+### 34.2 Veredicto del research OSS de pasarelas
+
+| Candidato | Veredicto | Razón |
+|---|---|---|
+| **Hyperswitch** (juspay/hyperswitch, Rust, OSS) | **Rechazado como núcleo** | Orquestador multi-PSP (vault PCI, routing a 120+ PSPs, reconciliación 2/3-way, cost observability). No tiene métodos colombianos (PSE/Nequi/Daviplata) y exige Postgres+Redis con operación 24/7: desproporcionado para un mono-tenant en SQLite. Reconsiderar solo si el negocio llega a multi-comercio o exige vault PCI propio. |
+| **Medusa v2** (Payment Module) | **Rechazado** | Es un framework e-commerce completo (authorize/capture/refund, payment collections, webhooks, providers). Adoptarlo es reescribir el backend: contradice la decisión de **no migrar de stack**. |
+| **Arquitectura de adapter ya existente** | **Adoptado** | `src/lib/payments/adapters/*` con fail-closed, vault, outbox, idempotencia, ledger y state machine. Se añade **un adapter por proveedor colombiano**, empezando por **Wompi**. |
+
+*Nota:* la doc de Wompi (`docs.wompi.co`) devolvió 403 al verificador, así que sus
+métodos exactos **no** quedaron verificados en esta sesión: el operador confirma
+cuenta, métodos y comisiones.
+
+### 34.3 P0 reales que este plan cierra (auditados en código, no de memoria)
+
+- El **domicilio no tocaba stock**: la reserva era condicional a `delivery_mode='scheduled'` → se podía **vender lo que no había**. `flavor_out_of_stock` además salía 500 en vez de 409.
+- El **webhook no validaba amount/currency** contra `payments.amount_minor` ni cruzaba `provider_reference` con `payment_attempts` → un evento firmado con monto menor cobra el pedido completo.
+- `POST /api/orders` es **público y dispara push de Nequi a cualquier teléfono** sin OTP → phishing y quema de cuota.
+- Los pagos que quedan en `REQUIRES_ACTION` **nunca se barren** (`expires_at`) → las reservas de stock **no se liberan nunca**.
+- `index.js` usaba `require()` en un módulo ESM (`supported: []` siempre vacío) y un `LIKE` que filtraba eventos de otros pagos.
+- El **reconciler financiero era un TODO**; los refunds solo existían para `provider='manual'` y sin idempotencia propia.
+- `payment_methods.provider` era **columna muerta**; `worker/` no tenía ninguna tabla de pagos ni montaba `/api/payments` ni `/api/webhooks`.
+- **No existía `order_items`**: los ítems vivían en JSON y toda estadística parseaba en RAM.
+
+### 34.4 Los cinco bloques (specs en dark-memory)
+
+| Bloque | Spec | Tareas | Contenido |
+|---|---|---|---|
+| **A · Motor de reparto** | 57 | 12 | `couriers` (tarifa propia + ubicación) · `dispatches` (estados `assigned→picked_up→on_way→delivered/failed`, `assigned_by auto|manual`) · `dispatch_log` · CRUD `/api/couriers` · `src/lib/dispatch.js` (menos carga activa, desempate por distancia, radio máximo) · WSP 2ª plantilla `new_delivery_courier` + deep link de respaldo · panel "Domiciliarios" como módulo aparte |
+| **B · Portal del domiciliario** | 57 (r8-r10) | 3 | Rol `courier` + `/api/courier/*` · `public/domiciliario.html` móvil (su cola, mapa, estados, confirmar cobro, incidencia) · `POST /api/courier/location` (heartbeat) |
+| **C · Precio con piso de margen** | 57 (r4, r10) | 2 | Tarifa del domiciliario asignado con snapshot inmutable en el pedido; fallback a la distancia admin→cliente; piso = mínimo por pedido + % sobre el costo |
+| **D · Pasarela + COD + seguridad** | 58 | 11 | Adapter Wompi · Nequi completo (refund, `REQUIRES_ACTION`, barrido de `expires_at`) · `payment_methods.provider` vivo · **COD como estado de dominio** (`cod_state`, ledger `cash_on_delivery`, cierre de caja) · reconciliación real · refunds con idempotencia propia · métricas de pagos · `audit_log` + CSP/cookie httpOnly · **los 4 P0 de seguridad** |
+| **E · Datos + tiempo real** | 59 | 6 | `order_items` con backfill · `GET /api/inventory` (stock vendible por sabor/combo/día) · `GET /api/metrics` con rango libre `from/to` y desgloses (modo, domiciliario, estado, franja, barrio, método) · export CSV/Excel · **SSE** |
+| **F · Marketplace UI** | 60 | 6 | Editor único de catálogo (combo = composición) · etiquetas en fuente única · imágenes con recorte y focal point · borrador→publicado con preview · stats de catálogo |
+
+### 34.5 Orden de ejecución
+
+`r5` (P0: el domicilio valida stock/ventana) → `r1-r3` (tablas + API + motor de
+asignación y cola) → `r6-r7` (WSP al domiciliario + panel) → `r8-r10` (portal,
+tarifa propia, ubicación y piso de margen) → `r11` (SSE) → `r12` (tests) →
+después **spec 58** (pagos) en paralelo de **spec 59** (datos), y **spec 60**
+(marketplace) al final.
+
+### 34.6 Estado de ejecución
+
+- **Hecho (2026-11-05):** `r5` — el domicilio **valida ventana y saldo** como la
+  recogida. Se unificó la regla en `resolveWindowStock()` (única copia, la usan
+  `validateScheduled` y la rama `immediate`), la entrega inmediata ahora exige
+  **horario de reparto** para el día (`no_delivery_schedule`), **reserva** stock
+  como cualquier pedido (antes no lo hacía) y devuelve **409** en
+  `insufficient_stock` / `flavor_out_of_stock`. Regresión:
+  `test/delivery-stock.test.js` (4 casos) + fixtures ajustados en
+  `test/delivery-rules.test.js`. Suite **140/140**.
+- **Abierto:** el cutoff propio del domicilio (el pedido inmediato hoy no tiene
+  hora límite: lo decide la ventana abierta de stock).
+- **Hecho (2026-11-05, tarde):** `r1` + `r2` + `r3` + `r8` + `r9` — la cadena
+  mínima del **motor de reparto** y del **portal del domiciliario**. Archivos
+  nuevos: `src/lib/dispatch.js` (motor), `src/routes/couriers.js` (CRUD admin),
+  `src/routes/courier.js` (API del portal), `public/domiciliario.html` (portal
+  móvil), `test/courier-dispatch.test.js` (13 casos). Suite **153/153**.
+  - `r1` — tablas `couriers` (tarifa propia + ubicación + radio máximo),
+    `dispatches` (estados `assigned→picked_up→on_way→delivered/failed`,
+    `assigned_by auto|manual`, `cod_collected`), `dispatch_log` (rastro de cada
+    transición) y `courier_locations` (heartbeat); `orders.courier_id` y
+    `orders.dispatch_id`.
+  - `r2` — `GET/POST /api/couriers`, `PATCH/DELETE /api/couriers/:id`,
+    `POST /api/couriers/:id/dispatch` (asignación manual, D16). Todo **admin-only**.
+    Crear el domiciliario con `email`+`password` le crea la cuenta de portal con
+    `role='courier'`. No se puede borrar un domiciliario con repartos (409): se
+    desactiva, para no perder historial.
+  - `r3` — `src/lib/dispatch.js`: elige el de **menos carga activa**, desempata
+    por **distancia** al destino y respeta el **radio máximo** por domiciliario.
+    **Fail-closed**: sin domiciliario elegible no se asigna a nadie y el pedido
+    del cliente NO falla (queda en la cola). La asignación salta al crear el
+    pedido con `delivery_mode='immediate'`.
+  - `r8`/`r9` — `POST /api/courier/login` (solo rol `courier`), `GET /api/courier/queue`
+    (solo su cola), `POST /api/courier/dispatch/:id/status` (máquina de estados
+    estricta e idempotente), `POST /api/courier/dispatch/:id/collect-cash`
+    (cobro contra entrega idempotente: reusa `confirmManualPayment`, deja el
+    pedido pagado y el stock vendido), `POST /api/courier/dispatch/:id/incident`
+    (nota o fallo) y `POST /api/courier/location` (heartbeat de ubicación).
+    Portal en `public/domiciliario.html`: login propio, su cola con el contenido
+    del pedido, enlaces de WhatsApp/llamada/ruta, estados, cobro e incidencia.
+    El domiciliario **solo** puede mover sus propios repartos.
+  - **Nombre del portal:** `public/domiciliario.html` (decidido aquí; la nota de
+    cuaderno #435 decía `/domiciliar.html` — manda este documento).
+  - **Pendiente de esta cadena:** nada — `r11` (SSE) y `r12` (e2e) cerrados el
+    2026-11-10. (`r6` — WSP al
+    domiciliario — y `r7` — el módulo "Domiciliarios" dentro del panel admin —
+    se completaron el 2026-11-05 por la noche; `r4`/`r10` el 2026-11-08.) El
+    árbol `worker/` (Cloudflare Worker)
+    **no** se tocó: el motor vive en `src/` (Node + SQLite, la arquitectura
+    autónoma).
+- **Hecho (2026-11-05, noche):** `r7` (UI) + **costo en el portal** +
+  **rediseño de la sección Productos** del panel. Pedido literal del operador:
+  "mejora la sección de productos pues se ve desorganizado sus componentes de
+  UI respecto al panel de domiciliario; el usuario de domiciliario debe crearlo
+  el admin en entregas para que este pueda acceder al panel de domiciliario y
+  en este gestionar los pedidos atraves de un api determinando el costo desde
+  la landing page al domiciliario junto con toda la informacion".
+  - **`r7` (UI del admin):** subtab **Entregas → Domiciliarios**. El admin crea
+    ahí al domiciliario (nombre, WhatsApp, email, clave, tarifa base, precio
+    por km, radio máximo) y esa es la cuenta con la que entra a
+    `/domiciliario.html`. Debajo, la tabla "Equipo de reparto" con su carga,
+    entregados, tarifa, radio y estado (activar/desactivar/eliminar; con
+    repartos no se borra, se desactiva).
+  - **Costo en el portal del domiciliario:** `GET /api/courier/queue` devuelve
+    por reparto un bloque `cost`: subtotal (del catálogo, no del cliente),
+    domicilio, total a cobrar, distancia, y **el costo de recogida con la
+    tarifa PROPIA del domiciliario** (base + por km) sobre la distancia entre
+    el negocio y su última ubicación, con **piso de margen** (nunca por debajo
+    de lo que el domicilio le cuesta al negocio). El domicilio de lalanding
+    se recalcula con `evaluateDelivery()`, o sea **las mismas reglas que
+    usa la landing** (`POST /api/delivery/quote`): el número que ve el
+    domiciliario es el que pagó el cliente. Si el pedido no tiene
+    coordenadas se cae al valor guardado del pedido (`source: 'pedido'`).
+    La cola además trae toda la información: precios unitarios de cada item,
+    ventana de recogida, método y estado de pago, notas y datos del cliente.
+  - **Sección Productos del panel (rediseño):** una sola tarjeta "Imágenes"
+    con las categorías en la cabecera, zona de arrastre compacta y la
+    "Portada" como bloque dentro de la misma tarjeta; columna lateral con
+    "Resumen" y "Cómo se usa" plegable; barra de catálogo con buscador, filtro
+    de disponibilidad y contador; tarjetas de producto con foto cuando la hay.
+    Se arreglaron tres defectos: el texto de portada quedaba encerrado en una
+    columna de 150 px (dentro de un grid), la zona de arrastre comía media
+    pantalla, y los mochis flotantes del login se colaban en los márgenes del
+    panel (`body.app-on` los oculta).
+- **Hecho (2026-11-08):** `r4`/`r10` — **piso de margen y precio de recogida
+  congelado**. El precio de recogida del domiciliario (su tarifa propia: base +
+  por km sobre la distancia negocio → domiciliario) ya no se recalcula en cada
+  lectura de la cola: **se congela al asignar el reparto**.
+  - **Piso de margen (D18):** el piso es lo que el domicilio le cuesta al
+    negocio (`delivery_fee_cents`) **más** un margen mínimo: el mayor entre un
+    **% sobre ese costo** (`courier_margin_pct`) y un **mínimo por pedido**
+    (`courier_min_margin_cents`). Con 0 en los dos, el piso es el costo (lo que
+    ya hacía).
+  - **Snapshot inmutable:** al asignar (automático o manual) queda guardado en
+    `dispatches.pickup_snapshot_json` + `dispatches.pickup_cost_cents` +
+    `dispatches.pickup_distance_km` y en `orders.pickup_cost_cents`. El portal
+    muestra ese número aunque el domicillero se mueva o el admin cambie las
+    reglas: **lo que se cobra no cambia bajo los pies de quien cobra**. Los
+    repartos anteriores (sin snapshot) se estiman en vivo y se marcan con
+    `frozen: false`.
+  - **Fallback (r4/r10):** sin ubicación conocida del domicillero, la distancia
+    del negocio es la del pedido (admin → cliente) y el costo sale de su tarifa
+    propia sobre esa distancia (`source: 'fallback_cliente'`).
+  - **Dónde se configura:** Entregas → Inmediato → grupo **"Margen del
+    reparto"** (% y mínimo por pedido), o por API `PUT /api/delivery-config`.
+  - **Archivos:** `src/lib/courier-pricing.js` (nuevo: piso, cálculo y
+    snapshot) · `src/lib/dispatch.js` (congela el snapshot al asignar) ·
+    `src/routes/courier.js` (la cola usa el snapshot) · `src/db.js` (columnas) ·
+    `src/routes/delivery-config.js` · `public/manage.html` ·
+    `public/domiciliario.html`.
+  - **Verificado:** suite **159/159** (4 casos nuevos en
+    `test/courier-dispatch.test.js`: el % sobre el costo, el mínimo por pedido,
+    el precio congelado aunque el domicillero se mueva, y el fallback sin
+    ubicación).
+- **Hecho (2026-11-05, noche):** `r6` — **WSP al domicillero**. Segunda
+  plantilla de Meta Cloud API (`new_delivery_courier`, env
+  `WHATSAPP_CLOUD_TEMPLATE_COURIER`): cuando se asigna un reparto (automático
+  o manual) el pedido llega al WhatsApp del repartidor con la dirección, lo que
+  debe cobrar, la fecha y el deep link de respaldo. Nunca rompe el pedido del
+  cliente (si el WSP falla, el reparto sigue asignado). Archivos:
+  `src/lib/whatsapp.js` (`buildCourierMessage` + `buildCourierDispatch`),
+  `src/routes/orders.js`, `src/lib/dispatch.js` (`logWspOutcome` deja el rastro
+  en `dispatch_log`).
+- **Hecho (2026-11-08/10):** `r11` — **tiempo real (SSE)**. Bus de eventos en
+  memoria (`src/lib/events.js`) + endpoint `GET /api/events?token=<jwt>`
+  (`src/routes/events.js`, SSE nativo de Node, cero dependencias). El evento
+  es la *señal*, no el dato: el cliente vuelve a pedir lo que necesita. Cada
+  evento se entrega solo a quien le interesa (el admin ve todo; el
+  domicillero solo sus repartos). El panel y el portal se suscriben y
+  repintan sin recargar.
+- **Hecho (2026-11-10):** `r12` — **e2e del ciclo completo** en
+  `e2e/reparto.spec.ts` (5 tests × 3 viewports = 15): el admin crea el
+  domiciliario en Entregas → Domiciliarios, el domicillero entra a su portal y
+  reporta su ubicación, el pedido se asigna solo y sale el WSP con deep link,
+  el domicillero avanza los estados y cobra contra entrega, y el panel se
+  actualiza solo cuando el reparto cambia (SSE). El e2e es hermético: la
+  dirección se precachea en la DB temporal (el `e2e/server.mjs` publica la
+  ruta de la DB en un archivo de estado) para no depender de Nominatim.
+  **Suite: 161/161 unit + 72/72 e2e.**
+- **Dos bugs reales que el e2e destapó (corregidos el 2026-11-10):**
+  1. **La geolocalización estaba bloqueada para todos**: el servidor mandaba
+     `Permissions-Policy: geolocation=()`, así que el botón "Enviar ubicación"
+     del portal **nunca pudo funcionar** en un navegador real — y de ella
+     dependen la asignación por distancia y el precio de recogida. Ahora es
+     `geolocation=(self)`.
+  2. **El portal escondía el botón de cobro justo cuando servía**: la tarjeta
+     lo ocultaba con el reparto en `delivered` (que es cuando la API sí
+     acepta el cobro) y lo mostraba con el reparto en `assigned` (que es
+     cuando la API lo rechaza). El domicillero no podía cobrar en el flujo
+     natural (recoger → en camino → entregado → cobrar). Ahora el botón se
+     ofrece mientras el reparto no esté anulado ni cobrado.
+---
+
+## 35. Stack tecnologico 100% open source y auto-alojado (2026-11-05)
+
+> Pedido del operador: "quiero determinar un stack tecnologico para las apis de
+> este proyecto en el cual use tecnologias opensource que no requieran de login
+> por parte de mi admin ni los domiciliarios que sea totalmente independiente".
+
+### 35.1 Criterio (medible, no retorico)
+
+"Totalmente independiente" para MyMochis significa:
+
+1. **Cero cuentas de terceros** que el admin o un domiciliario tengan que abrir
+   para usar el producto. Entran con su email y clave de MyMochis y ya.
+2. **Cero SaaS que cobre por uso** en el camino caliente (pedido, pago,
+   reparto, mapa, mensaje).
+3. **Todo corre en el `docker-compose.yml` del proyecto** o en la maquina del
+   operador, y se puede apagar internet y seguir vendiendo.
+4. **Cero lock-in de codigo**: si mañana se cae un componente, se cambia por
+   otro sin reescribir el dominio.
+
+Lo que NO entra en el criterio: que el operador tenga que contratar un banco o
+un portal de pagos (ver 35.4, es imposible y lo es por ley/regulación).
+
+### 35.2 Auditoria real de hoy (extraida del codigo, no de memoria)
+
+Host externos que el proyecto usa hoy, con lo que exigen:
+
+| Dependencia | Host | Que exige del operador |
+|---|---|---|
+| WhatsApp Cloud API | `graph.facebook.com`, `api.whatsapp.com` | Cuenta Meta Business + WABA + token + numero verificado |
+| Instagram Graph | `graph.instagram.com` | Cuenta Meta Business + pagina de FB + token de larga vida |
+| Google Maps JS | `maps.googleapis.com` | API key + cuenta de facturacion de Google (tarifa por uso) |
+| Google Fonts | `fonts.googleapis.com` | Nada (CDN), pero es dependencia externa y punto de fuga de datos |
+| Nequi / Daviplata / Bancolombia / MercadoPago | 4 APIs distintas | 4 contratos de comercio + 4 credenciales |
+| Backups a R2 | Cloudflare R2 | Cuenta Cloudflare + credenciales S3 |
+| Geocoding | `nominatim.openstreetmap.org` | Nada (publico) pero sin SLA, 1 req/s y prohibido en produccion masiva |
+| Git remoto | GitHub | Cuenta GitHub (el operador la usa para trazabilidad; **decision propia, no forzada**) |
+
+**Lo que YA es independiente y no hay que tocar:** runtime Node (MIT), Express
+(MIT), SQLite via `node:sqlite` (sin driver nativo), JWT + scrypt propios,
+ledger/outbox/idempotencia de pagos, deploy con Dockerfile + Caddy
+(Apache-2.0), y el geocoding con Nominatim (sin key).
+
+### 35.3 Stack elegido (licencias verificadas contra la API de GitHub, 2026-11-05)
+
+| Capacidad | Hoy | Elegido | Licencia verificada | Que elimina |
+|---|---|---|---|---|
+| Runtime API | Node + Express | **Node 24 + Express (mantener)** | MIT | — (ya era OSS) |
+| Contrato de API | no hay | **OpenAPI 3.1 + Scalar** (docs auto-alojadas) | MIT | el "no hay documentacion" |
+| Validacion | a mano | **Zod** | MIT | errores silenciosos en el body |
+| Base de datos | SQLite | **SQLite ahora** -> **PostgreSQL 17** cuando lo pida el volumen | PostgreSQL License | — (ya era OSS) |
+| Cache / cola | nada (in-process) | **Valkey** (NO Redis: desde 2024 no es OSI) + **BullMQ** | BSD-3-Clause / MIT | dependencia no-OSI |
+| Jobs | workers con `setInterval` | **BullMQ sobre Valkey** | MIT | timers que mueren con el server |
+| Auth | JWT + scrypt propios | **mantener** (+ **Zitadel** si algun dia hay OIDC multi-servicio) | AGPL-3.0 / propio | ya es 0 cuentas |
+| WhatsApp | Meta Cloud API | **WAHA** (`devlikeapro/waha`, Apache-2.0) o **Evolution API** | Apache-2.0 / NOASSERTION | cuenta Meta + WABA |
+| Geocoding | Nominatim publico | **Photon** (`komoot/photon`) auto-alojado | Apache-2.0 | cuota publica, latencia, SLA |
+| Mapas y rutas | Google Maps | **Leaflet + tiles OSM + OSRM** (`Project-OSRM/osrm-backend`) | BSD-2 / BSD-2 | API key + facturacion |
+| Fuentes | Google Fonts | **auto-alojar los WOFF2** de `google/fonts` | OFL / Apache-2.0 | CDN externo + fuga de datos |
+| Pagos | 4 cuentas | **BTCPay Server** (cripto, 0 cuentas) + **Wompi** (1 cuenta) como adapter | MIT / MIT | 4 cuentas -> 1 o 0 |
+| Objetos (uploads) | disco local | **disco local** (ya) y **SeaweedFS** si se quiere API S3 (NO MinIO: AGPL + sin binarios desde 2026-04) | Apache-2.0 | dependencia R2/MinIO |
+| Backups | R2 (Cloudflare) | **restic** -> disco local o SeaweedFS | BSD-2-Clause | cuenta Cloudflare |
+| Secretos | env vars en claro | **SOPS + age** o Docker secrets | Apache-2.0 / MIT | secretos en el repo |
+| Metricas y logs | logs sueltos | **OpenTelemetry + Prometheus + Grafana + Loki** | Apache-2.0 / AGPL-3.0 | — |
+| Uptime / alertas | nada | **Uptime Kuma** | MIT | — |
+| Correo | nada | **listmonk + Postfix** (o SMTP del hosting) | AGPL-3.0 / GPL | servicios de email |
+| Push al domiciliario | nada | **Web Push (VAPID generado local)** o SSE nativo | Apache-2.0 | — |
+| Realtime (r11) | pendiente | **SSE nativo de Node** (0 dependencias) | MIT | — |
+| Proxy / TLS | Caddy | **Caddy (mantener)** | Apache-2.0 | — |
+| Git | GitHub | **Gitea** si el operador quiere 0 cuentas; GitHub se queda si le sirve la trazabilidad | MIT | cuenta GitHub (decision del operador) |
+
+### 35.4 Lo que NO se puede volver independiente (limites honestos)
+
+1. **Tarjetas y PSE en Colombia no tienen OSS.** Toda pasarela real (Wompi,
+   Nequi, Daviplata, Bancolombia, MercadoPago) exige **contrato de comercio** y
+   KYC del operador. La meta alcanzable es **UNA cuenta** (D21: Wompi cubre
+   PSE + Nequi + Daviplata + Bancolombia + link de pago por WSP + tarjetas) o
+   **CERO** si se cobra en efectivo o en cripto (BTCPay). El dominio ya esta
+   desacoplado (`src/lib/payments/adapters/*` con fail-closed, vault, outbox,
+   idempotencia y ledger): cambiar de proveedor no toca pedidos ni contabilidad.
+2. **Instagram no tiene alternativa OSS.** La Graph API oficial exige cuenta
+   Meta Business. decision: o se mantiene como plug-in opcional (1 cuenta) o se
+   saca la auto-publicacion y se publica a mano.
+3. **WhatsApp auto-alojado va contra los ToS de WhatsApp.** WAHA y Evolution
+   API usan Baileys (Web no oficial): el numero puede ser baneado. Solo
+   corresponde en un numero secundario, nunca en el principal. La via oficial
+   (Meta Cloud API) si exige cuenta.
+4. **Auto-alojar significa mantener.** Cada pieza self-hosted la mantiene el
+   operador (o un `syseng`). El ahorro es de cuentas y de costes por uso, no de
+   trabajo.
+
+### 35.5 Topologia objetivo (docker-compose)
+
+```
+caddy (TLS)  ->  app (Node+Express, imagen actual)
+                   |- postgres (o sqlite en el volumen actual)
+                   |- valkey  (cache + colas)
+                   |- photon  (geocoding)   -> osrm (rutas)
+                   |- waha    (WhatsApp)     -> [opcional] bitcoind + btcpay
+                   |- seaweedfs (uploads, opcional)
+                   `- prometheus -> grafana + loki + uptime-kuma
+```
+
+Todo con `restart: unless-stopped`, volumen local, y `.env.production` cifrado
+con SOPS+age. El `docker-compose.yml` actual ya tiene `app` + `caddy` + volumen
+`mymochis_data`: la migracion es agregar servicios, no reescribir el deploy.
+
+### 35.6 Decisiones que faltan del operador (forks)
+
+- **F1 · Pagos**: BTCPay (cripto, 0 cuentas, pero el cliente paga en cripto) |
+  Wompi (1 cuenta, cubre PSE/tarjetas/Nequi) | efectivo + WSP manual (0 cuentas).
+- **F2 · WhatsApp/Instagram**: auto-alojado (WAHA, riesgo ToS) | Meta oficial
+  (1 cuenta) | sacar el auto-mensaje y avisar por la app del domiciliario.
+- **F3 · Git**: Gitea auto-alojado (0 cuentas) | GitHub (trazabilidad para el
+  operador, ya en uso).
+- **F4 · Base de datos**: quedarse en SQLite (0 servicios) | Postgres (spec 59
+  de metricas y `order_items` con volumen real).
+
+### 35.7 Plan por fases (con gate de calidad por fase)
+
+| Fase | Que | Esfuerzo | Gate |
+|---|---|---|---|
+| F0 | OpenAPI 3.1 + Scalar + Zod en las rutas nuevas | 1 dia | `/api/docs` sirve el contrato; tests siguen verdes |
+| F1 | Auto-alojar fuentes (WOFF2) y cambiar el mapa del admin y del portal a Leaflet + OSM + OSRM | 2 dias | 0 peticiones a `fonts.googleapis.com` ni `maps.googleapis.com` (verificado en el log del server) |
+| F2 | Photon + OSRM en el compose; `geocode.js` y la tarifa de distancia contra el servicio interno, con fallback a la cache y a Nominatim | 2-3 dias | la cotizacion de la landing sigue dando el mismo numero que hoy |
+| F3 | WhatsApp: adapter WAHA detras de `src/lib/whatsapp.js` (fallback a Meta si el operador decide) | 1 dia | el WSP de pedido sigue saliendo y queda en el outbox |
+| F4 | Backups con restic a disco local + prueba de restauracion (hoy van a R2) | 1 dia | `scripts/stack-smoke.sh` + restauracion probada |
+| F5 | OpenTelemetry + Prometheus + Grafana + Loki + Uptime Kuma | 2 dias | alertas de pagos, reparto y salud del server |
+| F6 | Postgres + Valkey + BullMQ (solo si el negocio crece) | 2-3 dias | migracion de datos con checksum + suite verde |
+| F7 | Adapter BTCPay (cripto) o Wompi (1 cuenta) | 1-2 dias | idempotencia y fail-closed verificados con los tests de pagos |
+| F8 | SOPS+age para `.env.production` | 0,5 dia | el compose levanta sin secretos en claro |
+
+**Regla de este cap.:** cada fase entra por su propio commit atomico, con la
+suite verde antes. Ninguna fase introduce una dependencia con login para el
+admin o el domiciliario; las unicas dependencias con cuenta quedan aisladas
+dentro de un adapter (`src/lib/payments/adapters/*`, `src/lib/whatsapp.js`), que
+es justo lo que ya permite el diseño actual.
