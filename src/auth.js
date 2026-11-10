@@ -1,5 +1,5 @@
 import { scryptSync, randomBytes, timingSafeEqual } from 'node:crypto';
-import { createHmac } from 'node:crypto';
+import { createHmac, createHash } from 'node:crypto';
 
 const IS_PROD = process.env.NODE_ENV === 'production';
 const JWT_SECRET = process.env.NEXOMOCHIS_JWT_SECRET;
@@ -25,6 +25,16 @@ export function verifyPassword(password, salt, hash) {
   return timingSafeEqual(candidate, target);
 }
 
+/** Comparacion en tiempo constante de dos strings (evita timing attacks). */
+function safeEqualString(a, b) {
+  if (typeof a !== 'string' || typeof b !== 'string') return false;
+  const ha = createHash('sha256').update(a).digest();
+  const hb = createHash('sha256').update(b).digest();
+  let r = 0;
+  for (let i = 0; i < ha.length; i++) r |= ha[i] ^ hb[i];
+  return r === 0;
+}
+
 function b64url(buf) {
   return Buffer.from(buf).toString('base64').replace(/\+/g, '-').replace(/\//g, '_').replace(/=+$/, '');
 }
@@ -48,7 +58,9 @@ export function verifyJwt(token) {
   if (parts.length !== 3) return null;
   const [header, body, sig] = parts;
   const expected = b64url(createHmac('sha256', JWT_SECRET_EFFECTIVE).update(`${header}.${body}`).digest());
-  if (sig !== expected) return null;
+  // Comparacion en tiempo constante: el `!==` filtraba byte a byte por
+  // timing y permitia falsificar firmas a fuerza de intentos (spec 58, p5).
+  if (!safeEqualString(sig, expected)) return null;
   try {
     const payload = JSON.parse(b64urlDecode(body).toString('utf8'));
     if (payload.exp && payload.exp < Math.floor(Date.now() / 1000)) return null;

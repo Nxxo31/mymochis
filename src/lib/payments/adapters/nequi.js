@@ -5,6 +5,8 @@ import { randomUUID } from 'node:crypto';
 import { createHmac, createHash } from 'node:crypto';
 import { MockAdapter } from './mock.js';
 import { useCredential } from '../../vault.js';
+import { db } from '../../../db.js';
+import { safeParse } from '../../stock.js';
 
 /** @typedef {import('../adapter.js').PaymentAdapter} PaymentAdapter */
 /** @typedef {import('../adapter.js').CreateInput} CreateInput */
@@ -152,9 +154,41 @@ export class NequiAdapter {
       this.#assertUsable('revertir un pago');
       return await this.fallback.refund(providerRef, amountMinor);
     }
-    // Nequi no expone refund unificado en push; depende de contrato.
-    // Implementar cuando el operador confirme el endpoint específico.
-    throw new Error('Nequi refund: implementar contra endpoint del contrato (no documentado públicamente)');
+    // La reversa de Nequi se hace contra el paymentId de Nequi, no contra el
+    // transactionId que guardamos como provider_reference. Se recupera del
+    // intento original: sin el no se revierte a ciegas (spec 58, p3).
+    const attempt = db.prepare(
+      "SELECT provider_response_json FROM payment_attempts WHERE provider = 'nequi' AND provider_reference = ? ORDER BY attempt_id DESC LIMIT 1"
+    ).get(String(providerRef));
+    const response = attempt ? safeParse(attempt.provider_response_json, {}) : {};
+    const nequiPaymentId = response?.paymentId || null;
+    if (!nequiPaymentId) {
+      throw new Error('Nequi refund: no se encontro el paymentId de Nequi del intento, no se revierte a ciegas');
+    }
+
+    const res = await fetch(`${NEQUI_BASE}/payments/v2/-services-paymentservice-reversepayment`, {
+      method: 'POST',
+      headers: {
+        'Content-Type': 'application/json',
+        'X-Api-Key': apiKey(),
+        'X-Request-Id': `refund-${providerRef}`,
+      },
+      body: JSON.stringify({
+        transactionId: String(providerRef),
+        paymentId: nequiPaymentId,
+        ...(amountMinor ? { amount: amountMinor } : {}),
+      }),
+    });
+
+    if (!res.ok) {
+      const text = await res.text().catch(() => '');
+      throw new Error(`Nequi refund ${res.status}: ${text.slice(0, 200)}`);
+    }
+    const data = await res.json().catch(() => ({}));
+    return {
+      providerRefundReference: data?.transactionId || data?.paymentId || `NEQ-REF-${randomUUID().slice(0, 8)}`,
+      state: 'SUCCEEDED',
+    };
   }
 
   /** @param {Buffer} rawBody @param {Record<string,string>} headers */

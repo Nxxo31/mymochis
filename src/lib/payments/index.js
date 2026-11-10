@@ -5,6 +5,7 @@ import { db } from '../../db.js';
 import { getAdapter } from './adapter.js';
 import { lookupIdempotency, createIdempotencyRecord, completeIdempotency } from './idempotency.js';
 import { enqueueOutbox } from './outbox.js';
+import { releaseReservedStock } from '../stock.js';
 
 const STATE = {
   INITIATED: 'INITIATED',
@@ -12,6 +13,8 @@ const STATE = {
   SUCCEEDED: 'SUCCEEDED',
   FAILED: 'FAILED',
   REQUIRES_ACTION: 'REQUIRES_ACTION',
+  REQUIRES_PAYMENT_METHOD: 'REQUIRES_PAYMENT_METHOD',
+  REFUNDED: 'REFUNDED',
   UNRESOLVED: 'UNRESOLVED',
   EXPIRED: 'EXPIRED',
 };
@@ -33,8 +36,12 @@ const VALID_STATES = new Set(Object.values(STATE));
  * se hace con el flujo de refund, no revirtiendo el pago.
  */
 const ALLOWED_TRANSITIONS = {
-  [STATE.INITIATED]:      [STATE.REQUIRES_ACTION, STATE.PROCESSING, STATE.SUCCEEDED, STATE.FAILED, STATE.EXPIRED],
-  [STATE.REQUIRES_ACTION]: [STATE.PROCESSING, STATE.SUCCEEDED, STATE.FAILED, STATE.EXPIRED, STATE.INITIATED],
+  [STATE.INITIATED]:      [STATE.REQUIRES_ACTION, STATE.REQUIRES_PAYMENT_METHOD, STATE.PROCESSING, STATE.SUCCEEDED, STATE.FAILED, STATE.EXPIRED],
+  [STATE.REQUIRES_ACTION]: [STATE.PROCESSING, STATE.SUCCEEDED, STATE.FAILED, STATE.EXPIRED, STATE.INITIATED, STATE.REQUIRES_PAYMENT_METHOD],
+  // El proveedor pidio otro metodo de pago (el cliente tiene que elegir uno
+  // distinto). Es terminal para este intento: la reserva de stock se libera
+  // y el pedido vuelve a "por pagar" con otro metodo.
+  [STATE.REQUIRES_PAYMENT_METHOD]: [STATE.REQUIRES_ACTION, STATE.PROCESSING, STATE.SUCCEEDED, STATE.FAILED, STATE.EXPIRED],
   [STATE.PROCESSING]:     [STATE.SUCCEEDED, STATE.FAILED, STATE.EXPIRED, STATE.UNRESOLVED],
   [STATE.UNRESOLVED]:     [STATE.PROCESSING, STATE.SUCCEEDED, STATE.FAILED, STATE.EXPIRED],
   // Un pago cobrado NO vuelve a "pendiente" por un webhook suelto — eso
@@ -43,7 +50,9 @@ const ALLOWED_TRANSITIONS = {
   // la reversa del operador (POST /api/payments/:id/refund) que exige razon y
   // postea las entradas contrarias en el ledger. No es una transicion que un
   // proveedor pueda disparar: el webhook nunca pide UNRESOLVED.
-  [STATE.SUCCEEDED]:      [STATE.UNRESOLVED],
+  [STATE.SUCCEEDED]:      [STATE.UNRESOLVED, STATE.REFUNDED],
+  // Devuelto: es terminal. El dinero volvio al cliente.
+  [STATE.REFUNDED]:      [],
   [STATE.FAILED]:         [STATE.INITIATED, STATE.PROCESSING, STATE.EXPIRED, STATE.UNRESOLVED],
   [STATE.EXPIRED]:        [],
 };
@@ -198,8 +207,15 @@ export async function createPaymentIntent({ idempotencyKey, request }) {
     }
   } catch (e) {
     responseStatus = 502;
-    responseBody = { error: 'provider_error', message: e.message };
-    transitionState(paymentId, 'INITIATED', 'FAILED', { reason: 'provider_error', message: e.message });
+    // El mensaje del provider NO sale al cliente: puede traer el detalle de
+    // la cuenta, el phone del cliente o el error crudo de la API (spec 58,
+    // p5). El detalle va al log del servidor.
+    console.error('[payments] provider_error', paymentId, String(e?.message || e));
+    responseBody = {
+      error: 'provider_error',
+      message: 'No pudimos procesar el pago con el proveedor. Intenta de nuevo o paga por otro metodo.',
+    };
+    transitionState(paymentId, 'INITIATED', 'FAILED', { reason: 'provider_error', message: String(e?.message || e).slice(0, 200) });
   }
 
   completeIdempotency({ operation, idempotencyKey, responseStatus, responseBody, paymentId });
@@ -211,12 +227,15 @@ export function getPayment(paymentId) {
   if (!p) return null;
   const attempts = db.prepare('SELECT * FROM payment_attempts WHERE payment_id = ? ORDER BY created_at ASC').all(paymentId);
   // Eventos del provider vinculados a ESTE payment (auditoria 2026-10-20, bug #9).
-  // Antes: una query global sin filtro que se descartaba — wasted work por lectura.
+  // Antes: una query global con `payload_json LIKE '%id%'` que recorria TODOS
+  // los eventos procesados y ademas podia traer los de otro pago que por
+  // casualidad mencionara el id. Ahora el evento guarda su payment_id y la
+  // consulta es un JOIN indexado (spec 58, p5).
   const events = db.prepare(`
     SELECT e.event_id, e.provider, e.provider_event_id, e.process_status, e.received_at, e.processed_at
     FROM provider_events e
     WHERE e.process_status = 'processed'
-      AND e.payload_json LIKE '%' || ? || '%'
+      AND e.payment_id = ?
     ORDER BY e.received_at DESC
     LIMIT 20
   `).all(paymentId);
@@ -262,21 +281,68 @@ export function transitionState(paymentId, expectedState, nextState, meta = {}) 
   return { ok: true };
 }
 
+/**
+ * Barre los pagos vencidos (spec 58, p3).
+ *
+ * Un pago que se queda en REQUIRES_ACTION (el cliente nunca abrio la app)
+ * mantiene la reserva de stock para siempre: el producto se agota solo y el
+ * pedido queda "pendiente" sin que nadie lo cancele. Aqui cada pago que paso
+ * su expires_at pasa a EXPIRED y su reserva se libera.
+ *
+ * Idempotente: la transicion usa el estado esperado, asi que un pago ya
+ * cobrado o ya expirado no se toca.
+ */
+export function sweepExpiredPayments(now = new Date()) {
+  const rows = db.prepare(`
+    SELECT payment_id, order_id, state FROM payments
+    WHERE expires_at IS NOT NULL
+      AND expires_at < ?
+      AND state IN ('INITIATED','REQUIRES_ACTION','REQUIRES_PAYMENT_METHOD','PROCESSING')
+  `).all(now.toISOString());
+
+  let expired = 0;
+  for (const row of rows) {
+    const out = transitionState(String(row.payment_id), row.state, 'EXPIRED', { source: 'sweep', reason: 'expires_at' });
+    if (!out.ok) continue;
+    const order = db.prepare('SELECT * FROM orders WHERE id = ?').get(row.order_id);
+    if (order) releaseReservedStock(order);
+    expired++;
+  }
+  if (expired) console.log(`[payments] barrido: ${expired} pago(s) vencido(s), stock liberado`);
+  return { scanned: rows.length, expired };
+}
+
 function postLedgerForSuccess(paymentId) {
   const p = db.prepare(`SELECT * FROM payments WHERE payment_id = ?`).get(paymentId);
   if (!p) return;
   // Evitar doble post
-  const existing = db.prepare(`SELECT COUNT(*) as n FROM ledger_entries WHERE payment_id = ?`).get(paymentId);
+  const existing = db.prepare(`SELECT COUNT(*) AS n FROM ledger_entries WHERE payment_id = ?`).get(paymentId);
   if (existing.n > 0) return;
+
+  // El efectivo que recogio el domicillero y una transferencia del cliente son
+  // cuentas DISTINTAS: sin esto el cierre de caja no puede decir cuanto fue
+  // efectivo y cuanto fue transferencia (spec 58, p6).
+  const cuenta = settlementForOrder(p.order_id) === 'cash_on_delivery' ? 'cash_on_delivery' : 'customer_cash';
 
   const e1 = `led_${randomUUID()}`;
   const e2 = `led_${randomUUID()}`;
   const now = new Date().toISOString();
   // Convención: debit customer_cash, credit merchant_receivable (mismo monto, signos opuestos)
   db.prepare(`INSERT INTO ledger_entries (entry_id, payment_id, account, amount_minor, currency, memo, posted_at) VALUES (?, ?, ?, ?, ?, ?, datetime('now'))`)
-    .run(e1, paymentId, 'customer_cash', p.amount_minor, p.currency, `payment ${paymentId} credit customer`);
+    .run(e1, paymentId, cuenta, p.amount_minor, p.currency, `payment ${paymentId} credit ${cuenta}`);
   db.prepare(`INSERT INTO ledger_entries (entry_id, payment_id, account, amount_minor, currency, memo, posted_at) VALUES (?, ?, ?, ?, ?, ?, datetime('now'))`)
     .run(e2, paymentId, 'merchant_receivable', -p.amount_minor, p.currency, `payment ${paymentId} credit merchant`);
+}
+
+/** Como se liquida el pedido: prepaid (transferencia) o cash_on_delivery. */
+export function settlementForOrder(orderId) {
+  if (!orderId) return 'prepaid';
+  const row = db.prepare(`
+    SELECT COALESCE(pm.settlement, 'prepaid') AS settlement
+    FROM orders o LEFT JOIN payment_methods pm ON pm.id = o.payment_method_id
+    WHERE o.id = ?
+  `).get(String(orderId));
+  return row?.settlement || 'prepaid';
 }
 
 /**
